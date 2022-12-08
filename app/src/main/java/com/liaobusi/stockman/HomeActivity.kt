@@ -83,6 +83,7 @@ class HomeActivity : AppCompatActivity() {
                 StockRepo.getRealTimeStocks()
                 StockRepo.getRealTimeBKs()
                 StockRepo.getHistoryBks()
+                StockRepo.getBKStocks()
                 val r = StockRepo.getHistoryStocks(
                     20220201,
                     SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())).toInt()
