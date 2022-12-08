@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    tools:context=".BKStrategyActivity">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="查找时间范围" />
+
+
+                <EditText
+                    android:id="@+id/timeRangeTv"
+                    android:layout_width="wrap_content"
+                    android:text="20"
+                    android:inputType="number"
+                    android:paddingEnd="10dp"
+                    android:maxLines="1"
+                    android:layout_height="wrap_content"
+                    />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:text="天"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="在" />
+
+
+                <EditText
+                    android:id="@+id/averageDayTv"
+                    android:layout_width="wrap_content"
+                    android:text="5"
+                    android:inputType="number"
+                    android:paddingEnd="10dp"
+                    android:layout_height="wrap_content"
+                    />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:text="日均线上方运行"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="收盘价不能偏离均线价" />
+
+
+                <EditText
+                    android:id="@+id/divergeRateTv"
+                    android:layout_width="wrap_content"
+                    android:text="0.5"
+                    android:paddingEnd="10dp"
+                    android:layout_height="wrap_content"
+                    />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:text="%"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="允许在均线下方调整最多" />
+
+                <EditText
+                    android:id="@+id/allowBelowCountTv"
+                    android:layout_width="wrap_content"
+                    android:text="1"
+                    android:maxLines="1"
+                    android:inputType="number"
+                    android:paddingEnd="10dp"
+                    android:layout_height="wrap_content"
+                    />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:text="日"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="截止时间" />
+
+                <EditText
+                    android:id="@+id/endTimeTv"
+                    android:text="20220803"
+                    android:inputType="date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+
+
+
+            <RadioGroup
+                android:id="@+id/cbGroup"
+                android:layout_width="wrap_content"
+                android:orientation="horizontal"
+                android:layout_height="wrap_content">
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/s1Cb"
+                    android:text="策略1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/s2Cb"
+                    android:text="策略2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/s3Cb"
+                    android:text="策略3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/s6Cb"
+                    android:text="策略6"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/s8Cb"
+                    android:text="策略8"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/dcCb"
+                    android:text="东财"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </RadioGroup>
+
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="抗跌" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/kdCb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="活跃度" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/activeRateCb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="行业" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/tradeCb"
+                    android:checked="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="概念" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/conceptCb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+
+
+            </LinearLayout>
+
+
+
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/chooseStockBtn"
+                android:layout_width="match_parent"
+                android:background="#3f51b5"
+                android:textColor="#fff"
+                android:layout_marginTop="10dp"
+                android:text="确    定"
+                android:layout_height="wrap_content"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:orientation="horizontal"
+                android:layout_height="wrap_content">
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/line5Btn"
+                    android:layout_width="0dp"
+                    android:background="#3f51b5"
+                    android:textColor="#fff"
+                    android:layout_weight="1"
+                    android:layout_marginTop="10dp"
+                    android:text="5日线选股"
+                    android:layout_height="wrap_content"/>
+
+                <View
+                    android:layout_width="30dp"
+                    android:layout_height="match_parent"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/line10Btn"
+                    android:layout_width="0dp"
+                    android:background="#ff4081"
+                    android:textColor="#fff"
+                    android:layout_weight="1"
+                    android:layout_marginTop="10dp"
+                    android:text="10日线选股"
+                    android:layout_height="wrap_content"/>
+
+
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/resultCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginTop="10dp"
+                android:textColor="#000"
+                android:text="板块结果" />
+
+            <LinearLayout
+                android:id="@+id/resultLL"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:layout_width="match_parent"
+                android:orientation="vertical"
+                android:layout_height="wrap_content">
+            </LinearLayout>
+
+
+
+
+        </LinearLayout>
+
+
+    </ScrollView>
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
