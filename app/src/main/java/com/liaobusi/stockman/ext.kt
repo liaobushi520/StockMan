@@ -26,10 +26,11 @@ fun <T> List<T>.split(groupCount: Int = 3): List<List<T>> {
 }
 
 suspend fun <T, R> List<T>.compute(
+    count:Int=6,
     f: suspend (s: T) -> R?
 ): List<R> {
     val jobList = mutableListOf<Deferred<List<R>>>()
-    this.split(6).forEach {
+    this.split(count).forEach {
         val job = GlobalScope.async {
             handle(it, f)
         }

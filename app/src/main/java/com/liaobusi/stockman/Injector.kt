@@ -7,6 +7,7 @@ import androidx.room.Room
 import com.liaobusi.stockman.api.getOkHttpClientBuilder
 import com.liaobusi.stockman.db.AppDatabase
 import com.liaobusi.stockman.db.BK
+import com.liaobusi.stockman.db.specialBK
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -56,7 +57,7 @@ object Injector {
 
         GlobalScope.launch {
             tradeBks = appDatabase.bkDao().getTradeBKs()
-            conceptBks = appDatabase.bkDao().getConceptBKs()
+            conceptBks = appDatabase.bkDao().getConceptBKs().filter { !it.specialBK }
         }
 
     }

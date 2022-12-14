@@ -47,13 +47,12 @@ data class BK(
 
 val BK.specialBK: Boolean
     get() {
-        return code == "BK1051" || code == "BK1050" || code=="BK0816" ||code=="BK0815"
+        return code == "BK1051" || code == "BK1050" || code=="BK0816" ||code=="BK0815"  || code=="BK1053" || code=="BK0867" ||code=="BK0500" ||code=="BK0610" || code=="BK0636"
     }
 
 
 fun BK.openWeb(context: Context) {
     val market=if(code=="000001") 1 else 90
-
     val  s= "dfcft://stock?market=${market}&code=${this.code}"
     val uri: Uri = Uri.parse(s)
     val intent = Intent(Intent.ACTION_VIEW, uri)

@@ -58,6 +58,8 @@ class Strategy1Activity : AppCompatActivity() {
             fromBKStrategyActivity=true
         }
 
+        supportActionBar?.title = "涨停洗盘"
+
         if(intent.hasExtra("endTime")){
             binding.endTimeTv.setText(intent.getStringExtra("endTime"))
         }else{

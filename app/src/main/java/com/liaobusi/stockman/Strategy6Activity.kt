@@ -1,5 +1,7 @@
 package com.liaobusi.stockman
 
+import android.content.Context
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -19,15 +21,38 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class Strategy6Activity : AppCompatActivity() {
+
+    companion object{
+        fun openDBHPStrategy(context: Context, bkCode:String, endTime: String){
+            val i = Intent(
+                context,
+                Strategy6Activity::class.java
+            ).apply {
+                putExtra("bk", bkCode)
+                putExtra("endTime",endTime)
+            }
+            context.startActivity(i)
+        }
+    }
     private lateinit var binding: ActivityStrategy6Binding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityStrategy6Binding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
+        supportActionBar?.title = "底部超跌横盘"
         if(intent.hasExtra("bk")){
             val bk=  intent.getStringExtra("bk")
             binding.conceptAndBKTv.setText(bk)
+            binding.lowMarketValue.setText("0.0")
+            binding.highMarketValue.setText("1000000.0")
         }
+
+        if(intent.hasExtra("endTime")){
+            binding.endTimeTv.setText(intent.getStringExtra("endTime"))
+        }else{
+            binding.endTimeTv.setText(SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())))
+        }
+
         binding.endTimeTv.setText(SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())))
         binding.chooseStockBtn.setOnClickListener {
             binding.root.requestFocus()

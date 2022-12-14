@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup.LayoutParams
 import android.widget.PopupWindow
@@ -26,6 +27,7 @@ class BKStrategyActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityBkstrategyBinding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
+        supportActionBar?.title = "板块强势"
         binding.endTimeTv.setText(SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())))
 
         binding.line5Btn.setOnClickListener {
@@ -67,6 +69,25 @@ class BKStrategyActivity : AppCompatActivity() {
             outputResult(param)
         }
 
+
+        binding.line20Btn.setOnClickListener {
+            binding.root.requestFocus()
+            val endTime =
+                binding.endTimeTv.editableText.toString().toIntOrNull()
+            if (endTime == null) {
+                Toast.makeText(this@BKStrategyActivity, "截止时间不合法", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            val param = Strategy7Param(
+                range = 40,
+                endTime = endTime,
+                averageDay = 20,
+                allowBelowCount = 0,
+                divergeRate = 1.0 / 100
+            )
+            updateUI(param)
+            outputResult(param)
+        }
 
         binding.chooseStockBtn.setOnClickListener {
             binding.root.requestFocus()
@@ -121,9 +142,9 @@ class BKStrategyActivity : AppCompatActivity() {
     private fun output(list: List<BKResult>) {
         lifecycleScope.launch(Dispatchers.Main) {
 
-            binding.kdCb.setOnCheckedChangeListener { compoundButton, b ->
-                output(list)
-            }
+//            binding.kdCb.setOnCheckedChangeListener { compoundButton, b ->
+//                output(list)
+//            }
 
             binding.activeRateCb.setOnCheckedChangeListener { compoundButton, b ->
                 output(list)
@@ -141,11 +162,11 @@ class BKStrategyActivity : AppCompatActivity() {
             var r = list
             r = mutableListOf<BKResult>().apply { addAll(r) }
 
-            if (binding.kdCb.isChecked) {
-                r = r.sortedBy {
-                    it.kd
-                }
-            }
+//            if (binding.kdCb.isChecked) {
+//                r = r.sortedBy {
+//                    it.kd
+//                }
+//            }
 
             if (binding.activeRateCb.isChecked) {
                 Collections.sort(r, kotlin.Comparator { v0, v1 ->
@@ -161,12 +182,12 @@ class BKStrategyActivity : AppCompatActivity() {
                 r = r.filter { it.bk.type != 0 }
             }
 
-            var t=0
-            if(binding.conceptCb.isChecked){
-                t+=Injector.conceptBks.size
+            var t = 0
+            if (binding.conceptCb.isChecked) {
+                t += Injector.conceptBks.size
             }
-            if(binding.tradeCb.isChecked){
-                t+=Injector.tradeBks.size
+            if (binding.tradeCb.isChecked) {
+                t += Injector.tradeBks.size
             }
 
 
@@ -184,29 +205,64 @@ class BKStrategyActivity : AppCompatActivity() {
                             this.labelTv.visibility = View.INVISIBLE
                         }
 
+                        var ev: MotionEvent? = null
+                        root.setOnTouchListener { view, motionEvent ->
+                            if (motionEvent.action == MotionEvent.ACTION_DOWN) {
+                                ev = motionEvent
+                            }
+                            return@setOnTouchListener false
+                        }
+
                         root.setOnLongClickListener {
 
-                            val b=LayoutPopupWindowBinding.inflate( LayoutInflater.from(it.context)).apply {
-                                ztrcBtn.setOnClickListener {
-                                    Strategy2Activity.openZTRCStrategy(this@BKStrategyActivity,result.bk.code,binding.endTimeTv.text.toString())
-                                }
+                            val b =
+                                LayoutPopupWindowBinding.inflate(LayoutInflater.from(it.context))
+                                    .apply {
+                                        ztrcBtn.setOnClickListener {
+                                            Strategy2Activity.openZTRCStrategy(
+                                                this@BKStrategyActivity,
+                                                result.bk.code,
+                                                binding.endTimeTv.text.toString()
+                                            )
+                                        }
 
-                                ztxpBtn.setOnClickListener {
-                                    Strategy1Activity.openZTXPStrategy(this@BKStrategyActivity,result.bk.code,binding.endTimeTv.text.toString())
-                                }
+                                        ztxpBtn.setOnClickListener {
+                                            Strategy1Activity.openZTXPStrategy(
+                                                this@BKStrategyActivity,
+                                                result.bk.code,
+                                                binding.endTimeTv.text.toString()
+                                            )
+                                        }
 
-                                jxqsBtn.setOnClickListener {
-                                    Strategy4Activity.openJXQSStrategy(this@BKStrategyActivity,result.bk.code,binding.endTimeTv.text.toString())
-                                }
+                                        jxqsBtn.setOnClickListener {
+                                            Strategy4Activity.openJXQSStrategy(
+                                                this@BKStrategyActivity,
+                                                result.bk.code,
+                                                binding.endTimeTv.text.toString()
+                                            )
+                                        }
 
-                                dfcfBtn.setOnClickListener {
-                                    result.bk.openWeb(this@BKStrategyActivity)
-                                }
+                                        dfcfBtn.setOnClickListener {
+                                            result.bk.openWeb(this@BKStrategyActivity)
+                                        }
 
-                                ztqsBtn.setOnClickListener {
-                                    Strategy7Activity.openJXQSStrategy(this@BKStrategyActivity,result.bk.code,binding.endTimeTv.text.toString())
-                                }
-                            }
+
+                                        dbhpBtn.setOnClickListener {
+                                            Strategy6Activity.openDBHPStrategy(
+                                                this@BKStrategyActivity,
+                                                result.bk.code,
+                                                binding.endTimeTv.text.toString()
+                                            )
+                                        }
+
+                                        ztqsBtn.setOnClickListener {
+                                            Strategy7Activity.openJXQSStrategy(
+                                                this@BKStrategyActivity,
+                                                result.bk.code,
+                                                binding.endTimeTv.text.toString()
+                                            )
+                                        }
+                                    }
 
                             val pw = PopupWindow(
                                 b.root,
@@ -214,11 +270,7 @@ class BKStrategyActivity : AppCompatActivity() {
                                 LayoutParams.WRAP_CONTENT,
                                 true
                             )
-
-                            pw.showAsDropDown(it,0,-900,Gravity.END)
-
-
-
+                            pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -1000)
                             return@setOnLongClickListener true
                         }
 
@@ -227,15 +279,27 @@ class BKStrategyActivity : AppCompatActivity() {
 
                             when (cbId) {
                                 R.id.s1Cb -> {
-                                    Strategy1Activity.openZTXPStrategy(this@BKStrategyActivity,result.bk.code,binding.endTimeTv.text.toString())
+                                    Strategy1Activity.openZTXPStrategy(
+                                        this@BKStrategyActivity,
+                                        result.bk.code,
+                                        binding.endTimeTv.text.toString()
+                                    )
                                 }
 
                                 R.id.s2Cb -> {
-                                    Strategy2Activity.openZTRCStrategy(this@BKStrategyActivity,result.bk.code,binding.endTimeTv.text.toString())
+                                    Strategy2Activity.openZTRCStrategy(
+                                        this@BKStrategyActivity,
+                                        result.bk.code,
+                                        binding.endTimeTv.text.toString()
+                                    )
                                 }
 
                                 R.id.s3Cb -> {
-                                    Strategy4Activity.openJXQSStrategy(this@BKStrategyActivity,result.bk.code,binding.endTimeTv.text.toString())
+                                    Strategy4Activity.openJXQSStrategy(
+                                        this@BKStrategyActivity,
+                                        result.bk.code,
+                                        binding.endTimeTv.text.toString()
+                                    )
                                 }
                                 R.id.s6Cb -> {
                                     val i = Intent(
@@ -248,7 +312,11 @@ class BKStrategyActivity : AppCompatActivity() {
                                 }
 
                                 R.id.s8Cb -> {
-                                    Strategy7Activity.openJXQSStrategy(this@BKStrategyActivity,result.bk.code,binding.endTimeTv.text.toString())
+                                    Strategy7Activity.openJXQSStrategy(
+                                        this@BKStrategyActivity,
+                                        result.bk.code,
+                                        binding.endTimeTv.text.toString()
+                                    )
                                 }
                                 else -> {
                                     result.bk.openWeb(this@BKStrategyActivity)

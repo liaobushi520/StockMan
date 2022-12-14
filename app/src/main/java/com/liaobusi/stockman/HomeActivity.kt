@@ -26,14 +26,14 @@ class HomeActivity : AppCompatActivity() {
 
         binding.passwordBtn.setOnClickListener {
             binding.root.requestFocus()
-            val p= binding.passwordEt.editableText.toString()
+            val p = binding.passwordEt.editableText.toString()
             lifecycleScope.launch(Dispatchers.IO) {
                 val d = Injector.appDatabase.stockDao()
-                val stock= d.getStockByCode("000601")
-                if(p==stock.yesterdayClosePrice.toString()){
-                   launch(Dispatchers.Main) {
-                       binding.passwordFL.visibility=View.GONE
-                   }
+                val stock = d.getStockByCode("000601")
+                if (p == stock.yesterdayClosePrice.toString()) {
+                    launch(Dispatchers.Main) {
+                        binding.passwordFL.visibility = View.GONE
+                    }
                 }
             }
         }
@@ -67,12 +67,12 @@ class HomeActivity : AppCompatActivity() {
         }
 
         binding.s7.setOnClickListener {
-            val i = Intent(this,  BKStrategyActivity::class.java)
+            val i = Intent(this, BKStrategyActivity::class.java)
             startActivity(i)
         }
 
         binding.s8.setOnClickListener {
-            val i = Intent(this,  Strategy7Activity::class.java)
+            val i = Intent(this, Strategy7Activity::class.java)
             startActivity(i)
         }
 
@@ -106,10 +106,17 @@ class HomeActivity : AppCompatActivity() {
             StockRepo.getRealTimeStocks()
             StockRepo.getRealTimeBKs()
 
-            val sp= getSharedPreferences("app", Context.MODE_PRIVATE)
-            if(System.currentTimeMillis()-sp.getLong("fetch_bk_stocks_time",0)>5*60*60*1000){
+            h.deleteErrorHistory()
+
+
+            val sp = getSharedPreferences("app", Context.MODE_PRIVATE)
+            if (System.currentTimeMillis() - sp.getLong(
+                    "fetch_bk_stocks_time",
+                    0
+                ) > 5 * 60 * 60 * 1000
+            ) {
                 StockRepo.getBKStocks()
-                sp.edit().putLong("fetch_bk_stocks_time",System.currentTimeMillis()).apply()
+                sp.edit().putLong("fetch_bk_stocks_time", System.currentTimeMillis()).apply()
             }
 
 //            val p=Injector.appDatabase.bkDao().getBKByCode("BK1036")
@@ -122,17 +129,10 @@ class HomeActivity : AppCompatActivity() {
 //            bkStockDao.getStocksByBKCode("BK0420").forEach {
 //                Log.e("XXX",it.toString())
 //            }
-
-
-
-
-
-
-
             val today =
                 SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())).toInt()
 
-//            h.getHistoryBefore2("000001",20221012).forEach {
+//            h.getHistoryBefore2("600975",20220812,1000).forEach {
 //                Log.e("DDD",it.toString())
 //            }
 
@@ -142,8 +142,6 @@ class HomeActivity : AppCompatActivity() {
 //                }
 //
 //            }
-
-
 
 
 //            StockRepo.fixData("002279",20221102)
@@ -185,7 +183,7 @@ class HomeActivity : AppCompatActivity() {
 //
 //            h.deleteHistory(l)
 
-      //  StockRepo.getHistoryStocks( 20220805,20220812)
+            //  StockRepo.getHistoryStocks( 20220805,20220812)
 
 
         }

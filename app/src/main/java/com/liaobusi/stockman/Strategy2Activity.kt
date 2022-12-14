@@ -113,6 +113,7 @@ class Strategy2Activity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityStrategy2Binding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
+        supportActionBar?.title = "涨停揉搓"
 
         var fromBKStrategyActivity=false
         if (intent.hasExtra("bk")) {
