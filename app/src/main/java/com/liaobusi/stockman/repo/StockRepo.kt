@@ -594,7 +594,7 @@ object StockRepo {
         try {
             val response = Injector.retrofit.create(StockService::class.java).getRealTimeStocks()
             if (response.data != null) {
-                val list = response.data.diff.filter { it.price!=0f }.map {
+                val list = response.data.diff.filter { it.price != 0f }.map {
                     return@map Stock(
                         code = it.code,
                         name = it.name,
@@ -624,7 +624,7 @@ object StockRepo {
                 val today =
                     SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())).toInt()
                 val date = response.data.diff.first().date
-                val historyStocks = list.filter { it.price!=0f }.map {
+                val historyStocks = list.filter { it.price != 0f }.map {
                     return@map HistoryStock(
                         code = it.code,
                         date = date,
@@ -675,31 +675,30 @@ object StockRepo {
     ) = withContext(Dispatchers.IO) {
         val stockDao = Injector.appDatabase.stockDao()
         val historyDao = Injector.appDatabase.historyStockDao()
-        val stocks = stockDao.getStock(
-            startTime = startMarketTime,
-            endTime = endMarketTime,
-            lowMarketValue = lowMarketValue,
-            highMarketValue = highMarketValue
-        ).run {
-            var r = this
-            if (bkList?.isNotEmpty() == true) {
-                r = this.filter { stock ->
-                    var h = false
-                    run run@{
-                        bkList.forEach {
-                            if (stock.bk.contains(it)) {
-                                h = true
-                                return@run
-                            }
-                        }
-                    }
-                    return@filter h
-                }
+        val bkStockDao = Injector.appDatabase.bkStockDao()
 
+
+        val stocks = if (bkList?.isNotEmpty() == true) {
+            bkList.flatMap { bkCode ->
+                return@flatMap bkStockDao.getStocksByBKCode2(
+                    bkCode,
+                    startTime = startMarketTime,
+                    endTime = endMarketTime,
+                    lowMarketValue = lowMarketValue,
+                    highMarketValue = highMarketValue
+                )
             }
-            return@run r
+        } else {
+            stockDao.getStock(
+                startTime = startMarketTime,
+                endTime = endMarketTime,
+                lowMarketValue = lowMarketValue,
+                highMarketValue = highMarketValue
+            )
         }
-//        val stocks=listOf( stockDao.getStockByCode("002279"))
+
+
+//        val stocks=listOf( stockDao.getStockByCode("300898"))
         val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())
         val result = stocks.compute {
             val histories =
@@ -713,7 +712,6 @@ object StockRepo {
                         return@run
                     }
                 }
-                return@compute null
             }
 
             if (ztStockHistory == null) {
@@ -1340,7 +1338,7 @@ object StockRepo {
 
             Log.i(
                 "股票超人",
-                "${it.name}${sampleCount}内平均涨停概率${perSampleZTRate},换手率变化${perSampleTurnOverRate / perTotalTurnOverRate},k线斜率${kLineSlopeRate}  ${chgDeviation} $activeRate  ${histories.last().date   }"
+                "${it.name}${sampleCount}内平均涨停概率${perSampleZTRate},换手率变化${perSampleTurnOverRate / perTotalTurnOverRate},k线斜率${kLineSlopeRate}  ${chgDeviation} $activeRate  ${histories.last().date}"
             )
 
             //放量异动
@@ -1396,131 +1394,140 @@ object StockRepo {
         val bks = bkDao.getAllBK()
         val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())!!
 
-        val result = bks.filter { !it.specialBK }.compute(3) {
+        //&& (it.code == "BK0454" || it.code == "BK0474")
+        val result = bks.filter { !it.specialBK }
+            .compute(3) {
 
-            val histories = historyDao.getHistoryRange(
-                it.code,
-                endDay.before(averageDay * 2 + range - 1),
-                endTime
-            )
-            if (histories.size - averageDay <= 0) {
-                return@compute null
-            }
-            var s = 0
-            var currentAllowBelowCount = allowBelowCount
-
-            while (s <= histories.size - averageDay) {
-                var total = 0.0
-
-                for (i in s until s + averageDay) {
-                    total += histories[i].closePrice
+                val histories = historyDao.getHistoryRange(
+                    it.code,
+                    endDay.before(averageDay * 2 + range - 1),
+                    endTime
+                )
+                if (histories.size - averageDay <= 0) {
+                    return@compute null
                 }
+                var s = 0
+                var currentAllowBelowCount = allowBelowCount
 
-                if (histories[s].closePrice < total / averageDay * (1.0 - divergeRate)) {
-                    writeLog(
-                        it.code,
-                        "${histories[s].date} ${averageDay}日线 ${total / averageDay} 除去偏差值${total / averageDay * (1.0 - divergeRate)}"
-                    )
-                    if (currentAllowBelowCount <= 0) {
-                        return@compute null
+                var belowCount = 0
+
+                while (s <= histories.size - averageDay) {
+                    var total = 0.0
+
+                    for (i in s until s + averageDay) {
+                        total += histories[i].closePrice
                     }
-                    currentAllowBelowCount -= 1
+
+                    if (histories[s].closePrice < total / averageDay * (1.0 - divergeRate)) {
+                        belowCount++
+                        writeLog(
+                            it.code,
+                            "${histories[s].date} ${averageDay}日线 ${total / averageDay} 除去偏差值${total / averageDay * (1.0 - divergeRate)}"
+                        )
+                        if (currentAllowBelowCount <= 0) {
+                            return@compute null
+                        }
+                        currentAllowBelowCount -= 1
+                    }
+                    s++
                 }
-                s++
-            }
 
-            val highest = historyDao.getHistoryHighestPrice(
-                it.code, endDay.before(range * 4),
-                endTime
-            )
-            val overPreHigh = histories[0].highest >= highest
+                val belowRate =
+                    (histories.size - averageDay - belowCount + 1f) / (histories.size - averageDay + 1f)
 
-            val dayang = histories[0].DY
+                val highest = historyDao.getHistoryHighestPrice(
+                    it.code, endDay.before(range * 4),
+                    endTime
+                )
+                val overPreHigh = histories[0].highest >= highest
+
+                val dayang = histories[0].DY
 
 //            val kd = bkKD(histories)
 //            Log.e("股票超人","抗跌${it.name} ${kd}")
 
-            //连阳
-            var lianyangCount = 0
-            while (lianyangCount < histories.size && histories[lianyangCount].chg >= 0) {
-                lianyangCount += 1
-            }
+                //连阳
+                var lianyangCount = 0
+                while (lianyangCount < histories.size && histories[lianyangCount].chg >= 0) {
+                    lianyangCount += 1
+                }
 
-            var totalTurnOverRate = 0f
-            for (element in histories) {
-                totalTurnOverRate += element.turnoverRate
-            }
-            //计算平均换手率
-            val perTurnOverRate = totalTurnOverRate / (histories.size)
-            //放量异动
-            val highTurnOverRate =
-                histories[0].turnoverRate >= perTurnOverRate * 1.3
+                var totalTurnOverRate = 0f
+                for (element in histories) {
+                    totalTurnOverRate += element.turnoverRate
+                }
+                //计算平均换手率
+                val perTurnOverRate = totalTurnOverRate / (histories.size)
+                //放量异动
+                val highTurnOverRate =
+                    histories[0].turnoverRate >= perTurnOverRate * 1.3
 
-            val zt = getBKZTRate(it, endTime)
+                val zt = getBKZTRate(it, endTime)
 
-            val sampleCount = kotlin.math.max(1, averageDay / 2)
-            val acc = histories.subList(0, sampleCount).fold(0f) { acc, item ->
-                return@fold acc + item.turnoverRate
-            }
+                val sampleCount = kotlin.math.max(1, averageDay / 2)
+                val acc = histories.subList(0, sampleCount).fold(0f) { acc, item ->
+                    return@fold acc + item.turnoverRate
+                }
 
-            val kLineSlopeRate = kLineSlopeRate(histories)
+                val kLineSlopeRate = kLineSlopeRate(histories)
 
-            val bkFirst = histories.first()
-            val bkLast = histories.last()
-            val bkChg = (bkFirst.closePrice - bkLast.closePrice) / bkLast.closePrice
-            val dpLast = historyDao.getHistoryByDate("000001", bkLast.date)
-            val dpFirst = historyDao.getHistoryByDate("000001", bkFirst.date)
-            val dpChg = (dpFirst.closePrice - dpLast.closePrice) / dpLast.closePrice
+                val bkFirst = histories.first()
+                val bkLast = histories.last()
+                val bkChg = (bkFirst.closePrice - bkLast.closePrice) / bkLast.closePrice
+                val dpLast = historyDao.getHistoryByDate("000001", bkLast.date)
+                val dpFirst = historyDao.getHistoryByDate("000001", bkFirst.date)
+                val dpChg = (dpFirst.closePrice - dpLast.closePrice) / dpLast.closePrice
 
-            Log.i(
-                "股票超人",
-                it.name + " ${bkLast.date}-${bkFirst.date} ${bkChg}  ${dpChg} 区间涨幅${bkChg - dpChg}"
-            )
-            Log.i(
-                "股票超人",
-                it.name + " ${histories.size}内平均换手率${perTurnOverRate}  近${sampleCount}天取样换手率" + (acc / sampleCount) + " 放量${acc / (perTurnOverRate * sampleCount)} 板块涨停率${zt}  K线斜率${kLineSlopeRate} ${histories.last().date}"
-            )
+                Log.i(
+                    "股票超人",
+                    it.name + " ${bkLast.date}-${bkFirst.date} ${bkChg}  ${dpChg} 区间涨幅${bkChg - dpChg}"
+                )
+                Log.i(
+                    "股票超人",
+                    it.name + " 在均线上的概率为${belowRate}    放量率${(acc / (perTurnOverRate * sampleCount))}  K线斜率${kLineSlopeRate} 板块涨停率${zt}  大盘差值${(bkChg - dpChg) * 10}  " +
+                            " ${histories.size}内平均换手率${perTurnOverRate}  近${sampleCount}天取样换手率" + (acc / sampleCount)
+                )
 
 
-            //触线
-            var touchLine10 = false
-            var touchLine20 = false
-            if (histories.size >= 20) {
-                var line10 = 0f
-                var line20 = 0f
-                for (i in 0 until 20) {
-                    if (i <= 9) {
-                        line10 += histories[i].closePrice
+                //触线
+                var touchLine10 = false
+                var touchLine20 = false
+                if (histories.size >= 20) {
+                    var line10 = 0f
+                    var line20 = 0f
+                    for (i in 0 until 20) {
+                        if (i <= 9) {
+                            line10 += histories[i].closePrice
+                        }
+                        line20 += histories[i].closePrice
                     }
-                    line20 += histories[i].closePrice
+
+                    val line10Price = line10 / 10
+                    val line20Price = line20 / 10
+                    if (line10 / 10 >= histories[0].lowest && histories[0].closePrice > line10Price) {
+                        //触10日线
+                        touchLine10 = true
+                    }
+                    if (line20 / 20 >= histories[0].lowest && histories[0].closePrice > line20Price) {
+                        //触20日线
+                        touchLine20 = true
+                    }
                 }
 
-                val line10Price=line10 / 10
-                val line20Price=line20 / 10
-                if (line10 / 10 >= histories[0].lowest && histories[0].closePrice > line10Price) {
-                    //触10日线
-                    touchLine10 = true
-                }
-                if (line20 / 20 >= histories[0].lowest && histories[0].closePrice > line20Price) {
-                    //触20日线
-                    touchLine20 = true
-                }
+                return@compute BKResult(
+                    it,
+                    overPreHigh = overPreHigh,
+                    dayang = dayang,
+                    lianyangCount = lianyangCount,
+                    highTurnOverRate = highTurnOverRate,
+                    perTurnoverRate = (kLineSlopeRate * 0.1f + (acc / (perTurnOverRate * sampleCount)) * 0.3f + zt/10 * 0.2f + (bkChg - dpChg) * 10 * 0.2f + belowRate * 0.2f) * 10,
+                    perZT = zt,
+                    touchLine10 = touchLine10,
+                    touchLine20 = touchLine20
+                )
+
+
             }
-
-            return@compute BKResult(
-                it,
-                overPreHigh = overPreHigh,
-                dayang = dayang,
-                lianyangCount = lianyangCount,
-                highTurnOverRate = highTurnOverRate,
-                perTurnoverRate = kLineSlopeRate * 0.2f + (acc / (perTurnOverRate * sampleCount)) * 0.3f + zt * 0.4f + (bkChg - dpChg) * 10 * 0.1f,
-                perZT = zt,
-                touchLine10 = touchLine10,
-                touchLine20 = touchLine20
-            )
-
-
-        }
 
         Collections.sort(result, kotlin.Comparator { v0, v1 ->
             return@Comparator v1.signalCount - v0.signalCount
@@ -1535,14 +1542,22 @@ object StockRepo {
         var count = 0
         var total = 0f
 
+        val ss = StringBuilder()
+
         histories.forEachIndexed { index, historyStock ->
-            if (index != histories.size && index < histories.size/2) {
-                val r = (historyStock.closePrice - last.closePrice) / (histories.size - index)
+            if (index != histories.size && index < histories.size / 2) {
+                val r =
+                    (historyStock.closePrice - last.closePrice) / last.closePrice * (histories.size - index)
                 val arc = atan(r)
+                ss.append("${historyStock.date} ${arc} |")
                 total += arc
                 count++
             }
         }
+
+//        Log.e("XXX","${last.date} ${last.code} $ss")
+
+
         return total / count
     }
 
@@ -1552,7 +1567,7 @@ object StockRepo {
         var total = 0f
 
         histories.forEachIndexed { index, historyStock ->
-            if (index != histories.size && index < histories.size/2) {
+            if (index != histories.size && index < histories.size / 2) {
                 val r = (historyStock.closePrice - last.closePrice) / (histories.size - index)
                 val arc = atan(r)
                 total += arc

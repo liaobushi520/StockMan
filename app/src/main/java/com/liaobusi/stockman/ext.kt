@@ -60,3 +60,9 @@ fun Date.before(before: Int): Int {
     val preDay = sdf.format(time);
     return preDay.toInt()
 }
+
+
+fun today():Int{
+    return  SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())).toInt()
+}
+

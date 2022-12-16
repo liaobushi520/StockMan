@@ -49,6 +49,7 @@ class Strategy4Activity : AppCompatActivity() {
             binding.conceptAndBKTv.setText(bk)
             binding.lowMarketValue.setText("0.0")
             binding.highMarketValue.setText("1000000.0")
+            binding.endMarketTime.setText(today().toString())
             fromBKStrategyActivity=true
         }
 
@@ -71,10 +72,10 @@ class Strategy4Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy4Param(
                 startMarketTime = 19910101,
-                endMarketTime = 20180101,
+                endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
                 lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
                 highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 30000000000.0,
-                range = 25,
+                range = 10,
                 endTime = endTime,
                 averageDay = 5,
                 allowBelowCount = 0,
@@ -100,13 +101,13 @@ class Strategy4Activity : AppCompatActivity() {
 
             val param = Strategy4Param(
                 startMarketTime = 19910101,
-                endMarketTime = 20180101,
+                endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
                 lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
                 highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 30000000000.0,
-                range = 50,
+                range = 20,
                 endTime = endTime,
                 averageDay = 10,
-                allowBelowCount = 5,
+                allowBelowCount = 1,
                 divergeRate = 0.02,
                 abnormalRange = 10,
                 abnormalRate = 2.0,
@@ -126,14 +127,14 @@ class Strategy4Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy4Param(
                 startMarketTime = 19910101,
-                endMarketTime = 20180101,
+                endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
                 lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
                 highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 30000000000.0,
-                range = 80,
+                range = 40,
                 endTime = endTime,
                 averageDay = 20,
-                allowBelowCount = 10,
-                divergeRate = 0.00,
+                allowBelowCount = 2,
+                divergeRate = 0.02,
                 abnormalRange = 15,
                 abnormalRate = 1.5,
                 bkList = bkList

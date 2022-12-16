@@ -11,6 +11,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.liaobusi.stockman.databinding.ActivityHomeBinding
+import com.liaobusi.stockman.db.specialBK
 import com.liaobusi.stockman.repo.StockRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -102,13 +103,11 @@ class HomeActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             val d = Injector.appDatabase.stockDao()
             val h = Injector.appDatabase.historyStockDao()
+            val bkStockDao = Injector.appDatabase.bkStockDao()
+            val bkDao=Injector.appDatabase.bkDao()
 
             StockRepo.getRealTimeStocks()
             StockRepo.getRealTimeBKs()
-
-            h.deleteErrorHistory()
-
-
             val sp = getSharedPreferences("app", Context.MODE_PRIVATE)
             if (System.currentTimeMillis() - sp.getLong(
                     "fetch_bk_stocks_time",
@@ -118,10 +117,23 @@ class HomeActivity : AppCompatActivity() {
                 StockRepo.getBKStocks()
                 sp.edit().putLong("fetch_bk_stocks_time", System.currentTimeMillis()).apply()
             }
+            h.deleteErrorHistory()
+
+
+
+
+//            bkStockDao.getStocksByBKCode("BK0438").forEach {
+//                Log.e("XXX", it.toString())
+//            }
+
+
+
+
+
 
 //            val p=Injector.appDatabase.bkDao().getBKByCode("BK1036")
 //
-//            val bkStockDao = Injector.appDatabase.bkStockDao()
+
 //            StockRepo.getBKStocks()
 //            bkStockDao.getAll().forEach {
 //                Log.e("XXXY",it.toString())

@@ -80,8 +80,9 @@ interface HistoryBKDao {
     @Query("select * from historybk where code=:code order by date desc")
     fun getHistory(code: String): List<HistoryBK>
 
-    @Query("select * from historybk where code=:code AND date=:date")
+    @Query("select * from historybk where code=:code AND date>=:date   order by date asc limit 1")
     fun getHistoryByDate(code: String, date: Int): HistoryBK
+
 
     @Query("select max(closePrice) from historybk where code=:code AND date <= :end AND date>= :start ")
     fun getHistoryHighestPrice(code: String, start: Int, end: Int): Float

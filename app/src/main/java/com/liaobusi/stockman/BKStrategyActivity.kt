@@ -40,10 +40,10 @@ class BKStrategyActivity : AppCompatActivity() {
             }
 
             val param = Strategy7Param(
-                range = 20,
+                range = 10,
                 endTime = endTime,
                 averageDay = 5,
-                allowBelowCount = 1,
+                allowBelowCount = 0,
                 divergeRate = 0.5 / 100,
             )
             updateUI(param)

@@ -55,6 +55,7 @@ class Strategy1Activity : AppCompatActivity() {
             binding.conceptAndBKTv.setText(bk)
             binding.lowMarketValue.setText("0.0")
             binding.highMarketValue.setText("1000000.0")
+            binding.endMarketTime.setText(today().toString())
             fromBKStrategyActivity=true
         }
 
@@ -77,7 +78,7 @@ class Strategy1Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy1Param(
                 startMarketTime = 19910101,
-                endMarketTime = 20180101,
+                endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
                 lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
                 highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 30000000000.0,
                 ztRange = 40,
@@ -105,7 +106,7 @@ class Strategy1Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy1Param(
                 startMarketTime = 19910101,
-                endMarketTime = 20180101,
+                endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
                 lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
                 highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 30000000000.0,
                 ztRange = 100,
@@ -134,7 +135,7 @@ class Strategy1Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy1Param(
                 startMarketTime = 19910101,
-                endMarketTime = 20180101,
+                endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
                 lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
                 highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 30000000000.0,
                 ztRange = 20,

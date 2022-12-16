@@ -109,7 +109,7 @@
                 <EditText
                     android:id="@+id/timeRangeTv"
                     android:layout_width="wrap_content"
-                    android:text="50"
+                    android:text="40"
                     android:inputType="number"
                     android:paddingEnd="10dp"
                     android:layout_height="wrap_content"
@@ -168,7 +168,7 @@
                 <EditText
                     android:id="@+id/divergeRateTv"
                     android:layout_width="wrap_content"
-                    android:text="1"
+                    android:text="0"
                     android:paddingEnd="10dp"
                     android:layout_height="wrap_content"
                     />
@@ -194,7 +194,7 @@
                 <EditText
                     android:id="@+id/allowBelowCountTv"
                     android:layout_width="wrap_content"
-                    android:text="5"
+                    android:text="40"
                     android:inputType="number"
                     android:paddingEnd="10dp"
                     android:layout_height="wrap_content"
