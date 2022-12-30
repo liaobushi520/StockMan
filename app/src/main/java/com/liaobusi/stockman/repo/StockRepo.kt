@@ -1378,11 +1378,11 @@ object StockRepo {
 
             val kLineSlopeRate = kLineSlopeRate2(histories)
             val activeRate =
-                (perSampleTurnOverRate * 0.2f / 10 + perSampleTurnOverRate * 0.2f / perTotalTurnOverRate + perSampleZTRate * 0.2f + kLineSlopeRate * 0.1f + chgDeviation * 0.1f+totalAverageDiverge*10*0.2f) * 10
+                (perSampleTurnOverRate * 0.2f / 10 + perSampleTurnOverRate * 0.2f / perTotalTurnOverRate + perSampleZTRate * 0.2f + kLineSlopeRate * 0.1f + chgDeviation * 0.1f+totalAverageDiverge/sampleCount*10*0.2f) * 10
 
             Log.i(
                 "股票超人",
-                "${it.name}${sampleCount}内平均换手率${perSampleTurnOverRate},均线偏差${totalAverageDiverge},平均涨停概率${perSampleZTRate},换手率变化${perSampleTurnOverRate / perTotalTurnOverRate},k线斜率${kLineSlopeRate}  与板块偏差$chgDeviation $activeRate  ${histories.last().date}"
+                "${it.name}${sampleCount}内平均换手率${perSampleTurnOverRate},均线偏差${totalAverageDiverge/sampleCount},平均涨停概率${perSampleZTRate},换手率变化${perSampleTurnOverRate / perTotalTurnOverRate},k线斜率${kLineSlopeRate}  与板块偏差$chgDeviation $activeRate  ${histories.last().date}"
             )
 
             //放量异动
