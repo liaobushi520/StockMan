@@ -12,9 +12,7 @@ import com.liaobusi.stockman.databinding.ActivityStrategy6Binding
 import com.liaobusi.stockman.databinding.ActivityStrategy7Binding
 import com.liaobusi.stockman.databinding.ItemStockBinding
 import com.liaobusi.stockman.db.openWeb
-import com.liaobusi.stockman.repo.StockRepo
-import com.liaobusi.stockman.repo.StockResult
-import com.liaobusi.stockman.repo.toFormatText
+import com.liaobusi.stockman.repo.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -22,15 +20,15 @@ import java.util.*
 
 class Strategy7Activity : AppCompatActivity() {
 
-    companion object{
+    companion object {
 
-        fun openJXQSStrategy(context: Context, bkCode:String, endTime: String){
+        fun openZTQSStrategy(context: Context, bkCode: String, endTime: String) {
             val i = Intent(
                 context,
                 Strategy7Activity::class.java
             ).apply {
                 putExtra("bk", bkCode)
-                putExtra("endTime",endTime)
+                putExtra("endTime", endTime)
             }
             context.startActivity(i)
         }
@@ -43,19 +41,74 @@ class Strategy7Activity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityStrategy7Binding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
-        var fromBKStrategyActivity=false
+        var fromBKStrategyActivity = false
         if (intent.hasExtra("bk")) {
             val bk = intent.getStringExtra("bk")
             binding.conceptAndBKTv.setText(bk)
             binding.lowMarketValue.setText("0.0")
             binding.highMarketValue.setText("1000000.0")
-            fromBKStrategyActivity=true
+            fromBKStrategyActivity = true
         }
-        if(intent.hasExtra("endTime")){
+        if (intent.hasExtra("endTime")) {
             binding.endTimeTv.setText(intent.getStringExtra("endTime"))
-        }else{
+        } else {
             binding.endTimeTv.setText(SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())))
         }
+
+
+        binding.softStockBtn.setOnClickListener {
+            binding.root.requestFocus()
+            val endTime =
+                binding.endTimeTv.editableText.toString().toIntOrNull()
+            if (endTime == null) {
+                Toast.makeText(this@Strategy7Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            val bkList = checkBKInput() ?: return@setOnClickListener
+            val param = Strategy8Param(
+                startMarketTime = 19900101,
+                endMarketTime = if (fromBKStrategyActivity) today() else 20180101,
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
+                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 30000000000.0,
+                endTime = endTime,
+                bkList = bkList,
+                ztRange = 15,
+                adjustTimeAfterZT = 2,
+                averageDay = 5,
+                divergeRate =0.01,
+                allowBelowCount = 10
+            )
+            updateUI(param)
+            outputResult(param)
+        }
+
+        binding.strictStockBtn.setOnClickListener {
+            binding.root.requestFocus()
+            val endTime =
+                binding.endTimeTv.editableText.toString().toIntOrNull()
+            if (endTime == null) {
+                Toast.makeText(this@Strategy7Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            val bkList = checkBKInput() ?: return@setOnClickListener
+            val param = Strategy8Param(
+                startMarketTime = 19900101,
+                endMarketTime = if (fromBKStrategyActivity) today() else 20180101,
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
+                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 30000000000.0,
+                endTime = endTime,
+                bkList = bkList,
+                ztRange = 10,
+                adjustTimeAfterZT = 4,
+                averageDay = 5,
+                divergeRate = 0.01,
+                allowBelowCount = 1
+            )
+            updateUI(param)
+            outputResult(param)
+        }
+
+
 
         binding.chooseStockBtn.setOnClickListener {
             binding.root.requestFocus()
@@ -123,12 +176,12 @@ class Strategy7Activity : AppCompatActivity() {
                 val list = StockRepo.strategy8(
                     startMarketTime = startMarketTime,
                     endMarketTime = endMarketTime,
-                    lowMarketValue =if(fromBKStrategyActivity) 0.0 else  lowMarketValue * 100000000,
-                    highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else  highMarketValue * 100000000,
+                    lowMarketValue = if (fromBKStrategyActivity) 0.0 else lowMarketValue * 100000000,
+                    highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else highMarketValue * 100000000,
                     ztRange = ztRange,
-                    averageDay=averageDay,
-                    allowBelowCount=allowBelowCount,
-                    divergeRate=divergeRate/100,
+                    averageDay = averageDay,
+                    allowBelowCount = allowBelowCount,
+                    divergeRate = divergeRate / 100,
                     adjustTimeAfterZT = ztAdjustTime,
                     endTime = endTime,
                     bkList = bkList
@@ -137,6 +190,25 @@ class Strategy7Activity : AppCompatActivity() {
             }
 
 
+        }
+    }
+
+    private fun outputResult(strictParam: Strategy8Param) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val list = StockRepo.strategy8(
+                startMarketTime = strictParam.startMarketTime,
+                endMarketTime = strictParam.endMarketTime,
+                lowMarketValue = strictParam.lowMarketValue,
+                highMarketValue = strictParam.highMarketValue,
+                ztRange = strictParam.ztRange,
+                adjustTimeAfterZT = strictParam.adjustTimeAfterZT,
+                endTime = strictParam.endTime,
+                bkList = strictParam.bkList,
+                averageDay = strictParam.averageDay,
+                divergeRate = strictParam.divergeRate,
+                allowBelowCount = strictParam.allowBelowCount
+            )
+            output(list)
         }
     }
 
@@ -161,10 +233,10 @@ class Strategy7Activity : AppCompatActivity() {
                 val itemBinding =
                     ItemStockBinding.inflate(LayoutInflater.from(Injector.context)).apply {
                         this.stockName.text = stock.name
-                        if(result.nextDayZT){
-                            this.goodIv.visibility= View.VISIBLE
-                        }else{
-                            this.goodIv.visibility= View.GONE
+                        if (result.nextDayZT) {
+                            this.goodIv.visibility = View.VISIBLE
+                        } else {
+                            this.goodIv.visibility = View.GONE
                         }
                         val formatText = result.toFormatText()
                         if (formatText.isNotEmpty()) {
@@ -182,6 +254,23 @@ class Strategy7Activity : AppCompatActivity() {
             }
         }
     }
+
+    private fun updateUI(param: Strategy8Param) {
+        binding.apply {
+            this.endTimeTv.setText(param.endTime.toString())
+            this.startMarketTime.setText(param.startMarketTime.toString())
+            this.endMarketTime.setText(param.endMarketTime.toString())
+            this.lowMarketValue.setText((param.lowMarketValue / 100000000).toString())
+            this.highMarketValue.setText((param.highMarketValue / 100000000).toString())
+
+            this.ztRangeTv.setText(param.ztRange.toString())
+            this.ztAdjustTimeTv.setText(param.adjustTimeAfterZT.toString())
+            this.allowBelowCountTv.setText(param.allowBelowCount.toString())
+            this.averageDayTv.setText(param.averageDay.toString())
+            this.divergeRateTv.setText((param.divergeRate*100).toString())
+        }
+    }
+
 
     private fun checkBKInput(): List<String>? {
         val conceptAndBK =

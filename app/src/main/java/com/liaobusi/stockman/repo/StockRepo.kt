@@ -89,8 +89,22 @@ data class Strategy7Param(
     val divergeRate: Double = 0.03,
     val endTime: Int = 20220722,
     val allowBelowCount: Int = 10,
-
     )
+
+//涨停强势
+data class Strategy8Param(
+    val startMarketTime: Int,
+    val endMarketTime: Int,
+    val lowMarketValue: Double,
+    val highMarketValue: Double,
+    val ztRange: Int,
+    val adjustTimeAfterZT: Int,
+    val endTime: Int,
+    val averageDay: Int = 5,
+    val divergeRate: Double = 0.02,
+    val allowBelowCount: Int = 1,
+    val bkList: List<String>? = null,
+)
 
 
 object StockRepo {
@@ -806,8 +820,11 @@ object StockRepo {
                 totalTurnOverRate += histories[i].turnoverRate
             }
             val perTurnOverRate = totalTurnOverRate / min(abnormalRange, histories.size)
+
             //放量
             val highTurnOverRate = histories[0].turnoverRate > perTurnOverRate * 2
+
+
             //长上影
             val longUpShadow = histories[0].longUpShadow
 
@@ -874,6 +891,10 @@ object StockRepo {
 
         return@withContext result
     }
+
+
+
+
 
     //涨停强势
     suspend fun strategy8(
@@ -960,6 +981,9 @@ object StockRepo {
             }
             var s = 0
             var currentAllowBelowCount = allowBelowCount
+            var belowLine5Count = 0
+
+            var totalAverageDiverge = 0.0
             while (s < ztIndex) {
                 totalTurnoverRate += histories[s].turnoverRate
                 totalAmplitude += histories[s].amplitude
@@ -972,12 +996,16 @@ object StockRepo {
 
                 val averagePrice = total / averageDay
 
+                totalAverageDiverge += (histories[s].closePrice - averagePrice) / averagePrice
+
 
                 if (histories[s].closePrice < averagePrice * (1.0 - divergeRate)) {
                     writeLog(
                         it.code,
                         "${histories[s].date} ${averageDay}日线 $averagePrice 除去偏差值${averagePrice * (1.0 - divergeRate)}"
                     )
+                    belowLine5Count++
+
                     if (currentAllowBelowCount <= 0) {
                         return@stockList
                     }
@@ -989,10 +1017,19 @@ object StockRepo {
             val list = historyDao.getHistoryBefore2(it.code, endTime)
             val hasZT = list.find { it.ZT } != null
 
+            val h =
+                (histories[0].closePrice - ztStockHistory!!.closePrice) * 100 / ztStockHistory!!.closePrice
+
+            Log.e(
+                "涨停强势",
+                "${it.name}--${ztIndex}天平均换手率${totalTurnoverRate / ztIndex} 平均振幅${totalAmplitude / ztIndex}  均线偏差${totalAverageDiverge} ${h}"
+            )
+
+
             result.add(
                 StockResult(
                     it,
-                    hyAfterZT = ((totalTurnoverRate * 0.8 / ztIndex) + totalAmplitude * 0.2 / ztIndex).toInt(),
+                    hyAfterZT = ((totalTurnoverRate * 0.4 / ztIndex) + totalAmplitude * 0.1 / ztIndex + 0.2 * h + totalAverageDiverge * 0.3 * 50).toInt(),
                     nextDayZT = hasZT
                 )
             )
@@ -1255,6 +1292,8 @@ object StockRepo {
             var totalZTCount = 0f
 
             val totalDays = histories.size - averageDay + 1
+
+            var totalAverageDiverge=0.0
             while (s < totalDays) {
                 var total = 0.0
                 if (highest < histories[s].closePrice) {
@@ -1269,13 +1308,18 @@ object StockRepo {
                     ztCount += -((s - range * 2 / 3f)).pow(2) + (range / 2f).pow(2)
                 }
 
+                val averagePrice=total / averageDay
+
+                if(s<min(abnormalRange, histories.size)){
+                    totalAverageDiverge+=((histories[s].closePrice-averagePrice)/averagePrice)
+                }
+
+
                 totalTurnoverRate += histories[s].turnoverRate
-
-
-                if (histories[s].closePrice < total / averageDay * (1.0 - divergeRate)) {
+                if (histories[s].closePrice <averagePrice * (1.0 - divergeRate)) {
                     writeLog(
                         it.code,
-                        "${histories[s].date} ${averageDay}日线 ${total / averageDay} 除去偏差值${total / averageDay * (1.0 - divergeRate)}"
+                        "${histories[s].date} ${averageDay}日线 $averagePrice 除去偏差值${averagePrice * (1.0 - divergeRate)}"
                     )
                     if (currentAllowBelowCount <= 0) {
                         return@compute null
@@ -1334,11 +1378,11 @@ object StockRepo {
 
             val kLineSlopeRate = kLineSlopeRate2(histories)
             val activeRate =
-                (perSampleTurnOverRate * 0.2f / 10 + perSampleTurnOverRate * 0.3f / perTotalTurnOverRate + perSampleZTRate * 0.2f + kLineSlopeRate * 0.1f + chgDeviation * 0.2f) * 10
+                (perSampleTurnOverRate * 0.2f / 10 + perSampleTurnOverRate * 0.2f / perTotalTurnOverRate + perSampleZTRate * 0.2f + kLineSlopeRate * 0.1f + chgDeviation * 0.1f+totalAverageDiverge*10*0.2f) * 10
 
             Log.i(
                 "股票超人",
-                "${it.name}${sampleCount}内平均涨停概率${perSampleZTRate},换手率变化${perSampleTurnOverRate / perTotalTurnOverRate},k线斜率${kLineSlopeRate}  ${chgDeviation} $activeRate  ${histories.last().date}"
+                "${it.name}${sampleCount}内平均换手率${perSampleTurnOverRate},均线偏差${totalAverageDiverge},平均涨停概率${perSampleZTRate},换手率变化${perSampleTurnOverRate / perTotalTurnOverRate},k线斜率${kLineSlopeRate}  与板块偏差$chgDeviation $activeRate  ${histories.last().date}"
             )
 
             //放量异动
@@ -1365,7 +1409,7 @@ object StockRepo {
                 longUpShadow = longUpShadow,
                 cowBack = cowBack,
                 nextDayZT = hasZT,
-                perTurnoverRate = activeRate
+                activeRate = activeRate.toFloat()
             )
 
         }
@@ -1520,7 +1564,7 @@ object StockRepo {
                     dayang = dayang,
                     lianyangCount = lianyangCount,
                     highTurnOverRate = highTurnOverRate,
-                    perTurnoverRate = (kLineSlopeRate * 0.1f + (acc / (perTurnOverRate * sampleCount)) * 0.3f + zt/10 * 0.2f + (bkChg - dpChg) * 10 * 0.2f + belowRate * 0.2f) * 10,
+                    perTurnoverRate = (kLineSlopeRate * 0.1f + (acc / (perTurnOverRate * sampleCount)) * 0.3f + zt / 10 * 0.2f + (bkChg - dpChg) * 10 * 0.2f + belowRate * 0.2f) * 10,
                     perZT = zt,
                     touchLine10 = touchLine10,
                     touchLine20 = touchLine20
@@ -1543,7 +1587,6 @@ object StockRepo {
         var total = 0f
 
         val ss = StringBuilder()
-
         histories.forEachIndexed { index, historyStock ->
             if (index != histories.size && index < histories.size / 2) {
                 val r =
@@ -1554,10 +1597,6 @@ object StockRepo {
                 count++
             }
         }
-
-//        Log.e("XXX","${last.date} ${last.code} $ss")
-
-
         return total / count
     }
 
@@ -1900,7 +1939,7 @@ data class StockResult(
     //之后有涨停
     val nextDayZT: Boolean = false,
     //一段时间平均换手率
-    var perTurnoverRate: Float = 0f
+    var activeRate: Float = 0f
 )
 
 data class StrategyResult(val stockResults: List<StockResult>, val total: Int)
@@ -1983,8 +2022,8 @@ fun StockResult.toFormatText(): String {
     if (activeCount > 0) {
         sb.append("H$activeCount ")
     }
-    if (perTurnoverRate > 2) {
-        val v = perTurnoverRate.toInt()
+    if (activeRate > 2) {
+        val v = activeRate.toInt()
         sb.append("Z${v} ")
     }
 

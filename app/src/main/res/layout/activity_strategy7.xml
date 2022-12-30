@@ -35,7 +35,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
                     android:inputType="number"
-                    android:text="19900102"
+                    android:text="19900101"
                     android:layout_weight="1" />
 
                 <TextView
@@ -46,7 +46,7 @@
                 <EditText
                     android:id="@+id/endMarketTime"
                     android:layout_width="0dp"
-                    android:text="20180102"
+                    android:text="20180101"
                     android:inputType="number"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
@@ -116,7 +116,7 @@
                 <EditText
                     android:id="@+id/ztAdjustTimeTv"
                     android:layout_width="wrap_content"
-                    android:text="3"
+                    android:text="4"
                     android:paddingEnd="10dp"
                     android:layout_height="wrap_content"
                     />
@@ -177,7 +177,7 @@
                 <EditText
                     android:id="@+id/divergeRateTv"
                     android:layout_width="wrap_content"
-                    android:text="0.5"
+                    android:text="0"
                     android:paddingEnd="10dp"
                     android:layout_height="wrap_content"
                     />
@@ -204,7 +204,7 @@
                 <EditText
                     android:id="@+id/allowBelowCountTv"
                     android:layout_width="wrap_content"
-                    android:text="1"
+                    android:text="10"
                     android:maxLines="1"
                     android:inputType="number"
                     android:paddingEnd="10dp"
@@ -287,7 +287,37 @@
                 android:layout_height="wrap_content"/>
 
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:orientation="horizontal"
+                android:layout_height="wrap_content">
 
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/strictStockBtn"
+                    android:layout_width="0dp"
+                    android:background="#3f51b5"
+                    android:textColor="#fff"
+                    android:layout_weight="1"
+                    android:layout_marginTop="10dp"
+                    android:text="严格模式"
+                    android:layout_height="wrap_content"/>
+
+                <View
+                    android:layout_width="20dp"
+                    android:layout_height="match_parent"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/softStockBtn"
+                    android:layout_width="0dp"
+                    android:background="#ff4081"
+                    android:textColor="#fff"
+                    android:layout_weight="1"
+                    android:layout_marginTop="10dp"
+                    android:text="宽松模式"
+                    android:layout_height="wrap_content"/>
+
+
+            </LinearLayout>
 
 
             <TextView

@@ -35,7 +35,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
                     android:inputType="number"
-                    android:text="19900102"
+                    android:text="19900101"
                     android:layout_weight="1" />
 
                 <TextView
@@ -46,7 +46,7 @@
                 <EditText
                     android:id="@+id/endMarketTime"
                     android:layout_width="0dp"
-                    android:text="20180102"
+                    android:text="20180101"
                     android:inputType="number"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
@@ -221,7 +221,7 @@
                 <EditText
                     android:id="@+id/abnormalRangeTv"
                     android:layout_width="wrap_content"
-                    android:text="20"
+                    android:text="5"
                     android:paddingEnd="10dp"
                     android:inputType="number"
                     android:layout_height="wrap_content"

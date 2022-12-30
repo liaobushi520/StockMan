@@ -449,7 +449,7 @@ class Strategy4Activity : AppCompatActivity() {
 
             if (binding.ztCountCb.isChecked) {
                 Collections.sort(r, kotlin.Comparator { v0, v1 ->
-                    return@Comparator v1.perTurnoverRate.compareTo(v0.perTurnoverRate)
+                    return@Comparator v1.activeRate.compareTo(v0.activeRate)
                 })
             }
 

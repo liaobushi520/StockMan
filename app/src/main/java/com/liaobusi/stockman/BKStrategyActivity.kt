@@ -256,7 +256,7 @@ class BKStrategyActivity : AppCompatActivity() {
                                         }
 
                                         ztqsBtn.setOnClickListener {
-                                            Strategy7Activity.openJXQSStrategy(
+                                            Strategy7Activity.openZTQSStrategy(
                                                 this@BKStrategyActivity,
                                                 result.bk.code,
                                                 binding.endTimeTv.text.toString()
@@ -312,7 +312,7 @@ class BKStrategyActivity : AppCompatActivity() {
                                 }
 
                                 R.id.s8Cb -> {
-                                    Strategy7Activity.openJXQSStrategy(
+                                    Strategy7Activity.openZTQSStrategy(
                                         this@BKStrategyActivity,
                                         result.bk.code,
                                         binding.endTimeTv.text.toString()
