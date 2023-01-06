@@ -3,7 +3,6 @@ package com.liaobusi.stockman
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -170,7 +169,7 @@ class BKStrategyActivity : AppCompatActivity() {
 
             if (binding.activeRateCb.isChecked) {
                 Collections.sort(r, kotlin.Comparator { v0, v1 ->
-                    return@Comparator v1.perTurnoverRate.compareTo(v0.perTurnoverRate)
+                    return@Comparator v1.activeRate.compareTo(v0.activeRate)
                 })
             }
 
@@ -203,6 +202,13 @@ class BKStrategyActivity : AppCompatActivity() {
                             this.labelTv.text = formatText
                         } else {
                             this.labelTv.visibility = View.INVISIBLE
+                        }
+
+                        if(result.activeRate>1){
+                            this.activeLabelTv.visibility = View.VISIBLE
+                            this.activeLabelTv.text =result.activeRate.toInt().toString()
+                        }else{
+                            this.activeLabelTv.visibility = View.INVISIBLE
                         }
 
                         var ev: MotionEvent? = null

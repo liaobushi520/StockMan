@@ -471,6 +471,14 @@ class Strategy4Activity : AppCompatActivity() {
                         } else {
                             this.labelTv.visibility = View.INVISIBLE
                         }
+
+                        if(result.activeRate>2){
+                            this.activeLabelTv.visibility = View.VISIBLE
+                            this.activeLabelTv.text =result.activeRate.toInt().toString()
+                        }else{
+                            this.activeLabelTv.visibility = View.INVISIBLE
+                        }
+
                         this.goodIv.visibility =
                             if (result.nextDayZT) View.VISIBLE else View.GONE
                         root.setOnClickListener {

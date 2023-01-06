@@ -89,7 +89,7 @@ data class Strategy7Param(
     val divergeRate: Double = 0.03,
     val endTime: Int = 20220722,
     val allowBelowCount: Int = 10,
-    )
+)
 
 //涨停强势
 data class Strategy8Param(
@@ -369,11 +369,10 @@ object StockRepo {
     }
 
 
-    private fun getBKZTRate(bk: BK, date: Int): Float {
+    private fun getBKZTRate(bk: BK, date: Int, days: Int = 5): Float {
         val historyStockDao = Injector.appDatabase.historyStockDao()
         val bkStockDao = Injector.appDatabase.bkStockDao()
         var ztTotal = 0f
-        val days = 5
         val stocks = bkStockDao.getStocksByBKCode(bk.code)
         stocks.forEach {
             val list = historyStockDao.getHistoryAfter2(it.code, date, days)
@@ -384,7 +383,7 @@ object StockRepo {
         }
         Log.i(
             "股票超人",
-            "板块${bk.name}-${bk.code}近${days}内有${ztTotal}次涨停，板块内股票涨停概率${ztTotal * 100f / (days * stocks.size)}/100"
+            "板块${bk.name}-${bk.code}--${date}--近${days}内有${ztTotal}次涨停，板块内股票涨停概率${ztTotal * 100f / (days * stocks.size)}/100"
         )
         return ztTotal * 100 / (days * stocks.size)
     }
@@ -893,9 +892,6 @@ object StockRepo {
     }
 
 
-
-
-
     //涨停强势
     suspend fun strategy8(
         startMarketTime: Int = 19900102,
@@ -1293,7 +1289,7 @@ object StockRepo {
 
             val totalDays = histories.size - averageDay + 1
 
-            var totalAverageDiverge=0.0
+            var totalAverageDiverge = 0.0
             while (s < totalDays) {
                 var total = 0.0
                 if (highest < histories[s].closePrice) {
@@ -1308,15 +1304,15 @@ object StockRepo {
                     ztCount += -((s - range * 2 / 3f)).pow(2) + (range / 2f).pow(2)
                 }
 
-                val averagePrice=total / averageDay
+                val averagePrice = total / averageDay
 
-                if(s<min(abnormalRange, histories.size)){
-                    totalAverageDiverge+=((histories[s].closePrice-averagePrice)/averagePrice)
+                if (s < min(abnormalRange, histories.size)) {
+                    totalAverageDiverge += ((histories[s].closePrice - averagePrice) / averagePrice)
                 }
 
 
                 totalTurnoverRate += histories[s].turnoverRate
-                if (histories[s].closePrice <averagePrice * (1.0 - divergeRate)) {
+                if (histories[s].closePrice < averagePrice * (1.0 - divergeRate)) {
                     writeLog(
                         it.code,
                         "${histories[s].date} ${averageDay}日线 $averagePrice 除去偏差值${averagePrice * (1.0 - divergeRate)}"
@@ -1378,11 +1374,11 @@ object StockRepo {
 
             val kLineSlopeRate = kLineSlopeRate2(histories)
             val activeRate =
-                (perSampleTurnOverRate * 0.2f / 10 + perSampleTurnOverRate * 0.2f / perTotalTurnOverRate + perSampleZTRate * 0.2f + kLineSlopeRate * 0.1f + chgDeviation * 0.1f+totalAverageDiverge/sampleCount*10*0.2f) * 10
+                (perSampleTurnOverRate * 0.2f / 10 + perSampleTurnOverRate * 0.2f / perTotalTurnOverRate + perSampleZTRate * 0.2f + kLineSlopeRate * 0.1f + chgDeviation * 0.1f + totalAverageDiverge / sampleCount * 10 * 0.2f) * 10
 
             Log.i(
                 "股票超人",
-                "${it.name}${sampleCount}内平均换手率${perSampleTurnOverRate},均线偏差${totalAverageDiverge/sampleCount},平均涨停概率${perSampleZTRate},换手率变化${perSampleTurnOverRate / perTotalTurnOverRate},k线斜率${kLineSlopeRate}  与板块偏差$chgDeviation $activeRate  ${histories.last().date}"
+                "${it.name}${sampleCount}内平均换手率${perSampleTurnOverRate},均线偏差${totalAverageDiverge / sampleCount},平均涨停概率${perSampleZTRate},换手率变化${perSampleTurnOverRate / perTotalTurnOverRate},k线斜率${kLineSlopeRate}  与板块偏差$chgDeviation $activeRate  ${histories.last().date}"
             )
 
             //放量异动
@@ -1440,7 +1436,7 @@ object StockRepo {
 
         //&& (it.code == "BK0454" || it.code == "BK0474")
         val result = bks.filter { !it.specialBK }
-            .compute(3) {
+            .compute(4) {
 
                 val histories = historyDao.getHistoryRange(
                     it.code,
@@ -1487,8 +1483,8 @@ object StockRepo {
 
                 val dayang = histories[0].DY
 
-//            val kd = bkKD(histories)
-//            Log.e("股票超人","抗跌${it.name} ${kd}")
+//              val kd = bkKD(histories)
+//              Log.e("股票超人","抗跌${it.name} ${kd}")
 
                 //连阳
                 var lianyangCount = 0
@@ -1507,6 +1503,8 @@ object StockRepo {
                     histories[0].turnoverRate >= perTurnOverRate * 1.3
 
                 val zt = getBKZTRate(it, endTime)
+
+                val ztOne = getBKZTRate(it, endTime, 1)
 
                 val sampleCount = kotlin.math.max(1, averageDay / 2)
                 val acc = histories.subList(0, sampleCount).fold(0f) { acc, item ->
@@ -1564,8 +1562,8 @@ object StockRepo {
                     dayang = dayang,
                     lianyangCount = lianyangCount,
                     highTurnOverRate = highTurnOverRate,
-                    perTurnoverRate = (kLineSlopeRate * 0.1f + (acc / (perTurnOverRate * sampleCount)) * 0.3f + zt / 10 * 0.2f + (bkChg - dpChg) * 10 * 0.2f + belowRate * 0.2f) * 10,
-                    perZT = zt,
+                    activeRate = (kLineSlopeRate * 0.1f + (acc / (perTurnOverRate * sampleCount)) * 0.3f + zt / 10 * 0.2f + (bkChg - dpChg) * 10 * 0.2f + belowRate * 0.2f) * 10,
+                    perZTRate = ztOne,
                     touchLine10 = touchLine10,
                     touchLine20 = touchLine20
                 )
@@ -1838,22 +1836,22 @@ val StockResult.signalCount: Int
     get() {
         var c0 = 0
         if (dayang) {
-            c0 += 1
-        }
-        if (highTurnOverRate) {
-            c0 += 1
-        }
-        if (overPreHigh) {
             c0 += 2
         }
-        if (lianyangCount > 3) {
+        if (highTurnOverRate) {
+            c0 += 2
+        }
+        if (overPreHigh) {
             c0 += 1
         }
-        if (lianyangCount >= 6) {
+        if (lianyangCount >=3) {
+            c0 += 1
+        }
+        if (lianyangCount >=6) {
             c0 += 1
         }
 
-        if (lianyangCount >= 8) {
+        if (lianyangCount >=9) {
             c0 += 1
         }
 
@@ -1861,16 +1859,12 @@ val StockResult.signalCount: Int
             c0 += 2
         }
         if (longUpShadow) {
-            c0 += 2
+            c0 += 1
         }
 
         if (touchLine10 || touchLine20) {
             c0 += 1
         }
-
-//        if(ztCount>0&&ztCount<=70){
-//            c0+=1
-//        }
 
         return c0
     }
@@ -1882,24 +1876,25 @@ data class BKResult(
     val dayang: Boolean = false,
     val highTurnOverRate: Boolean = false,
     val lianyangCount: Int = 0,
-    var perTurnoverRate: Float = 0f,
-    var perZT: Float = 0f,
+    //活跃度
+    var activeRate: Float = 0f,
+    //板块涨停率
+    var perZTRate: Float = 0f,
     val touchLine10: Boolean = false,
     val touchLine20: Boolean = false,
-
-    )
+)
 
 val BKResult.signalCount: Int
     get() {
         var c0 = 0
         if (dayang) {
-            c0 += 1
+            c0 += 2
         }
         if (highTurnOverRate) {
-            c0 += 1
+            c0 += 2
         }
         if (overPreHigh) {
-            c0 += 2
+            c0 += 1
         }
         if (lianyangCount > 3) {
             c0 += 1
@@ -1915,6 +1910,19 @@ val BKResult.signalCount: Int
         if (touchLine10 || touchLine20) {
             c0 += 1
         }
+
+        if (perZTRate > 3) {
+            c0 += 1
+        }
+
+        if (perZTRate > 6) {
+            c0 += 1
+        }
+
+        if (perZTRate > 10) {
+            c0 += 1
+        }
+
         return c0
     }
 
@@ -1938,7 +1946,7 @@ data class StockResult(
     val hyAfterZT: Int = 0,
     //之后有涨停
     val nextDayZT: Boolean = false,
-    //一段时间平均换手率
+    //活跃度
     var activeRate: Float = 0f
 )
 
@@ -1952,9 +1960,6 @@ fun BKResult.toFormatText(): String {
         sb.append("过前高 ")
     }
 
-    if (dayang) {
-        sb.append("大阳 ")
-    }
     if (highTurnOverRate) {
         sb.append("放量 ")
     }
@@ -1963,20 +1968,29 @@ fun BKResult.toFormatText(): String {
         sb.append("${lianyangCount}连阳 ")
     }
 
+    if (dayang) {
+        sb.append("大阳 ")
+    }
+
+    if (perZTRate > 3) {
+        sb.append("涨停率${perZTRate.toInt()} ")
+    }
+
     if (touchLine10 || touchLine20) {
         sb.append("触")
         if (touchLine10)
             sb.append(10).append(',')
         if (touchLine20)
             sb.append(20).append(',')
+
         sb.deleteCharAt(sb.length - 1)
         sb.append("日线 ")
     }
 
-    if (perTurnoverRate > 1) {
-        sb.append(" ${perTurnoverRate.toInt()} ")
-    }
 
+//    if (activeRate > 1) {
+//        sb.append("${activeRate.toInt()} ")
+//    }
 
     return sb.toString()
 }
@@ -1999,6 +2013,7 @@ fun StockResult.toFormatText(): String {
     if (dayang) {
         sb.append("大阳 ")
     }
+
     if (highTurnOverRate) {
         sb.append("放量 ")
     }
@@ -2022,10 +2037,11 @@ fun StockResult.toFormatText(): String {
     if (activeCount > 0) {
         sb.append("H$activeCount ")
     }
-    if (activeRate > 2) {
-        val v = activeRate.toInt()
-        sb.append("Z${v} ")
-    }
+
+//    if (activeRate > 2) {
+//        val v = activeRate.toInt()
+//        sb.append("${v} ")
+//    }
 
     if (hyAfterZT > 2) {
         sb.append("$hyAfterZT ")
