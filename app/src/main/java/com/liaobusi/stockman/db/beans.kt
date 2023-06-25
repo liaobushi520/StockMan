@@ -60,7 +60,10 @@ fun BK.openWeb(context: Context) {
 }
 
 @Entity(primaryKeys = ["bkCode","stockCode"])
-data class BKStock(  val bkCode:String,  val stockCode:String)
+data class BKStock(    val bkCode:String,  val stockCode:String)
+
+@Entity
+data class Follow( @PrimaryKey val code: String,val type: Int)
 
 /***
  * @param name 名称
@@ -187,9 +190,9 @@ val HistoryStock.longUpShadow: Boolean
 
 
 @Database(
-    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class,BKStock::class], version = 10,
+    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class,BKStock::class,Follow::class], version = 11,
     autoMigrations = [
-        AutoMigration(from = 9, to = 10)
+        AutoMigration(from = 10, to = 11)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -198,6 +201,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun bkDao(): BKDao
     abstract fun historyBKDao(): HistoryBKDao
     abstract fun bkStockDao():BKStockDao
+
+    abstract fun followDao():FollowDao
 
 
 //    @DeleteTable.Entries(value = [DeleteTable(tableName = "BK"),DeleteTable(tableName = "HistoryBK")])

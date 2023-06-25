@@ -91,6 +91,24 @@ interface HistoryBKDao {
 }
 
 @Dao
+interface FollowDao{
+
+    @Query("select * from follow where type=1")
+    fun getFollowStocks():List<Follow>
+
+    @Query("select * from follow where type=2")
+    fun getFollowBks():List<Follow>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertFollow(follow: Follow)
+
+    @Delete
+    fun deleteFollow(follow: Follow)
+
+}
+
+
+@Dao
 interface HistoryStockDao {
 
     @Query("select * from historystock where code=:code AND date <= :date order by date desc")

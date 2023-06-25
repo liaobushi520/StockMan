@@ -25,6 +25,10 @@ class HomeActivity : AppCompatActivity() {
         binding = ActivityHomeBinding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
 
+
+
+
+
         binding.passwordBtn.setOnClickListener {
             binding.root.requestFocus()
             val p = binding.passwordEt.editableText.toString()
@@ -78,7 +82,7 @@ class HomeActivity : AppCompatActivity() {
         }
 
 
-        binding.initBtn.setOnClickListener {
+        binding.initBtn.multiClick(3) {
             binding.ll.visibility = View.VISIBLE
             lifecycleScope.launch(Dispatchers.IO) {
                 StockRepo.getRealTimeStocks()

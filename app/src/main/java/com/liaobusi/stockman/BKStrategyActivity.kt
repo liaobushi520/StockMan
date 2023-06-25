@@ -13,9 +13,11 @@ import androidx.lifecycle.lifecycleScope
 import com.liaobusi.stockman.databinding.ActivityBkstrategyBinding
 import com.liaobusi.stockman.databinding.ItemStockBinding
 import com.liaobusi.stockman.databinding.LayoutPopupWindowBinding
+import com.liaobusi.stockman.db.Follow
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.repo.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -39,11 +41,11 @@ class BKStrategyActivity : AppCompatActivity() {
             }
 
             val param = Strategy7Param(
-                range = 10,
+                range = 5,
                 endTime = endTime,
                 averageDay = 5,
                 allowBelowCount = 0,
-                divergeRate = 0.5 / 100,
+                divergeRate = 0.0 / 100,
             )
             updateUI(param)
             outputResult(param)
@@ -58,11 +60,11 @@ class BKStrategyActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             val param = Strategy7Param(
-                range = 25,
+                range = 10,
                 endTime = endTime,
                 averageDay = 10,
-                allowBelowCount = 2,
-                divergeRate = 1.0 / 100
+                allowBelowCount = 0,
+                divergeRate = 0.0 / 100
             )
             updateUI(param)
             outputResult(param)
@@ -78,15 +80,36 @@ class BKStrategyActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             val param = Strategy7Param(
-                range = 40,
+                range = 20,
                 endTime = endTime,
                 averageDay = 20,
                 allowBelowCount = 0,
-                divergeRate = 1.0 / 100
+                divergeRate = 0.0 / 100
             )
             updateUI(param)
             outputResult(param)
         }
+
+
+        binding.line60Btn.setOnClickListener {
+            binding.root.requestFocus()
+            val endTime =
+                binding.endTimeTv.editableText.toString().toIntOrNull()
+            if (endTime == null) {
+                Toast.makeText(this@BKStrategyActivity, "截止时间不合法", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            val param = Strategy7Param(
+                range = 60,
+                endTime = endTime,
+                averageDay = 60,
+                allowBelowCount = 0,
+                divergeRate = 0.0 / 100
+            )
+            updateUI(param)
+            outputResult(param)
+        }
+
 
         binding.chooseStockBtn.setOnClickListener {
             binding.root.requestFocus()
@@ -106,7 +129,11 @@ class BKStrategyActivity : AppCompatActivity() {
             val allowBelowCount =
                 binding.allowBelowCountTv.editableText.toString().toIntOrNull()
             if (allowBelowCount == null) {
-                Toast.makeText(this@BKStrategyActivity, "允许均线下方运行次数不合法", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@BKStrategyActivity,
+                    "允许均线下方运行次数不合法",
+                    Toast.LENGTH_LONG
+                ).show()
                 return@setOnClickListener
             }
             val averageDay =
@@ -118,7 +145,11 @@ class BKStrategyActivity : AppCompatActivity() {
             val divergeRate =
                 binding.divergeRateTv.editableText.toString().toDoubleOrNull()
             if (divergeRate == null) {
-                Toast.makeText(this@BKStrategyActivity, "收盘价与均线偏差率取值不合法", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@BKStrategyActivity,
+                    "收盘价与均线偏差率取值不合法",
+                    Toast.LENGTH_LONG
+                ).show()
                 return@setOnClickListener
             }
 
@@ -181,6 +212,21 @@ class BKStrategyActivity : AppCompatActivity() {
                 r = r.filter { it.bk.type != 0 }
             }
 
+
+            val newList = mutableListOf<BKResult>()
+
+            r.forEach {
+                if (it.follow) {
+                    newList.add(0, it)
+                } else {
+                    newList.add(it)
+                }
+
+            }
+
+            r = newList
+
+
             var t = 0
             if (binding.conceptCb.isChecked) {
                 t += Injector.conceptBks.size
@@ -194,8 +240,14 @@ class BKStrategyActivity : AppCompatActivity() {
             r.forEach { result ->
                 val itemBinding =
                     ItemStockBinding.inflate(LayoutInflater.from(Injector.context)).apply {
-                        this.stockName.text = result.bk.name
 
+                        if (result.follow) {
+                            this.root.setBackgroundColor(0x33333333)
+                        }
+
+
+
+                        this.stockName.text = result.bk.name
                         val formatText = result.toFormatText()
                         if (formatText.isNotEmpty()) {
                             this.labelTv.visibility = View.VISIBLE
@@ -204,10 +256,10 @@ class BKStrategyActivity : AppCompatActivity() {
                             this.labelTv.visibility = View.INVISIBLE
                         }
 
-                        if(result.activeRate>1){
+                        if (result.activeRate > 1) {
                             this.activeLabelTv.visibility = View.VISIBLE
-                            this.activeLabelTv.text =result.activeRate.toInt().toString()
-                        }else{
+                            this.activeLabelTv.text = result.activeRate.toInt().toString()
+                        } else {
                             this.activeLabelTv.visibility = View.INVISIBLE
                         }
 
@@ -223,52 +275,7 @@ class BKStrategyActivity : AppCompatActivity() {
 
                             val b =
                                 LayoutPopupWindowBinding.inflate(LayoutInflater.from(it.context))
-                                    .apply {
-                                        ztrcBtn.setOnClickListener {
-                                            Strategy2Activity.openZTRCStrategy(
-                                                this@BKStrategyActivity,
-                                                result.bk.code,
-                                                binding.endTimeTv.text.toString()
-                                            )
-                                        }
 
-                                        ztxpBtn.setOnClickListener {
-                                            Strategy1Activity.openZTXPStrategy(
-                                                this@BKStrategyActivity,
-                                                result.bk.code,
-                                                binding.endTimeTv.text.toString()
-                                            )
-                                        }
-
-                                        jxqsBtn.setOnClickListener {
-                                            Strategy4Activity.openJXQSStrategy(
-                                                this@BKStrategyActivity,
-                                                result.bk.code,
-                                                binding.endTimeTv.text.toString()
-                                            )
-                                        }
-
-                                        dfcfBtn.setOnClickListener {
-                                            result.bk.openWeb(this@BKStrategyActivity)
-                                        }
-
-
-                                        dbhpBtn.setOnClickListener {
-                                            Strategy6Activity.openDBHPStrategy(
-                                                this@BKStrategyActivity,
-                                                result.bk.code,
-                                                binding.endTimeTv.text.toString()
-                                            )
-                                        }
-
-                                        ztqsBtn.setOnClickListener {
-                                            Strategy7Activity.openZTQSStrategy(
-                                                this@BKStrategyActivity,
-                                                result.bk.code,
-                                                binding.endTimeTv.text.toString()
-                                            )
-                                        }
-                                    }
 
                             val pw = PopupWindow(
                                 b.root,
@@ -276,6 +283,78 @@ class BKStrategyActivity : AppCompatActivity() {
                                 LayoutParams.WRAP_CONTENT,
                                 true
                             )
+
+                            b.apply {
+                                if (result.follow) {
+                                    followBtn.text = "取消关注"
+                                }
+
+                                ztrcBtn.setOnClickListener {
+                                    Strategy2Activity.openZTRCStrategy(
+                                        this@BKStrategyActivity,
+                                        result.bk.code,
+                                        binding.endTimeTv.text.toString()
+                                    )
+                                }
+
+                                ztxpBtn.setOnClickListener {
+                                    Strategy1Activity.openZTXPStrategy(
+                                        this@BKStrategyActivity,
+                                        result.bk.code,
+                                        binding.endTimeTv.text.toString()
+                                    )
+                                }
+
+                                jxqsBtn.setOnClickListener {
+                                    Strategy4Activity.openJXQSStrategy(
+                                        this@BKStrategyActivity,
+                                        result.bk.code,
+                                        binding.endTimeTv.text.toString()
+                                    )
+                                }
+
+                                dfcfBtn.setOnClickListener {
+                                    result.bk.openWeb(this@BKStrategyActivity)
+                                }
+
+
+                                dbhpBtn.setOnClickListener {
+                                    Strategy6Activity.openDBHPStrategy(
+                                        this@BKStrategyActivity,
+                                        result.bk.code,
+                                        binding.endTimeTv.text.toString()
+                                    )
+                                }
+
+                                ztqsBtn.setOnClickListener {
+                                    Strategy7Activity.openZTQSStrategy(
+                                        this@BKStrategyActivity,
+                                        result.bk.code,
+                                        binding.endTimeTv.text.toString()
+                                    )
+                                }
+
+                                followBtn.setOnClickListener {
+                                    pw.dismiss()
+                                    lifecycleScope.launch(Dispatchers.IO) {
+                                        if (result.follow) {
+                                            result.follow = false
+                                            Injector.appDatabase.followDao()
+                                                .deleteFollow(Follow(result.bk.code, 2))
+                                            output(list)
+                                        } else {
+                                            result.follow = true
+                                            Injector.appDatabase.followDao()
+                                                .insertFollow(Follow(result.bk.code, 2))
+                                            output(list)
+                                        }
+
+                                    }
+
+
+                                }
+                            }
+
                             pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -1000)
                             return@setOnLongClickListener true
                         }
@@ -307,6 +386,7 @@ class BKStrategyActivity : AppCompatActivity() {
                                         binding.endTimeTv.text.toString()
                                     )
                                 }
+
                                 R.id.s6Cb -> {
                                     val i = Intent(
                                         this@BKStrategyActivity,
@@ -324,6 +404,7 @@ class BKStrategyActivity : AppCompatActivity() {
                                         binding.endTimeTv.text.toString()
                                     )
                                 }
+
                                 else -> {
                                     result.bk.openWeb(this@BKStrategyActivity)
                                 }

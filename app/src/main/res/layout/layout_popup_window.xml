@@ -68,5 +68,16 @@
         android:textSize="18sp" />
 
 
+    <TextView
+        android:id="@+id/followBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="10dp"
+        android:text="关注"
+        android:textColor="#fff"
+        android:textSize="18sp" />
+
+
 
 </LinearLayout>

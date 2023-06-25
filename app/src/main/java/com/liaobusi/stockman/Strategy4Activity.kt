@@ -2,14 +2,21 @@ package com.liaobusi.stockman
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
+import android.widget.PopupWindow
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.liaobusi.stockman.databinding.ActivityStrategy4Binding
 import com.liaobusi.stockman.databinding.ItemStockBinding
+import com.liaobusi.stockman.databinding.LayoutPopupWindowBinding
+import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
+import com.liaobusi.stockman.db.Follow
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.repo.*
 import kotlinx.coroutines.*
@@ -23,15 +30,15 @@ import kotlin.math.min
  */
 class Strategy4Activity : AppCompatActivity() {
 
-    companion object{
+    companion object {
 
-        fun openJXQSStrategy(context: Context, bkCode:String, endTime: String){
+        fun openJXQSStrategy(context: Context, bkCode: String, endTime: String) {
             val i = Intent(
                 context,
                 Strategy4Activity::class.java
             ).apply {
                 putExtra("bk", bkCode)
-                putExtra("endTime",endTime)
+                putExtra("endTime", endTime)
             }
             context.startActivity(i)
         }
@@ -43,19 +50,19 @@ class Strategy4Activity : AppCompatActivity() {
         binding = ActivityStrategy4Binding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
 
-        var fromBKStrategyActivity=false
+        var fromBKStrategyActivity = false
         if (intent.hasExtra("bk")) {
             val bk = intent.getStringExtra("bk")
             binding.conceptAndBKTv.setText(bk)
             binding.lowMarketValue.setText("0.0")
             binding.highMarketValue.setText("1000000.0")
             binding.endMarketTime.setText(today().toString())
-            fromBKStrategyActivity=true
+            fromBKStrategyActivity = true
         }
 
-        if(intent.hasExtra("endTime")){
+        if (intent.hasExtra("endTime")) {
             binding.endTimeTv.setText(intent.getStringExtra("endTime"))
-        }else{
+        } else {
             binding.endTimeTv.setText(SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())))
         }
 
@@ -72,14 +79,14 @@ class Strategy4Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy4Param(
                 startMarketTime = 19910101,
-                endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
-                lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
-                highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 30000000000.0,
-                range = 10,
+                endMarketTime = if (fromBKStrategyActivity) today() else 20180101,
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
+                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
+                range = 5,
                 endTime = endTime,
                 averageDay = 5,
                 allowBelowCount = 0,
-                divergeRate = 0.01,
+                divergeRate = 0.00,
                 abnormalRange = 5,
                 abnormalRate = 2.0,
                 bkList = bkList
@@ -101,14 +108,14 @@ class Strategy4Activity : AppCompatActivity() {
 
             val param = Strategy4Param(
                 startMarketTime = 19910101,
-                endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
-                lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
-                highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 30000000000.0,
-                range = 20,
+                endMarketTime = if (fromBKStrategyActivity) today() else 20180101,
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
+                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
+                range = 10,
                 endTime = endTime,
                 averageDay = 10,
-                allowBelowCount = 1,
-                divergeRate = 0.02,
+                allowBelowCount = 0,
+                divergeRate = 0.00,
                 abnormalRange = 10,
                 abnormalRate = 2.0,
                 bkList = bkList
@@ -127,21 +134,51 @@ class Strategy4Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy4Param(
                 startMarketTime = 19910101,
-                endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
-                lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
-                highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 30000000000.0,
-                range = 40,
+                endMarketTime = if (fromBKStrategyActivity) today() else 20180101,
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
+                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
+                range = 20,
                 endTime = endTime,
                 averageDay = 20,
-                allowBelowCount = 2,
-                divergeRate = 0.02,
+                allowBelowCount = 0,
+                divergeRate = 0.00,
                 abnormalRange = 15,
-                abnormalRate = 1.5,
+                abnormalRate = 2.0,
                 bkList = bkList
             )
             updateUI(param)
             outputResult(param)
         }
+
+
+        binding.line60Btn.setOnClickListener {
+            binding.root.requestFocus()
+            val endTime =
+                binding.endTimeTv.editableText.toString().toIntOrNull()
+            if (endTime == null) {
+                Toast.makeText(this@Strategy4Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            val bkList = checkBKInput() ?: return@setOnClickListener
+            val param = Strategy4Param(
+                startMarketTime = 19910101,
+                endMarketTime = if (fromBKStrategyActivity) today() else 20180101,
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
+                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
+                range = 60,
+                endTime = endTime,
+                averageDay = 60,
+                allowBelowCount = 0,
+                divergeRate = 0.00,
+                abnormalRange = 20,
+                abnormalRate = 2.0,
+                bkList = bkList
+            )
+            updateUI(param)
+            outputResult(param)
+        }
+
+
 
         binding.chooseStockBtn.setOnClickListener {
             binding.root.requestFocus()
@@ -179,7 +216,11 @@ class Strategy4Activity : AppCompatActivity() {
             val allowBelowCount =
                 binding.allowBelowCountTv.editableText.toString().toIntOrNull()
             if (allowBelowCount == null) {
-                Toast.makeText(this@Strategy4Activity, "允许均线下方运行次数不合法", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@Strategy4Activity,
+                    "允许均线下方运行次数不合法",
+                    Toast.LENGTH_LONG
+                ).show()
                 return@setOnClickListener
             }
             val averageDay =
@@ -191,20 +232,26 @@ class Strategy4Activity : AppCompatActivity() {
             val divergeRate =
                 binding.divergeRateTv.editableText.toString().toDoubleOrNull()
             if (divergeRate == null) {
-                Toast.makeText(this@Strategy4Activity, "收盘价与均线偏差率取值不合法", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@Strategy4Activity,
+                    "收盘价与均线偏差率取值不合法",
+                    Toast.LENGTH_LONG
+                ).show()
                 return@setOnClickListener
             }
 
             val abnormalRange =
                 binding.abnormalRangeTv.editableText.toString().toIntOrNull()
             if (abnormalRange == null) {
-                Toast.makeText(this@Strategy4Activity, "异常放量查找区间不合法", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@Strategy4Activity, "异常放量查找区间不合法", Toast.LENGTH_LONG)
+                    .show()
                 return@setOnClickListener
             }
             val abnormalRate =
                 binding.abnormalRateTv.editableText.toString().toDoubleOrNull()
             if (abnormalRate == null) {
-                Toast.makeText(this@Strategy4Activity, "异常放量倍数不合法", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@Strategy4Activity, "异常放量倍数不合法", Toast.LENGTH_LONG)
+                    .show()
                 return@setOnClickListener
             }
             val bkList = checkBKInput() ?: return@setOnClickListener
@@ -276,7 +323,11 @@ class Strategy4Activity : AppCompatActivity() {
             val allowBelowCount =
                 binding.allowBelowCountTv.editableText.toString().toIntOrNull()
             if (allowBelowCount == null) {
-                Toast.makeText(this@Strategy4Activity, "允许均线下方运行次数不合法", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@Strategy4Activity,
+                    "允许均线下方运行次数不合法",
+                    Toast.LENGTH_LONG
+                ).show()
                 return@setOnClickListener
             }
             val averageDay =
@@ -288,20 +339,26 @@ class Strategy4Activity : AppCompatActivity() {
             val divergeRate =
                 binding.divergeRateTv.editableText.toString().toDoubleOrNull()
             if (divergeRate == null) {
-                Toast.makeText(this@Strategy4Activity, "收盘价与均线偏差率取值不合法", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@Strategy4Activity,
+                    "收盘价与均线偏差率取值不合法",
+                    Toast.LENGTH_LONG
+                ).show()
                 return@setOnClickListener
             }
 
             val abnormalRange =
                 binding.abnormalRangeTv.editableText.toString().toIntOrNull()
             if (abnormalRange == null) {
-                Toast.makeText(this@Strategy4Activity, "异常放量查找区间不合法", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@Strategy4Activity, "异常放量查找区间不合法", Toast.LENGTH_LONG)
+                    .show()
                 return@setOnClickListener
             }
             val abnormalRate =
                 binding.abnormalRateTv.editableText.toString().toDoubleOrNull()
             if (abnormalRate == null) {
-                Toast.makeText(this@Strategy4Activity, "异常放量倍数不合法", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@Strategy4Activity, "异常放量倍数不合法", Toast.LENGTH_LONG)
+                    .show()
                 return@setOnClickListener
             }
             val bkList = checkBKInput() ?: return@setOnClickListener
@@ -313,7 +370,7 @@ class Strategy4Activity : AppCompatActivity() {
                 for (day in 0 until abnormalDay) {
                     val time = endDay.before(day)
                     val j = async {
-                        return@async StockRepo.strategy4(
+                        val r = StockRepo.strategy4(
                             startMarketTime = startMarketTime,
                             endMarketTime = endMarketTime,
                             lowMarketValue = lowMarketValue * 100000000,
@@ -326,7 +383,10 @@ class Strategy4Activity : AppCompatActivity() {
                             abnormalRange = abnormalRange,
                             abnormalRate = abnormalRate,
                             bkList = bkList
-                        ).stockResults
+                        )
+                        return@async mutableListOf<StockResult>().apply {
+                            addAll(r.stockResults)
+                        }
                     }
                     jobList.add(j)
                 }
@@ -344,7 +404,9 @@ class Strategy4Activity : AppCompatActivity() {
                 Collections.sort(l, kotlin.Comparator { v0, v1 ->
                     return@Comparator v1.activeCount - v0.activeCount
                 })
-                output(StrategyResult(l.subList(0, min(l.size, rankCount)), -1))
+
+                val ll = l.subList(0, min(l.size, rankCount))
+                output(StrategyResult(ll, -1 ))
             }
 
 
@@ -410,7 +472,8 @@ class Strategy4Activity : AppCompatActivity() {
             }
         }
         if (bkInputError) {
-            Toast.makeText(this@Strategy4Activity, "板块不合法,BK开头,逗号分割", Toast.LENGTH_LONG).show()
+            Toast.makeText(this@Strategy4Activity, "板块不合法,BK开头,逗号分割", Toast.LENGTH_LONG)
+                .show()
             return null
 
         }
@@ -421,6 +484,7 @@ class Strategy4Activity : AppCompatActivity() {
         val list = strategyResult.stockResults
 
         lifecycleScope.launch(Dispatchers.Main) {
+
 
             binding.changyebanCb.setOnCheckedChangeListener { compoundButton, b ->
                 output(strategyResult)
@@ -439,7 +503,7 @@ class Strategy4Activity : AppCompatActivity() {
 
 
             if (!binding.changyebanCb.isChecked) {
-                r = r.filter { return@filter !it.stock.code.startsWith("300") }
+                r = r.filter { return@filter !it.stock.code.startsWith("300") }.toMutableList()
             }
 
             if (binding.cowBackCb.isChecked) {
@@ -453,16 +517,36 @@ class Strategy4Activity : AppCompatActivity() {
                 })
             }
 
+
+            val newList = mutableListOf<StockResult>()
+            r.forEach {
+                if (it.follow) {
+                    newList.add(0, it)
+                } else {
+                    newList.add(it)
+                }
+
+            }
+            r = newList
+
+
             val ztCount = list.count { it.nextDayZT }
-            val s = if (strategyResult.total > 0&& r.isNotEmpty()) {
-                "拟合度${ DecimalFormat("#.0").format(r.size * 100f / strategyResult.total)}%"
+            val s = if (strategyResult.total > 0 && r.isNotEmpty()) {
+                "拟合度${DecimalFormat("#.0").format(r.size * 100f / strategyResult.total)}%"
             } else ""
             binding.resultCount.text = "选股结果(${ztCount}/${r.size})  ${s}"
+
 
             r.forEach { result ->
                 val stock = result.stock
                 val itemBinding =
                     ItemStockBinding.inflate(LayoutInflater.from(Injector.context)).apply {
+
+                        if (result.follow) {
+                            this.root.setBackgroundColor(0x33333333)
+                        }
+
+
                         this.stockName.text = stock.name
                         val formatText = result.toFormatText()
                         if (formatText.isNotEmpty()) {
@@ -472,10 +556,10 @@ class Strategy4Activity : AppCompatActivity() {
                             this.labelTv.visibility = View.INVISIBLE
                         }
 
-                        if(result.activeRate>2){
+                        if (result.activeRate > 2) {
                             this.activeLabelTv.visibility = View.VISIBLE
-                            this.activeLabelTv.text =result.activeRate.toInt().toString()
-                        }else{
+                            this.activeLabelTv.text = result.activeRate.toInt().toString()
+                        } else {
                             this.activeLabelTv.visibility = View.INVISIBLE
                         }
 
@@ -484,6 +568,57 @@ class Strategy4Activity : AppCompatActivity() {
                         root.setOnClickListener {
                             stock.openWeb(this@Strategy4Activity)
                         }
+
+
+                        var ev: MotionEvent? = null
+                        root.setOnTouchListener { view, motionEvent ->
+                            if (motionEvent.action == MotionEvent.ACTION_DOWN) {
+                                ev = motionEvent
+                            }
+                            return@setOnTouchListener false
+                        }
+
+                        root.setOnLongClickListener {
+                            val b =
+                                LayoutStockPopupWindowBinding.inflate(LayoutInflater.from(it.context))
+
+                            if (result.follow) {
+                                b.followBtn.text = "取消关注"
+                            }
+
+
+                            val pw = PopupWindow(
+                                b.root,
+                                ViewGroup.LayoutParams.WRAP_CONTENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT,
+                                true
+                            )
+
+                            b.followBtn.setOnClickListener {
+                                pw.dismiss()
+                                lifecycleScope.launch(Dispatchers.IO) {
+                                    if (result.follow) {
+                                        Injector.appDatabase.followDao()
+                                            .deleteFollow(Follow(result.stock.code, 1))
+                                        result.follow = false
+                                        output(strategyResult)
+
+                                    } else {
+                                        result.follow = true
+                                        Injector.appDatabase.followDao()
+                                            .insertFollow(Follow(result.stock.code, 1))
+                                        output(strategyResult)
+                                    }
+
+
+                                }
+
+                            }
+                            pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -200)
+                            return@setOnLongClickListener true
+                        }
+
+
                     }
                 binding.resultLL.addView(itemBinding.root)
             }

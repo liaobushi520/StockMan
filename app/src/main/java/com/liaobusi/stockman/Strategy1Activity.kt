@@ -6,18 +6,25 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
+import android.widget.PopupWindow
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.liaobusi.stockman.Injector.context
 import com.liaobusi.stockman.databinding.ActivityStrategy1Binding
 import com.liaobusi.stockman.databinding.ItemStockBinding
+import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
+import com.liaobusi.stockman.db.Follow
 import com.liaobusi.stockman.db.Stock
 import com.liaobusi.stockman.db.openWeb
+import com.liaobusi.stockman.repo.BKResult
 import com.liaobusi.stockman.repo.StockRepo
 import com.liaobusi.stockman.repo.StockResult
 import com.liaobusi.stockman.repo.Strategy1Param
+import com.liaobusi.stockman.repo.StrategyResult
 import com.liaobusi.stockman.repo.toFormatText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -80,7 +87,7 @@ class Strategy1Activity : AppCompatActivity() {
                 startMarketTime = 19910101,
                 endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
                 lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
-                highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 30000000000.0,
+                highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 100000000000000.0,
                 ztRange = 40,
                 adjustTimeAfterZT = 5,
                 afterZTStockPriceLowRate = 0.95,
@@ -108,7 +115,7 @@ class Strategy1Activity : AppCompatActivity() {
                 startMarketTime = 19910101,
                 endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
                 lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
-                highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 30000000000.0,
+                highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 100000000000000.0,
                 ztRange = 100,
                 adjustTimeAfterZT = 20,
                 afterZTStockPriceLowRate = 0.90,
@@ -137,7 +144,7 @@ class Strategy1Activity : AppCompatActivity() {
                 startMarketTime = 19910101,
                 endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
                 lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
-                highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 30000000000.0,
+                highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 100000000000000.0,
                 ztRange = 20,
                 adjustTimeAfterZT = 3,
                 afterZTStockPriceLowRate = 0.95,
@@ -362,10 +369,28 @@ class Strategy1Activity : AppCompatActivity() {
             val ztCount=list.count { it.nextDayZT }
             binding.resultCount.text = "选股结果($ztCount/${r.size})"
 
+
+            val newList = mutableListOf<StockResult>()
+            r.forEach {
+                if (it.follow) {
+                    newList.add(0, it)
+                } else {
+                    newList.add(it)
+                }
+
+            }
+            r = newList
+
+
             r.forEach { result ->
                 val stock = result.stock
                 val itemBinding =
                     ItemStockBinding.inflate(LayoutInflater.from(context)).apply {
+
+                        if (result.follow) {
+                            this.root.setBackgroundColor(0x33333333)
+                        }
+
                         this.stockName.text = stock.name
                         val formatText = result.toFormatText()
                         if (formatText.isNotEmpty()) {
@@ -379,6 +404,53 @@ class Strategy1Activity : AppCompatActivity() {
 
                         root.setOnClickListener {
                             stock.openWeb(this@Strategy1Activity)
+                        }
+
+
+                        var ev: MotionEvent? = null
+                        root.setOnTouchListener { view, motionEvent ->
+                            if (motionEvent.action == MotionEvent.ACTION_DOWN) {
+                                ev = motionEvent
+                            }
+                            return@setOnTouchListener false
+                        }
+
+                        root.setOnLongClickListener {
+                            val b =
+                                LayoutStockPopupWindowBinding.inflate(LayoutInflater.from(it.context))
+
+                            if (result.follow) {
+                                b.followBtn.text = "取消关注"
+                            }
+
+                            val pw = PopupWindow(
+                                b.root,
+                                ViewGroup.LayoutParams.WRAP_CONTENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT,
+                                true
+                            )
+
+                            b.followBtn.setOnClickListener {
+                                pw.dismiss()
+                                lifecycleScope.launch(Dispatchers.IO) {
+                                    if (result.follow) {
+                                        result.follow = false
+                                        Injector.appDatabase.followDao()
+                                            .deleteFollow(Follow(result.stock.code, 1))
+                                        output(list)
+                                    } else {
+                                        result.follow = true
+                                        Injector.appDatabase.followDao()
+                                            .insertFollow(Follow(result.stock.code, 1))
+                                        output(list)
+                                    }
+
+                                }
+
+
+                            }
+                            pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -300)
+                            return@setOnLongClickListener true
                         }
                     }
                 binding.resultLL.addView(itemBinding.root)

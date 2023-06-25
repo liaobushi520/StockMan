@@ -1,9 +1,13 @@
 package com.liaobusi.stockman
 
+import android.view.View
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -64,5 +68,34 @@ fun Date.before(before: Int): Int {
 
 fun today():Int{
     return  SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())).toInt()
+}
+
+fun View.multiClick(count:Int, callback:()->Unit){
+
+    this.setTag(R.id.view_tag_count,0)
+
+    var job: Job?=null
+    this.setOnClickListener {
+        var c=this.getTag(R.id.view_tag_count) as Int
+        job?.cancel()
+        c += 1
+        if(c==count){
+            this.setTag(R.id.view_tag_count,0)
+            callback()
+        }else{
+            this.setTag(R.id.view_tag_count,c)
+            job= GlobalScope.launch {
+                delay(300)
+                setTag(R.id.view_tag_count,0)
+            }
+        }
+
+
+
+
+
+
+    }
+
 }
 

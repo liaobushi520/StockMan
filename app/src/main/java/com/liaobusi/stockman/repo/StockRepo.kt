@@ -378,7 +378,10 @@ object StockRepo {
             val list = historyStockDao.getHistoryAfter2(it.code, date, days)
             val c = list.count { it.ZT }
             ztTotal += c
-            Log.i("股票超人", "板块${bk.name}-${bk.code} 股票${it.name}-${it.code}近${days}内有${c}次涨停")
+            Log.i(
+                "股票超人",
+                "板块${bk.name}-${bk.code} 股票${it.name}-${it.code}近${days}内有${c}次涨停"
+            )
 
         }
         Log.i(
@@ -710,6 +713,7 @@ object StockRepo {
             )
         }
 
+        val follows = Injector.appDatabase.followDao().getFollowStocks()
 
 //        val stocks=listOf( stockDao.getStockByCode("300898"))
         val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())
@@ -878,7 +882,8 @@ object StockRepo {
                 touchLine20 = touchLine20,
                 cowBack = cowBack,
                 kd = kd,
-                nextDayZT = hasZT
+                nextDayZT = hasZT,
+                follow = follows.filter { f -> f.code == it.code }.isNotEmpty()
             )
 
 
@@ -1270,6 +1275,7 @@ object StockRepo {
 
 //       val stocks=listOf( stockDao.getStockByCode("000088"))
         val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())
+        val follows = Injector.appDatabase.followDao().getFollowStocks()
         val result = stocks.compute {
             val histories = historyDao.getHistoryRange(
                 it.code,
@@ -1405,17 +1411,43 @@ object StockRepo {
                 longUpShadow = longUpShadow,
                 cowBack = cowBack,
                 nextDayZT = hasZT,
-                activeRate = activeRate.toFloat()
+                activeRate = activeRate.toFloat(),
+                follow = follows.filter { f -> f.code == it.code }.isNotEmpty()
             )
 
         }
+
+
+//        val follows = Injector.appDatabase.followDao().getFollowStocks()
+//        val followList = mutableListOf<StockResult>()
+//        val unFollowList = mutableListOf<StockResult>()
+//
+//        for (r in result) {
+//            var has = false
+//            for (f in follows) {
+//                if (f.code == r.stock.code) {
+//                    r.follow = true
+//                    followList.add(r)
+//                    has = true
+//                    break
+//                }
+//
+//            }
+//            if (!has) {
+//                unFollowList.add(r)
+//            }
+//        }
+
+
+
 
         Collections.sort(result, kotlin.Comparator
         { v0, v1 ->
             return@Comparator v1.signalCount - v0.signalCount
         })
 
-        return@withContext StrategyResult(result, stocks.size)
+
+        return@withContext StrategyResult(result, stocks.size )
     }
 
 
@@ -1433,6 +1465,7 @@ object StockRepo {
         val historyDao = Injector.appDatabase.historyBKDao()
         val bks = bkDao.getAllBK()
         val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())!!
+        val follows = Injector.appDatabase.followDao().getFollowBks()
 
         //&& (it.code == "BK0454" || it.code == "BK0474")
         val result = bks.filter { !it.specialBK }
@@ -1522,7 +1555,7 @@ object StockRepo {
 
                 Log.i(
                     "股票超人",
-                    it.name + " ${bkLast.date}-${bkFirst.date} ${bkChg}  ${dpChg} 区间涨幅${bkChg - dpChg}"
+                    it.name + " ${bkLast.date}-${bkFirst.date} $bkChg  $dpChg 区间涨幅${bkChg - dpChg}"
                 )
                 Log.i(
                     "股票超人",
@@ -1556,6 +1589,9 @@ object StockRepo {
                     }
                 }
 
+
+
+
                 return@compute BKResult(
                     it,
                     overPreHigh = overPreHigh,
@@ -1565,7 +1601,8 @@ object StockRepo {
                     activeRate = (kLineSlopeRate * 0.1f + (acc / (perTurnOverRate * sampleCount)) * 0.3f + zt / 10 * 0.2f + (bkChg - dpChg) * 10 * 0.2f + belowRate * 0.2f) * 10,
                     perZTRate = ztOne,
                     touchLine10 = touchLine10,
-                    touchLine20 = touchLine20
+                    touchLine20 = touchLine20,
+                    follow = follows.filter { f -> f.code == it.code }.isNotEmpty()
                 )
 
 
@@ -1574,6 +1611,7 @@ object StockRepo {
         Collections.sort(result, kotlin.Comparator { v0, v1 ->
             return@Comparator v1.signalCount - v0.signalCount
         })
+
 
         return@withContext result
     }
@@ -1844,14 +1882,14 @@ val StockResult.signalCount: Int
         if (overPreHigh) {
             c0 += 1
         }
-        if (lianyangCount >=3) {
+        if (lianyangCount >= 3) {
             c0 += 1
         }
-        if (lianyangCount >=6) {
+        if (lianyangCount >= 6) {
             c0 += 1
         }
 
-        if (lianyangCount >=9) {
+        if (lianyangCount >= 9) {
             c0 += 1
         }
 
@@ -1882,6 +1920,7 @@ data class BKResult(
     var perZTRate: Float = 0f,
     val touchLine10: Boolean = false,
     val touchLine20: Boolean = false,
+    var follow: Boolean = false
 )
 
 val BKResult.signalCount: Int
@@ -1947,10 +1986,15 @@ data class StockResult(
     //之后有涨停
     val nextDayZT: Boolean = false,
     //活跃度
-    var activeRate: Float = 0f
+    var activeRate: Float = 0f,
+    var follow: Boolean = false
 )
 
-data class StrategyResult(val stockResults: List<StockResult>, val total: Int)
+data class StrategyResult(
+    val stockResults: List<StockResult>,
+    val total: Int,
+
+)
 
 fun BKResult.toFormatText(): String {
 
