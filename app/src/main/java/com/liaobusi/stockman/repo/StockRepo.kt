@@ -109,6 +109,60 @@ data class Strategy8Param(
 
 object StockRepo {
 
+
+    suspend fun filterStockByGDRS(stocks: List<StockResult>, count: Int): List<StockResult> =
+        withContext(Dispatchers.IO) {
+            val l = mutableListOf<StockResult>()
+            val gdrsDao = Injector.appDatabase.gdrsDao()
+            stocks.forEach {
+                val list = gdrsDao.getGDRSByCode(it.stock.code)
+                val m = kotlin.math.min(list.size - 1, count)
+                for (i in list.indices) {
+                    if (i == m) {
+                        l.add(it)
+                        break
+                    }
+                    if (list[i].totalNumRatio > 0 && i < m) {
+                        break
+                    }
+                }
+            }
+            return@withContext l
+        }
+
+    suspend fun getHistoryGDRS() {
+
+        val dao = Injector.appDatabase.stockDao()
+        val api = Injector.retrofit.create(StockService::class.java)
+
+        val gdrsDao = Injector.appDatabase.gdrsDao()
+        val jobs = mutableListOf<Deferred<Any>>()
+        dao.getAllStock().forEach {
+
+            val j = GlobalScope.async {
+                val marhetCode = if (it.marketCode() == 0) "SZ" else "SH"
+                val f = "(SECUCODE=\"${it.code}.${marhetCode}\")"
+                val response = api.getGDRS(f)
+                if (response.success) {
+                    val gdrss = response.result.data.mapIndexed { index, gdrsBean ->
+                        val date = SimpleDateFormat("yyyy-MM-dd").parse(gdrsBean.END_DATE)
+                        var s=gdrsBean.TOTAL_NUM_RATIO
+                        if(index!=response.result.data.size-1){
+                            if(gdrsBean.TOTAL_NUM_RATIO==0.0f){
+                                s   = ((gdrsBean.HOLDER_TOTAL_NUM -response.result.data[index+1].HOLDER_TOTAL_NUM).toFloat()/response.result.data[index+1].HOLDER_TOTAL_NUM)
+                            }
+                        }
+                        GDRS(gdrsBean.SECURITY_CODE, date.time, s, gdrsBean.HOLDER_TOTAL_NUM)
+                    }
+                    gdrsDao.insert(gdrss)
+                }
+            }
+            jobs.add(j)
+        }
+        jobs.awaitAll()
+    }
+
+
     //板块抗跌
     private fun bkKD(
         stockHistories: List<HistoryBK>
@@ -1439,15 +1493,13 @@ object StockRepo {
 //        }
 
 
-
-
         Collections.sort(result, kotlin.Comparator
         { v0, v1 ->
             return@Comparator v1.signalCount - v0.signalCount
         })
 
 
-        return@withContext StrategyResult(result, stocks.size )
+        return@withContext StrategyResult(result, stocks.size)
     }
 
 
@@ -1994,7 +2046,7 @@ data class StrategyResult(
     val stockResults: List<StockResult>,
     val total: Int,
 
-)
+    )
 
 fun BKResult.toFormatText(): String {
 

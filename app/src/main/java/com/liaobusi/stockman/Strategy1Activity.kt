@@ -349,6 +349,10 @@ class Strategy1Activity : AppCompatActivity() {
                 output(list)
             }
 
+            binding.gdrsCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                output(list)
+            }
+
 
 
             binding.resultLL.removeAllViews()
@@ -366,8 +370,18 @@ class Strategy1Activity : AppCompatActivity() {
                     it.kd
                 }
             }
+
+
+            if(binding.gdrsCb.isChecked){
+                val c=binding.gdrsCountTv.text.toString().toIntOrNull()?:5
+                r= StockRepo.filterStockByGDRS(r,c)
+            }
+
+
             val ztCount=list.count { it.nextDayZT }
             binding.resultCount.text = "选股结果($ztCount/${r.size})"
+
+
 
 
             val newList = mutableListOf<StockResult>()

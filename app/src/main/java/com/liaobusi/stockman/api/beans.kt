@@ -8,6 +8,37 @@ data class EMResponse(val data: EMData?)
 data class EMData(val total: Int, val diff: List<EMDiffBean>)
 
 
+data class GDRSResponse(val version:String,val success:Boolean,val message:String,val code:Int,val result: Result)
+
+data class Result(val pages:Int,val count:Int,val data:List<GDRSBean>)
+
+data class GDRSBean(
+    val AVG_FREESHARES_RATIO: Double,
+    val AVG_FREE_SHARES: Int,
+    val AVG_HOLD_AMT: Double,
+    val A_MARK: String,
+    val B_MARK: String,
+    val END_DATE: String,
+    val FREEHOLD_RATIO_TOTAL: Double,
+    val HOLDER_ANUM_RATIO: Double,
+    val HOLDER_A_NUM: Int,
+    val HOLDER_BNUM_RATIO: Any,
+    val HOLDER_B_NUM: Any,
+    val HOLDER_HNUM_RATIO: Any,
+    val HOLDER_H_NUM: Any,
+    val HOLDER_TOTAL_NUM: Int,
+    val HOLD_FOCUS: String,
+    val HOLD_RATIO_TOTAL: Double,
+    val H_MARK: String,
+    val ORG_CODE: String,
+    val PRICE: Double,
+    val SECUCODE: String,
+    val SECURITY_CODE: String,
+    val TOTAL_NUM_RATIO: Float
+)
+
+
+
 //f104涨 f105跌 f106平
 data class EMDiffBean(
     val f1: Int,

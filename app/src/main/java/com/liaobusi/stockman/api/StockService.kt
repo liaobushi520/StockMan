@@ -56,11 +56,12 @@ interface StockService {
     //https://push2.eastmoney.com/api/qt/clist/get?np=1&fltt=1&invt=2&fs=b:BK0482&fields=f14,f12,f13,f1,f2,f4,f3,f152,f128,f140,f141,f62,f184,f66,f69,f72,f75,f78,f81,f84,f87,f109,f160,f164,f165,f166,f167,f168,f169,f170,f171,f172,f173,f174,f175,f176,f177,f178,f179,f180,f181,f182,f183&fid=f62&pn=1&pz=8&po=1&ut=fa5fd1943c7b386f172d6893dbfba10b&wbp2u=|0|0|0|web&_=1670382926497
 
 
-
-
-
     @GET("https://52.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&po=1&np=1&fields=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f23,f24,f25,f22,f11,f62,f128,f136,f115,f152,f45")
     suspend fun getBKStocks(@Query("fs") fs:String):EMResponse
+
+
+    @GET("https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_F10_EH_HOLDERNUM&columns=A_MARK%2CB_MARK%2CH_MARK%2CSECUCODE%2CSECURITY_CODE%2CORG_CODE%2CEND_DATE%2CHOLDER_TOTAL_NUM%2CTOTAL_NUM_RATIO%2CHOLDER_A_NUM%2CHOLDER_ANUM_RATIO%2CAVG_FREE_SHARES%2CAVG_FREESHARES_RATIO%2CPRICE%2CAVG_HOLD_AMT%2CHOLD_FOCUS%2CHOLD_RATIO_TOTAL%2CFREEHOLD_RATIO_TOTAL%2CHOLDER_B_NUM%2CHOLDER_H_NUM%2CHOLDER_BNUM_RATIO%2CHOLDER_HNUM_RATIO&client=APP&source=SECURITIES&pageNumber=1&pageSize=200&sr=-1&st=END_DATE&v=05145907342118392")
+    suspend fun getGDRS(@Query("filter") filter:String):GDRSResponse
 
 }
 

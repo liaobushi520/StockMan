@@ -7,6 +7,10 @@ interface StockDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(stock: List<Stock>)
 
+
+    @Query("select * from stock where code in ( select code from follow where type=1)")
+    fun getFollowedStocks():List<Stock>
+
     @Query("select * from stock where toMarketTime < :endTime AND toMarketTime >:startTime AND circulationMarketValue <= :highMarketValue AND circulationMarketValue >= :lowMarketValue AND name not like '%ST%'  order by circulationMarketValue desc")
     fun getStock(
         startTime: Int,
@@ -35,6 +39,10 @@ interface BKDao {
     @Query("select * from bk")
     fun getAllBK(): List<BK>
 
+    @Query("select * from bk where code in ( select code from follow where type=2)")
+    fun getFollowedBKS():List<BK>
+
+
     @Query("select * from bk where code=:code")
     fun getBKByCode(code: String): BK
 
@@ -47,10 +55,28 @@ interface BKDao {
 
 }
 
+
+@Dao
+interface GDRSDao{
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(list:List<GDRS>)
+
+
+    @Query("select * from gdrs where code=:code order by endDate DESC")
+    fun getGDRSByCode(code: String):List<GDRS>
+
+
+    @Query("select * from gdrs")
+    fun getAll():List<GDRS>
+
+}
+
 @Dao
 interface BKStockDao {
     @Query("select * from stock where code in ( select stockCode  from bkstock where bkCode=:bkCode )")
     fun getStocksByBKCode(bkCode: String): List<Stock>
+
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(bkStocks: List<BKStock>)
@@ -98,6 +124,8 @@ interface FollowDao{
 
     @Query("select * from follow where type=2")
     fun getFollowBks():List<Follow>
+    @Query("select * from follow ")
+    fun getFollows():List<Follow>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertFollow(follow: Follow)

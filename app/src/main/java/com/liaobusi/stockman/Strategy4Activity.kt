@@ -50,6 +50,8 @@ class Strategy4Activity : AppCompatActivity() {
         binding = ActivityStrategy4Binding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
 
+        supportActionBar?.title="均线强势"
+
         var fromBKStrategyActivity = false
         if (intent.hasExtra("bk")) {
             val bk = intent.getStringExtra("bk")
@@ -496,6 +498,10 @@ class Strategy4Activity : AppCompatActivity() {
             binding.cowBackCb.setOnCheckedChangeListener { compoundButton, b ->
                 output(strategyResult)
             }
+
+            binding.gdrsCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                output(strategyResult)
+            }
             binding.resultLL.removeAllViews()
 
             var r = list
@@ -515,6 +521,11 @@ class Strategy4Activity : AppCompatActivity() {
                 Collections.sort(r, kotlin.Comparator { v0, v1 ->
                     return@Comparator v1.activeRate.compareTo(v0.activeRate)
                 })
+            }
+
+            if(binding.gdrsCb.isChecked){
+                val c=binding.gdrsCountTv.text.toString().toIntOrNull()?:5
+                r= StockRepo.filterStockByGDRS(r,c)
             }
 
 
@@ -602,7 +613,6 @@ class Strategy4Activity : AppCompatActivity() {
                                             .deleteFollow(Follow(result.stock.code, 1))
                                         result.follow = false
                                         output(strategyResult)
-
                                     } else {
                                         result.follow = true
                                         Injector.appDatabase.followDao()
@@ -614,7 +624,7 @@ class Strategy4Activity : AppCompatActivity() {
                                 }
 
                             }
-                            pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -200)
+                            pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -300)
                             return@setOnLongClickListener true
                         }
 

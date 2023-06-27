@@ -6,6 +6,8 @@ import android.net.Uri
 import androidx.room.*
 
 
+@Entity(primaryKeys = ["code","endDate"])
+data class GDRS(val code: String,val endDate:Long,val totalNumRatio:Float,@ColumnInfo(defaultValue = "0")val holderTotalNum:Int)
 
 
 @Entity(primaryKeys = ["code", "date"])
@@ -190,9 +192,9 @@ val HistoryStock.longUpShadow: Boolean
 
 
 @Database(
-    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class,BKStock::class,Follow::class], version = 11,
+    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class,BKStock::class,Follow::class,GDRS::class], version = 13,
     autoMigrations = [
-        AutoMigration(from = 10, to = 11)
+        AutoMigration(from = 12, to = 13)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -203,6 +205,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun bkStockDao():BKStockDao
 
     abstract fun followDao():FollowDao
+
+    abstract fun gdrsDao():GDRSDao
 
 
 //    @DeleteTable.Entries(value = [DeleteTable(tableName = "BK"),DeleteTable(tableName = "HistoryBK")])

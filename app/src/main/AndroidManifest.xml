@@ -16,6 +16,9 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
+            android:name=".FollowListActivity"
+            android:exported="false" />
+        <activity
             android:name=".Strategy7Activity"
             android:exported="false">
             <meta-data
@@ -58,8 +61,8 @@
             android:name=".Strategy1Activity"
             android:exported="true" />
     </application>
-    <uses-permission android:name="android.permission.INTERNET" />
-
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
 
 </manifest>

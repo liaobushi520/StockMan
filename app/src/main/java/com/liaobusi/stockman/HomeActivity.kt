@@ -7,6 +7,8 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
@@ -20,14 +22,27 @@ import java.util.*
 
 class HomeActivity : AppCompatActivity() {
     private lateinit var binding: ActivityHomeBinding
+
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.action_follow_list -> {
+                FollowListActivity.startFollowListActivity(this)
+                return true
+            }
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.easy_menu, menu)
+        return true
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityHomeBinding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
-
-
-
-
 
         binding.passwordBtn.setOnClickListener {
             binding.root.requestFocus()
@@ -89,13 +104,18 @@ class HomeActivity : AppCompatActivity() {
                 StockRepo.getRealTimeBKs()
                 StockRepo.getHistoryBks()
                 StockRepo.getBKStocks()
+                StockRepo.getHistoryGDRS()
                 val r = StockRepo.getHistoryStocks(
                     20220201,
                     SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())).toInt()
                 )
                 launch(Dispatchers.Main) {
                     if (!r) {
-                        Toast.makeText(this@HomeActivity, "拉取数据失败，请稍后重试", Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            this@HomeActivity,
+                            "拉取数据失败，请稍后重试",
+                            Toast.LENGTH_LONG
+                        ).show()
                     } else {
                         Toast.makeText(this@HomeActivity, "初始化成功", Toast.LENGTH_LONG).show()
                     }
@@ -108,7 +128,7 @@ class HomeActivity : AppCompatActivity() {
             val d = Injector.appDatabase.stockDao()
             val h = Injector.appDatabase.historyStockDao()
             val bkStockDao = Injector.appDatabase.bkStockDao()
-            val bkDao=Injector.appDatabase.bkDao()
+            val bkDao = Injector.appDatabase.bkDao()
 
             StockRepo.getRealTimeStocks()
             StockRepo.getRealTimeBKs()
@@ -116,23 +136,18 @@ class HomeActivity : AppCompatActivity() {
             if (System.currentTimeMillis() - sp.getLong(
                     "fetch_bk_stocks_time",
                     0
-                ) > 5 * 60 * 60 * 1000
+                ) > 3 * 24 * 60 * 60 * 1000
             ) {
                 StockRepo.getBKStocks()
+                StockRepo.getHistoryGDRS()
                 sp.edit().putLong("fetch_bk_stocks_time", System.currentTimeMillis()).apply()
             }
             h.deleteErrorHistory()
 
 
-
-
 //            bkStockDao.getStocksByBKCode("BK0438").forEach {
 //                Log.e("XXX", it.toString())
 //            }
-
-
-
-
 
 
 //            val p=Injector.appDatabase.bkDao().getBKByCode("BK1036")
