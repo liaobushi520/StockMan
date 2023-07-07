@@ -136,7 +136,7 @@ class HomeActivity : AppCompatActivity() {
             if (System.currentTimeMillis() - sp.getLong(
                     "fetch_bk_stocks_time",
                     0
-                ) > 3 * 24 * 60 * 60 * 1000
+                ) > 5 * 24 * 60 * 60 * 1000
             ) {
                 StockRepo.getBKStocks()
                 StockRepo.getHistoryGDRS()

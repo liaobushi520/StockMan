@@ -45,7 +45,7 @@
                 <EditText
                     android:id="@+id/endMarketTime"
                     android:layout_width="0dp"
-                    android:text="20180102"
+                    android:text="20210102"
                     android:inputType="number"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"

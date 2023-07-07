@@ -81,7 +81,7 @@ class Strategy4Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy4Param(
                 startMarketTime = 19910101,
-                endMarketTime = if (fromBKStrategyActivity) today() else 20180101,
+                endMarketTime = if (fromBKStrategyActivity) today() else today(),
                 lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
                 highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
                 range = 5,
@@ -110,7 +110,7 @@ class Strategy4Activity : AppCompatActivity() {
 
             val param = Strategy4Param(
                 startMarketTime = 19910101,
-                endMarketTime = if (fromBKStrategyActivity) today() else 20180101,
+                endMarketTime = if (fromBKStrategyActivity) today() else today(),
                 lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
                 highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
                 range = 10,
@@ -136,7 +136,7 @@ class Strategy4Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy4Param(
                 startMarketTime = 19910101,
-                endMarketTime = if (fromBKStrategyActivity) today() else 20180101,
+                endMarketTime = if (fromBKStrategyActivity) today() else today(),
                 lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
                 highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
                 range = 20,
@@ -164,7 +164,7 @@ class Strategy4Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy4Param(
                 startMarketTime = 19910101,
-                endMarketTime = if (fromBKStrategyActivity) today() else 20180101,
+                endMarketTime = if (fromBKStrategyActivity) today() else today(),
                 lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
                 highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
                 range = 60,
