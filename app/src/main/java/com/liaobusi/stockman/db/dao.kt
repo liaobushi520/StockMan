@@ -7,8 +7,7 @@ interface StockDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(stock: List<Stock>)
 
-
-    @Query("select * from stock where code in ( select code from follow where type=1)")
+    @Query("select * from stock where code in ( select code from follow where type=1) order by chg DESC")
     fun getFollowedStocks():List<Stock>
 
     @Query("select * from stock where toMarketTime < :endTime AND toMarketTime >:startTime AND circulationMarketValue <= :highMarketValue AND circulationMarketValue >= :lowMarketValue AND name not like '%ST%'  order by circulationMarketValue desc")
@@ -39,8 +38,11 @@ interface BKDao {
     @Query("select * from bk")
     fun getAllBK(): List<BK>
 
-    @Query("select * from bk where code in ( select code from follow where type=2)")
+    @Query("select * from bk where code in ( select code from follow where type=2) order by chg DESC")
     fun getFollowedBKS():List<BK>
+
+    @Query("select * from bk where code not in ( select code from hide where type=2) order by chg DESC")
+    fun getVisibleBKS():List<BK>
 
 
     @Query("select * from bk where code=:code")
@@ -132,6 +134,25 @@ interface FollowDao{
 
     @Delete
     fun deleteFollow(follow: Follow)
+
+}
+
+@Dao
+interface HideDao{
+
+    @Query("select * from hide where type=1")
+    fun getHideStocks():List<Hide>
+
+    @Query("select * from hide where type=2")
+    fun getHideBks():List<Hide>
+    @Query("select * from hide ")
+    fun getHides():List<Follow>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertHide(hide: Hide)
+
+    @Delete
+    fun deleteHide(hide: Hide)
 
 }
 

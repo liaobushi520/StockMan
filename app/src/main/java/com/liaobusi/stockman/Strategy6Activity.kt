@@ -131,6 +131,10 @@ class Strategy6Activity : AppCompatActivity() {
             }
 
         }
+
+
+
+
     }
 
     private fun output(list: List<StockResult>) {

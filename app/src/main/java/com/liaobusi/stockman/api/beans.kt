@@ -71,7 +71,7 @@ data class DPDayKLineResponse(
     val lt: Int,
     val rc: Int,
     val rt: Int,
-    val svr: Int
+    val svr: Long
 )
 
 data class Data(
@@ -86,5 +86,18 @@ data class Data(
     val qtMiscType: Int
 )
 
+data class StockTrend(
+    val data:StockTrendData,
+    val dlmkts: String,
+    val full: Int,
+    val lt: Int,
+    val rc: Int,
+    val rt: Int,
+    val svr: Long
+)
+
+data class StockTrendData(
+    val trends: List<String>
+)
 
 

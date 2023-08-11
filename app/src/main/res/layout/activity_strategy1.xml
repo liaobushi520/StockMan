@@ -45,7 +45,7 @@
                 <EditText
                     android:id="@+id/endMarketTime"
                     android:layout_width="0dp"
-                    android:text="20210102"
+                    android:text="20230101"
                     android:inputType="number"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
@@ -82,7 +82,7 @@
                 <EditText
                     android:id="@+id/highMarketValue"
                     android:layout_width="0dp"
-                    android:text="300"
+                    android:text="300000000"
                     android:inputType="number"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
@@ -294,6 +294,20 @@
                 <EditText
                     android:id="@+id/conceptAndBKTv"
                     android:text="ALL"
+                    android:maxWidth="200dp"
+                    android:maxLines="1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:text="关注的板块"
+                    android:layout_marginStart="16dp"
+                    android:layout_height="wrap_content"/>
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/followBkCb"
+                    android:checked="false"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
 
@@ -374,14 +388,46 @@
 
             </LinearLayout>
 
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/chooseStockBtn"
+
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:background="#3f51b5"
-                android:textColor="#fff"
-                android:layout_marginTop="10dp"
-                android:text="选    股"
-                android:layout_height="wrap_content"/>
+                android:orientation="horizontal"
+                android:layout_height="wrap_content">
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/preBtn"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:background="#3f51b5"
+                    android:textColor="#fff"
+                    android:layout_marginTop="10dp"
+                    android:text="前一天"
+
+                    android:layout_height="wrap_content"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/chooseStockBtn"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:background="#3f51b5"
+                    android:textColor="#fff"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginTop="10dp"
+                    android:text="选    股"
+                    android:layout_height="wrap_content"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/postBtn"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:background="#3f51b5"
+                    android:textColor="#fff"
+                    android:layout_marginTop="10dp"
+                    android:text="后一天"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+
 
             <LinearLayout
                 android:layout_width="match_parent"

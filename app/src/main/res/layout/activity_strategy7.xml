@@ -110,7 +110,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="交易日内有首板涨停,涨停后调整时间至少" />
+                    android:text="交易日内有涨停,涨停后调整时间至少" />
 
 
                 <EditText
@@ -252,6 +252,20 @@
                 <EditText
                     android:id="@+id/conceptAndBKTv"
                     android:text="ALL"
+                    android:maxWidth="200dp"
+                    android:maxLines="1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:text="关注的板块"
+                    android:layout_marginStart="16dp"
+                    android:layout_height="wrap_content"/>
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/followBkCb"
+                    android:checked="false"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
 
@@ -269,8 +283,22 @@
 
                 <androidx.appcompat.widget.AppCompatCheckBox
                     android:id="@+id/changyebanCb"
+                    android:checked="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="首板" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/firstZTCb"
+                    android:checked="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
 
 
             </LinearLayout>
@@ -287,19 +315,35 @@
                 android:layout_height="wrap_content"/>
 
 
+
+
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:orientation="horizontal"
                 android:layout_height="wrap_content">
 
                 <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/strictStockBtn"
+                    android:id="@+id/line5Btn"
                     android:layout_width="0dp"
                     android:background="#3f51b5"
                     android:textColor="#fff"
                     android:layout_weight="1"
                     android:layout_marginTop="10dp"
-                    android:text="严格模式"
+                    android:text="5日线"
+                    android:layout_height="wrap_content"/>
+                <View
+                    android:layout_width="20dp"
+                    android:layout_height="match_parent"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/line10Btn"
+                    android:layout_width="0dp"
+                    android:background="#ff4081"
+                    android:textColor="#fff"
+                    android:layout_weight="1"
+                    android:layout_marginTop="10dp"
+                    android:text="10日线"
                     android:layout_height="wrap_content"/>
 
                 <View
@@ -307,17 +351,47 @@
                     android:layout_height="match_parent"/>
 
                 <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/softStockBtn"
+                    android:id="@+id/line20Btn"
                     android:layout_width="0dp"
-                    android:background="#ff4081"
+                    android:background="#004081"
                     android:textColor="#fff"
                     android:layout_weight="1"
                     android:layout_marginTop="10dp"
-                    android:text="宽松模式"
+                    android:text="20日线"
                     android:layout_height="wrap_content"/>
 
 
+                <View
+                    android:layout_width="20dp"
+                    android:layout_height="match_parent"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/line30Btn"
+                    android:layout_width="0dp"
+                    android:background="#004081"
+                    android:textColor="#fff"
+                    android:layout_weight="1"
+                    android:layout_marginTop="10dp"
+                    android:text="30日线"
+                    android:layout_height="wrap_content"/>
+
+                <View
+                    android:layout_width="20dp"
+                    android:layout_height="match_parent"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/line60Btn"
+                    android:layout_width="0dp"
+                    android:background="#004081"
+                    android:textColor="#fff"
+                    android:layout_weight="1"
+                    android:layout_marginTop="10dp"
+                    android:text="60日线"
+                    android:layout_height="wrap_content"/>
             </LinearLayout>
+
+
+
 
 
             <TextView

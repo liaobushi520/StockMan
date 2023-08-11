@@ -50,7 +50,7 @@ fun getOkHttpClientBuilder() = OkHttpClient.Builder().apply {
     val logging =
         HttpLoggingInterceptor()
     if (DEBUG) {
-        logging.setLevel(HttpLoggingInterceptor.Level.BODY)
+        logging.setLevel(HttpLoggingInterceptor.Level.HEADERS)
     } else {
         logging.setLevel(HttpLoggingInterceptor.Level.NONE)
     }
@@ -75,7 +75,7 @@ fun getOkHttpClientBuilder() = OkHttpClient.Builder().apply {
     }
 
     //启用Log日志
-    addInterceptor(logging)
+   addInterceptor(logging)
 
 }
 

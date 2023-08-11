@@ -30,6 +30,11 @@ class HomeActivity : AppCompatActivity() {
                 FollowListActivity.startFollowListActivity(this)
                 return true
             }
+            R.id.action_setting->{
+                 SettingActivity.startSettingActivity(this)
+
+                return true
+            }
         }
         return super.onOptionsItemSelected(item)
     }
@@ -96,6 +101,10 @@ class HomeActivity : AppCompatActivity() {
             startActivity(i)
         }
 
+        binding.s9.setOnClickListener {
+            val i = Intent(this, Strategy9Activity::class.java)
+            startActivity(i)
+        }
 
         binding.initBtn.multiClick(3) {
             binding.ll.visibility = View.VISIBLE
@@ -130,8 +139,11 @@ class HomeActivity : AppCompatActivity() {
             val bkStockDao = Injector.appDatabase.bkStockDao()
             val bkDao = Injector.appDatabase.bkDao()
 
+
+            StockRepo.getRealTimeStockData("0.300059")
             StockRepo.getRealTimeStocks()
             StockRepo.getRealTimeBKs()
+
             val sp = getSharedPreferences("app", Context.MODE_PRIVATE)
             if (System.currentTimeMillis() - sp.getLong(
                     "fetch_bk_stocks_time",
@@ -143,6 +155,8 @@ class HomeActivity : AppCompatActivity() {
                 sp.edit().putLong("fetch_bk_stocks_time", System.currentTimeMillis()).apply()
             }
             h.deleteErrorHistory()
+
+
 
 
 //            bkStockDao.getStocksByBKCode("BK0438").forEach {

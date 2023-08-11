@@ -78,6 +78,16 @@
         android:textColor="#fff"
         android:textSize="18sp" />
 
+    <TextView
+        android:id="@+id/hideBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="10dp"
+        android:text="隐藏"
+        android:textColor="#fff"
+        android:textSize="18sp" />
+
 
 
 </LinearLayout>

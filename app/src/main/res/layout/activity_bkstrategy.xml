@@ -34,7 +34,7 @@
                 <EditText
                     android:id="@+id/timeRangeTv"
                     android:layout_width="wrap_content"
-                    android:text="40"
+                    android:text="5"
                     android:inputType="number"
                     android:paddingEnd="10dp"
                     android:maxLines="1"
@@ -121,7 +121,7 @@
                 <EditText
                     android:id="@+id/allowBelowCountTv"
                     android:layout_width="wrap_content"
-                    android:text="40"
+                    android:text="5"
                     android:maxLines="1"
                     android:inputType="number"
                     android:paddingEnd="10dp"
@@ -148,6 +148,17 @@
                     android:id="@+id/endTimeTv"
                     android:text="20220803"
                     android:inputType="date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="  仅活跃比较" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/onlyActiveRateCb"
+                    android:checked="false"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
 
@@ -253,20 +264,62 @@
                     android:layout_height="wrap_content"/>
 
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="跳转板块集合" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/withAllBksCb"
+                    android:checked="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
 
             </LinearLayout>
 
 
 
-
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/chooseStockBtn"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:background="#3f51b5"
-                android:textColor="#fff"
-                android:layout_marginTop="10dp"
-                android:text="确    定"
-                android:layout_height="wrap_content"/>
+                android:orientation="horizontal"
+                android:layout_height="wrap_content">
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/preBtn"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:background="#3f51b5"
+                    android:textColor="#fff"
+                    android:layout_marginTop="10dp"
+                    android:text="前一天"
+
+                    android:layout_height="wrap_content"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/chooseStockBtn"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:background="#3f51b5"
+                    android:textColor="#fff"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginTop="10dp"
+                    android:text="确 定"
+                    android:layout_height="wrap_content"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/postBtn"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:background="#3f51b5"
+                    android:textColor="#fff"
+                    android:layout_marginTop="10dp"
+                    android:text="后一天"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+
+
+
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -280,11 +333,11 @@
                     android:textColor="#fff"
                     android:layout_weight="1"
                     android:layout_marginTop="10dp"
-                    android:text="5日线选股"
+                    android:text="5日线"
                     android:layout_height="wrap_content"/>
 
                 <View
-                    android:layout_width="20dp"
+                    android:layout_width="10dp"
                     android:layout_height="match_parent"/>
 
                 <androidx.appcompat.widget.AppCompatButton
@@ -294,11 +347,11 @@
                     android:textColor="#fff"
                     android:layout_weight="1"
                     android:layout_marginTop="10dp"
-                    android:text="10日线选股"
+                    android:text="10日线"
                     android:layout_height="wrap_content"/>
 
                 <View
-                    android:layout_width="20dp"
+                    android:layout_width="10dp"
                     android:layout_height="match_parent"/>
 
                 <androidx.appcompat.widget.AppCompatButton
@@ -308,22 +361,36 @@
                     android:textColor="#fff"
                     android:layout_weight="1"
                     android:layout_marginTop="10dp"
-                    android:text="20日线选股"
+                    android:text="20日线"
+                    android:layout_height="wrap_content"/>
+
+                <View
+                    android:layout_width="10dp"
+                    android:layout_height="match_parent"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/line30Btn"
+                    android:layout_width="0dp"
+                    android:background="#0f4000"
+                    android:textColor="#fff"
+                    android:layout_weight="1"
+                    android:layout_marginTop="10dp"
+                    android:text="30日线"
                     android:layout_height="wrap_content"/>
 
 
                 <View
-                    android:layout_width="20dp"
+                    android:layout_width="10dp"
                     android:layout_height="match_parent"/>
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/line60Btn"
                     android:layout_width="0dp"
-                    android:background="#f040f0"
+                    android:background="#ff4000"
                     android:textColor="#fff"
                     android:layout_weight="1"
                     android:layout_marginTop="10dp"
-                    android:text="60日线选股"
+                    android:text="60日线"
                     android:layout_height="wrap_content"/>
 
             </LinearLayout>
@@ -334,7 +401,7 @@
                 android:layout_height="wrap_content"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:layout_marginTop="10dp"
+                android:layout_marginVertical="10dp"
                 android:textColor="#000"
                 android:text="板块结果" />
 

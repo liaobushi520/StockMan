@@ -1,0 +1,328 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    tools:context=".Strategy2Activity">
+
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="上市时间" />
+
+                <EditText
+                    android:id="@+id/startMarketTime"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:inputType="number"
+                    android:text="19900102"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="10dp"
+                    android:background="#000000"
+                    android:layout_height="2dp"/>
+
+                <EditText
+                    android:id="@+id/endMarketTime"
+                    android:layout_width="0dp"
+                    android:text="20230102"
+                    android:inputType="number"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_weight="1" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="流通市值(亿)" />
+
+
+                <EditText
+                    android:id="@+id/lowMarketValue"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="1"
+                    android:inputType="number"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="10dp"
+                    android:background="#000000"
+                    android:layout_height="2dp"/>
+
+                <EditText
+                    android:id="@+id/highMarketValue"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_weight="1"
+                    android:inputType="number"
+                    android:text="10000000" />
+
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:text="查找区间"
+                    android:layout_height="wrap_content"/>
+
+                <EditText
+                    android:id="@+id/timeRangeTv"
+                    android:layout_width="wrap_content"
+                    android:text="15"
+                    android:inputType="number"
+                    android:paddingEnd="10dp"
+                    android:layout_height="wrap_content"
+                    />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:text="天，起爆点换手率是前一天"
+                    android:layout_height="wrap_content"/>
+
+
+                <EditText
+                    android:id="@+id/explosionTurnoverRateRadioTv"
+                    android:layout_width="wrap_content"
+                    android:text="3"
+                    android:inputType="number"
+                    android:paddingEnd="10dp"
+                    android:layout_height="wrap_content"
+                    />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:text="倍"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="起爆后堆量至少" />
+
+
+                <EditText
+                    android:id="@+id/explosionDaysTv"
+                    android:layout_width="wrap_content"
+                    android:text="7"
+                    android:paddingEnd="10dp"
+                    android:layout_height="wrap_content"
+                    />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="天，每日放量不低于平均量能" />
+
+                <EditText
+                    android:id="@+id/lowestTurnoverRadioTv"
+                    android:layout_width="wrap_content"
+                    android:text="0.6"
+                    android:paddingEnd="10dp"
+                    android:layout_height="wrap_content"
+                    />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="倍" />
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="起爆后最大涨幅低于" />
+
+
+                <EditText
+                    android:id="@+id/maxIncreaseTv"
+                    android:layout_width="wrap_content"
+                    android:text="20"
+                    android:paddingEnd="10dp"
+                    android:layout_height="wrap_content"
+                    />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="%" />
+
+            </LinearLayout>
+
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="截止时间" />
+
+                <EditText
+                    android:id="@+id/endTimeTv"
+                    android:text="20220803"
+                    android:inputType="date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="概念板块" />
+
+                <EditText
+                    android:id="@+id/conceptAndBKTv"
+                    android:text="ALL"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="创业板" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/changyebanCb"
+                    android:checked="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:orientation="horizontal"
+                android:layout_height="wrap_content">
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/preBtn"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:background="#3f51b5"
+                    android:textColor="#fff"
+                    android:layout_marginTop="10dp"
+                    android:text="前一天"
+
+                    android:layout_height="wrap_content"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/chooseStockBtn"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:background="#3f51b5"
+                    android:textColor="#fff"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginTop="10dp"
+                    android:text="选    股"
+                    android:layout_height="wrap_content"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/postBtn"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:background="#3f51b5"
+                    android:textColor="#fff"
+                    android:layout_marginTop="10dp"
+                    android:text="后一天"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+
+
+
+
+            <TextView
+                android:id="@+id/resultCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginTop="10dp"
+                android:textColor="#000"
+                android:text="选股结果" />
+
+            <LinearLayout
+                android:id="@+id/resultLL"
+                android:layout_width="match_parent"
+                android:orientation="vertical"
+                android:layout_height="wrap_content">
+            </LinearLayout>
+
+
+
+        </LinearLayout>
+
+
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

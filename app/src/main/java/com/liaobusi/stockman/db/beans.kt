@@ -67,6 +67,9 @@ data class BKStock(    val bkCode:String,  val stockCode:String)
 @Entity
 data class Follow( @PrimaryKey val code: String,val type: Int)
 
+@Entity
+data class Hide( @PrimaryKey val code: String,val type: Int)
+
 /***
  * @param name 名称
  * @param amplitude 振幅
@@ -101,6 +104,7 @@ data class Stock(
     val averagePrice: Float,
     @ColumnInfo(defaultValue = "")
     val bk: String,
+
 )
 
 fun Stock.openWeb(context: Context) {
@@ -192,9 +196,9 @@ val HistoryStock.longUpShadow: Boolean
 
 
 @Database(
-    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class,BKStock::class,Follow::class,GDRS::class], version = 13,
+    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class,BKStock::class,Follow::class,GDRS::class,Hide::class], version = 14,
     autoMigrations = [
-        AutoMigration(from = 12, to = 13)
+        AutoMigration(from = 13, to = 14)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -207,6 +211,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun followDao():FollowDao
 
     abstract fun gdrsDao():GDRSDao
+
+    abstract fun hideDao():HideDao
 
 
 //    @DeleteTable.Entries(value = [DeleteTable(tableName = "BK"),DeleteTable(tableName = "HistoryBK")])

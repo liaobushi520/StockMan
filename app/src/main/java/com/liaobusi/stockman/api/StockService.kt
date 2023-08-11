@@ -1,11 +1,13 @@
 package com.liaobusi.stockman.api
 
 import okhttp3.OkHttpClient
+import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
+import retrofit2.http.Streaming
 import retrofit2.http.Url
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
@@ -16,6 +18,8 @@ import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
 
+const val FILED="f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f23,f24,f25,f26,f22,f11,f62,f128,f136,f115,f152,f297,f350,f351,f352,f383"
+
 interface StockService {
 
 //    m:1 t:2 上证A股主板
@@ -25,8 +29,19 @@ interface StockService {
 //    m:0 t:7,m:1 t:3 B股
 //    b:MK0021,b:MK0022,b:MK0023,b:MK0024 ETF
 
-    @GET("http://20.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&np=1&fid=f3&fields=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f23,f24,f25,f26,f22,f11,f62,f128,f136,f115,f152,f297,f350,f351,f352,f383&fs=m:1+t:2,m:0+t:6,m:0+t:13,m:0+t:80,m:1+t:23")
+    @GET("http://20.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&np=1&fid=f3&fields=${FILED}&fs=m:1+t:2,m:0+t:6,m:0+t:13,m:0+t:80,m:1+t:23")
     suspend fun getRealTimeStocks():EMResponse
+//    @Streaming
+//    @GET("http://72.push2.eastmoney.com/api/qt/stock/details/sse?fields1=${FILED}&fields2=f51,f52,f53,f54,f55&mpi=1000&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&pos=-11&wbp2u=8678395952121844|0|1|0|web")
+//    suspend fun getRealTimeStockData(@Query("secid") secid:String ):ResponseBody
+
+
+    @Streaming
+    @GET("https://53.push2.eastmoney.com/api/qt/stock/trends2/sse?fields1=${FILED}&fields2=f51,f52,f53,f54,f55,f56,f57,f58&mpi=1000&ut=fa5fd1943c7b386f172d6893dbfba10b&ndays=1&iscr=0&iscca=0&wbp2u=8678395952121844|0|1|0|web")
+    suspend fun getRealTimeStockData(@Query("secid") secid:String ):ResponseBody
+
+
+
 
     //90.Bk0974
     @GET("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.000001&klt=101&fqt=1&lmt=66&end=20500000&iscca=1&fields1=f1,f2,f3,f4,f5,f6,f7,f8&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64&forcect=1")

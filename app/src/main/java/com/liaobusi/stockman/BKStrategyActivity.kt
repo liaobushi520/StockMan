@@ -14,11 +14,13 @@ import com.liaobusi.stockman.databinding.ActivityBkstrategyBinding
 import com.liaobusi.stockman.databinding.ItemStockBinding
 import com.liaobusi.stockman.databinding.LayoutPopupWindowBinding
 import com.liaobusi.stockman.db.Follow
+import com.liaobusi.stockman.db.Hide
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.repo.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.lang.StringBuilder
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -44,7 +46,7 @@ class BKStrategyActivity : AppCompatActivity() {
                 range = 5,
                 endTime = endTime,
                 averageDay = 5,
-                allowBelowCount = 0,
+                allowBelowCount = if (binding.onlyActiveRateCb.isChecked) 5 else 0,
                 divergeRate = 0.0 / 100,
             )
             updateUI(param)
@@ -63,7 +65,7 @@ class BKStrategyActivity : AppCompatActivity() {
                 range = 10,
                 endTime = endTime,
                 averageDay = 10,
-                allowBelowCount = 0,
+                allowBelowCount = if (binding.onlyActiveRateCb.isChecked) 10 else 0,
                 divergeRate = 0.0 / 100
             )
             updateUI(param)
@@ -83,13 +85,32 @@ class BKStrategyActivity : AppCompatActivity() {
                 range = 20,
                 endTime = endTime,
                 averageDay = 20,
-                allowBelowCount = 0,
+                allowBelowCount = if (binding.onlyActiveRateCb.isChecked) 20 else 0,
                 divergeRate = 0.0 / 100
             )
             updateUI(param)
             outputResult(param)
         }
 
+
+        binding.line30Btn.setOnClickListener {
+            binding.root.requestFocus()
+            val endTime =
+                binding.endTimeTv.editableText.toString().toIntOrNull()
+            if (endTime == null) {
+                Toast.makeText(this@BKStrategyActivity, "截止时间不合法", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            val param = Strategy7Param(
+                range = 30,
+                endTime = endTime,
+                averageDay = 30,
+                allowBelowCount = if (binding.onlyActiveRateCb.isChecked) 30 else 0,
+                divergeRate = 0.0 / 100
+            )
+            updateUI(param)
+            outputResult(param)
+        }
 
         binding.line60Btn.setOnClickListener {
             binding.root.requestFocus()
@@ -103,11 +124,39 @@ class BKStrategyActivity : AppCompatActivity() {
                 range = 60,
                 endTime = endTime,
                 averageDay = 60,
-                allowBelowCount = 0,
+                allowBelowCount = if (binding.onlyActiveRateCb.isChecked) 60 else 0,
                 divergeRate = 0.0 / 100
             )
             updateUI(param)
             outputResult(param)
+        }
+
+
+        binding.preBtn.setOnClickListener {
+            val c = binding.endTimeTv.editableText.toString()
+            val d = SimpleDateFormat("yyyyMMdd").parse(c)
+
+            val cal = Calendar.getInstance()
+            cal.apply { timeInMillis = d.time }
+                .add(Calendar.DAY_OF_MONTH, -1)
+
+            val s = SimpleDateFormat("yyyyMMdd").format(cal.time)
+            binding.endTimeTv.setText(s)
+            binding.chooseStockBtn.callOnClick()
+
+        }
+
+
+        binding.postBtn.setOnClickListener {
+            val c = binding.endTimeTv.editableText.toString()
+            val d = SimpleDateFormat("yyyyMMdd").parse(c)
+
+            val cal = Calendar.getInstance()
+            cal.apply { timeInMillis = d.time }
+                .add(Calendar.DAY_OF_MONTH, 1)
+            val s = SimpleDateFormat("yyyyMMdd").format(cal.time)
+            binding.endTimeTv.setText(s)
+            binding.chooseStockBtn.callOnClick()
         }
 
 
@@ -126,6 +175,13 @@ class BKStrategyActivity : AppCompatActivity() {
                 Toast.makeText(this@BKStrategyActivity, "查找区间不合法", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
+
+            if (binding.onlyActiveRateCb.isChecked) {
+                binding.divergeRateTv.setText("0.0")
+                binding.allowBelowCountTv.setText(timeRange.toString())
+            }
+
+
             val allowBelowCount =
                 binding.allowBelowCountTv.editableText.toString().toIntOrNull()
             if (allowBelowCount == null) {
@@ -214,8 +270,8 @@ class BKStrategyActivity : AppCompatActivity() {
 
 
             val newList = mutableListOf<BKResult>()
-
             r.forEach {
+
                 if (it.follow) {
                     newList.add(0, it)
                 } else {
@@ -225,7 +281,6 @@ class BKStrategyActivity : AppCompatActivity() {
             }
 
             r = newList
-
 
             var t = 0
             if (binding.conceptCb.isChecked) {
@@ -237,7 +292,23 @@ class BKStrategyActivity : AppCompatActivity() {
 
 
             binding.resultCount.text = "板块结果(${r.size}/${t})"
+
+            val bkCodes = StringBuilder()
             r.forEach { result ->
+                if (result.bk.code.startsWith("BK")) {
+                    bkCodes.append(result.bk.code + ",")
+                }
+
+            }
+            if (bkCodes.endsWith(",")) {
+                bkCodes.deleteAt(bkCodes.length - 1)
+            }
+
+
+
+            r.forEach { result ->
+
+
                 val itemBinding =
                     ItemStockBinding.inflate(LayoutInflater.from(Injector.context)).apply {
 
@@ -245,6 +316,9 @@ class BKStrategyActivity : AppCompatActivity() {
                             this.root.setBackgroundColor(0x33333333)
                         }
 
+                        if(result.hide){
+                            this.root.setBackgroundColor(0xffB0E0E6.toInt())
+                        }
 
 
                         this.stockName.text = result.bk.name
@@ -288,11 +362,19 @@ class BKStrategyActivity : AppCompatActivity() {
                                 if (result.follow) {
                                     followBtn.text = "取消关注"
                                 }
+                                if(result.hide){
+                                    hideBtn.text="取消隐藏"
+                                }
+
+
+
+                                val withAllBks = binding.withAllBksCb.isChecked
+                                val codes = if (withAllBks) bkCodes.toString() else result.bk.code
 
                                 ztrcBtn.setOnClickListener {
                                     Strategy2Activity.openZTRCStrategy(
                                         this@BKStrategyActivity,
-                                        result.bk.code,
+                                        codes,
                                         binding.endTimeTv.text.toString()
                                     )
                                 }
@@ -300,7 +382,7 @@ class BKStrategyActivity : AppCompatActivity() {
                                 ztxpBtn.setOnClickListener {
                                     Strategy1Activity.openZTXPStrategy(
                                         this@BKStrategyActivity,
-                                        result.bk.code,
+                                        codes,
                                         binding.endTimeTv.text.toString()
                                     )
                                 }
@@ -308,7 +390,7 @@ class BKStrategyActivity : AppCompatActivity() {
                                 jxqsBtn.setOnClickListener {
                                     Strategy4Activity.openJXQSStrategy(
                                         this@BKStrategyActivity,
-                                        result.bk.code,
+                                        codes,
                                         binding.endTimeTv.text.toString()
                                     )
                                 }
@@ -321,7 +403,7 @@ class BKStrategyActivity : AppCompatActivity() {
                                 dbhpBtn.setOnClickListener {
                                     Strategy6Activity.openDBHPStrategy(
                                         this@BKStrategyActivity,
-                                        result.bk.code,
+                                        codes,
                                         binding.endTimeTv.text.toString()
                                     )
                                 }
@@ -329,7 +411,7 @@ class BKStrategyActivity : AppCompatActivity() {
                                 ztqsBtn.setOnClickListener {
                                     Strategy7Activity.openZTQSStrategy(
                                         this@BKStrategyActivity,
-                                        result.bk.code,
+                                        codes,
                                         binding.endTimeTv.text.toString()
                                     )
                                 }
@@ -348,10 +430,23 @@ class BKStrategyActivity : AppCompatActivity() {
                                                 .insertFollow(Follow(result.bk.code, 2))
                                             output(list)
                                         }
-
                                     }
+                                }
 
-
+                                hideBtn.setOnClickListener {
+                                    pw.dismiss()
+                                    lifecycleScope.launch(Dispatchers.IO) {
+                                        if(result.hide){
+                                            result.hide = false
+                                            Injector.appDatabase.hideDao()
+                                                .deleteHide(Hide(result.bk.code, 2))
+                                        }else{
+                                            result.hide = true
+                                            Injector.appDatabase.hideDao()
+                                                .insertHide(Hide(result.bk.code, 2))
+                                        }
+                                        output(list)
+                                    }
                                 }
                             }
 

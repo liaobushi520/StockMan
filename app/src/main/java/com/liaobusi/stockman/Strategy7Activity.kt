@@ -5,16 +5,22 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
+import android.widget.PopupWindow
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.liaobusi.stockman.databinding.ActivityStrategy6Binding
 import com.liaobusi.stockman.databinding.ActivityStrategy7Binding
 import com.liaobusi.stockman.databinding.ItemStockBinding
+import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
+import com.liaobusi.stockman.db.Follow
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.repo.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.lang.StringBuilder
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -56,7 +62,7 @@ class Strategy7Activity : AppCompatActivity() {
         }
 
 
-        binding.softStockBtn.setOnClickListener {
+        binding.line5Btn.setOnClickListener {
             binding.root.requestFocus()
             val endTime =
                 binding.endTimeTv.editableText.toString().toIntOrNull()
@@ -67,22 +73,22 @@ class Strategy7Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy8Param(
                 startMarketTime = 19900101,
-                endMarketTime = if (fromBKStrategyActivity) today() else 20180101,
+                endMarketTime = if (fromBKStrategyActivity) today() else today(),
                 lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
-                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 30000000000.0,
+                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 30000000000000.0,
                 endTime = endTime,
                 bkList = bkList,
-                ztRange = 15,
+                ztRange = 10,
                 adjustTimeAfterZT = 2,
                 averageDay = 5,
-                divergeRate =0.01,
-                allowBelowCount = 10
+                divergeRate =0.00,
+                allowBelowCount = 0
             )
             updateUI(param)
             outputResult(param)
         }
 
-        binding.strictStockBtn.setOnClickListener {
+        binding.line10Btn.setOnClickListener {
             binding.root.requestFocus()
             val endTime =
                 binding.endTimeTv.editableText.toString().toIntOrNull()
@@ -93,19 +99,127 @@ class Strategy7Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy8Param(
                 startMarketTime = 19900101,
-                endMarketTime = if (fromBKStrategyActivity) today() else 20180101,
+                endMarketTime = if (fromBKStrategyActivity) today() else today(),
                 lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
-                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 30000000000.0,
+                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 30000000000000.0,
                 endTime = endTime,
                 bkList = bkList,
-                ztRange = 10,
-                adjustTimeAfterZT = 4,
-                averageDay = 5,
-                divergeRate = 0.01,
-                allowBelowCount = 1
+                ztRange = 15,
+                adjustTimeAfterZT = 5,
+                averageDay = 10,
+                divergeRate =0.00,
+                allowBelowCount = 0
             )
             updateUI(param)
             outputResult(param)
+        }
+
+
+
+        binding.line20Btn.setOnClickListener {
+            binding.root.requestFocus()
+            val endTime =
+                binding.endTimeTv.editableText.toString().toIntOrNull()
+            if (endTime == null) {
+                Toast.makeText(this@Strategy7Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            val bkList = checkBKInput() ?: return@setOnClickListener
+            val param = Strategy8Param(
+                startMarketTime = 19900101,
+                endMarketTime = if (fromBKStrategyActivity) today() else today(),
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
+                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 30000000000000.0,
+                endTime = endTime,
+                bkList = bkList,
+                ztRange = 25,
+                adjustTimeAfterZT = 10,
+                averageDay = 20,
+                divergeRate =0.00,
+                allowBelowCount = 0
+            )
+            updateUI(param)
+            outputResult(param)
+        }
+
+
+
+        binding.line30Btn.setOnClickListener {
+            binding.root.requestFocus()
+            val endTime =
+                binding.endTimeTv.editableText.toString().toIntOrNull()
+            if (endTime == null) {
+                Toast.makeText(this@Strategy7Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            val bkList = checkBKInput() ?: return@setOnClickListener
+            val param = Strategy8Param(
+                startMarketTime = 19900101,
+                endMarketTime = if (fromBKStrategyActivity) today() else today(),
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
+                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 30000000000000.0,
+                endTime = endTime,
+                bkList = bkList,
+                ztRange = 40,
+                adjustTimeAfterZT = 15,
+                averageDay = 30,
+                divergeRate =0.00,
+                allowBelowCount = 0
+            )
+            updateUI(param)
+            outputResult(param)
+        }
+
+
+        binding.line60Btn.setOnClickListener {
+            binding.root.requestFocus()
+            val endTime =
+                binding.endTimeTv.editableText.toString().toIntOrNull()
+            if (endTime == null) {
+                Toast.makeText(this@Strategy7Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            val bkList = checkBKInput() ?: return@setOnClickListener
+            val param = Strategy8Param(
+                startMarketTime = 19900101,
+                endMarketTime = if (fromBKStrategyActivity) today() else today(),
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
+                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 30000000000000.0,
+                endTime = endTime,
+                bkList = bkList,
+                ztRange = 60,
+                adjustTimeAfterZT = 30,
+                averageDay = 60,
+                divergeRate =0.00,
+                allowBelowCount = 0
+            )
+            updateUI(param)
+            outputResult(param)
+        }
+
+
+        binding.followBkCb.setOnCheckedChangeListener { buttonView, isChecked ->
+            if(isChecked){
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val followBKs = Injector.appDatabase.bkDao().getFollowedBKS()
+                    val sb = StringBuilder()
+                    followBKs.forEach {
+                        sb.append(it.code + ",")
+                    }
+                    var s = sb.dropLastWhile { it == ',' }
+                    if(s.isNullOrEmpty()){
+                        s="ALL"
+                    }
+                    launch(Dispatchers.Main) {
+                        binding.conceptAndBKTv.setText(s.toString())
+                        binding.chooseStockBtn.callOnClick()
+                    }
+                }
+            }else{
+                binding.conceptAndBKTv.setText("ALL")
+                binding.chooseStockBtn.callOnClick()
+            }
+
         }
 
 
@@ -219,6 +333,10 @@ class Strategy7Activity : AppCompatActivity() {
                 output(list)
             }
 
+            binding.firstZTCb.setOnCheckedChangeListener { compoundButton, b ->
+                output(list)
+            }
+
 
             binding.resultLL.removeAllViews()
             var r = list
@@ -226,13 +344,37 @@ class Strategy7Activity : AppCompatActivity() {
                 r = list.filter { return@filter !it.stock.code.startsWith("300") }
             }
 
-            binding.resultCount.text = "选股结果(${r.size})"
+            if(binding.firstZTCb.isChecked){
+                r=list.filter { return@filter it.ztCountInRange==1 }
+            }
+
+
+            val ztCount = list.count { it.nextDayZT }
+            binding.resultCount.text = "选股结果(${ztCount}/${r.size})"
+
+
+
+            val newList = mutableListOf<StockResult>()
+            r.forEach {
+                if (it.follow) {
+                    newList.add(0, it)
+                } else {
+                    newList.add(it)
+                }
+
+            }
+            r = newList
 
             r.forEach { result ->
                 val stock = result.stock
                 val itemBinding =
                     ItemStockBinding.inflate(LayoutInflater.from(Injector.context)).apply {
                         this.stockName.text = stock.name
+
+                        if (result.follow) {
+                            this.root.setBackgroundColor(0x33333333)
+                        }
+
                         if (result.nextDayZT) {
                             this.goodIv.visibility = View.VISIBLE
                         } else {
@@ -249,6 +391,56 @@ class Strategy7Activity : AppCompatActivity() {
                         root.setOnClickListener {
                             stock.openWeb(this@Strategy7Activity)
                         }
+
+
+                        var ev: MotionEvent? = null
+                        root.setOnTouchListener { view, motionEvent ->
+                            if (motionEvent.action == MotionEvent.ACTION_DOWN) {
+                                ev = motionEvent
+                            }
+                            return@setOnTouchListener false
+                        }
+
+                        root.setOnLongClickListener {
+                            val b =
+                                LayoutStockPopupWindowBinding.inflate(LayoutInflater.from(it.context))
+
+                            if (result.follow) {
+                                b.followBtn.text = "取消关注"
+                            }
+
+                            val pw = PopupWindow(
+                                b.root,
+                                ViewGroup.LayoutParams.WRAP_CONTENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT,
+                                true
+                            )
+
+                            b.followBtn.setOnClickListener {
+                                pw.dismiss()
+                                lifecycleScope.launch(Dispatchers.IO) {
+                                    if (result.follow) {
+                                        Injector.appDatabase.followDao()
+                                            .deleteFollow(Follow(result.stock.code, 1))
+                                        result.follow = false
+                                        output(list)
+                                    } else {
+                                        result.follow = true
+                                        Injector.appDatabase.followDao()
+                                            .insertFollow(Follow(result.stock.code, 1))
+                                        output(list)
+                                    }
+
+
+                                }
+
+                            }
+                            pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -300)
+                            return@setOnLongClickListener true
+                        }
+
+
+
                     }
                 binding.resultLL.addView(itemBinding.root)
             }

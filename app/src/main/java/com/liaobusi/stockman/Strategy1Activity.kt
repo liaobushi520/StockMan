@@ -28,6 +28,7 @@ import com.liaobusi.stockman.repo.StrategyResult
 import com.liaobusi.stockman.repo.toFormatText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.lang.StringBuilder
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -85,7 +86,7 @@ class Strategy1Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy1Param(
                 startMarketTime = 19910101,
-                endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
+                endMarketTime =if(fromBKStrategyActivity)  today()  else  today(),
                 lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
                 highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 100000000000000.0,
                 ztRange = 40,
@@ -113,7 +114,7 @@ class Strategy1Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy1Param(
                 startMarketTime = 19910101,
-                endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
+                endMarketTime =if(fromBKStrategyActivity)  today()  else  today(),
                 lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
                 highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 100000000000000.0,
                 ztRange = 100,
@@ -142,7 +143,7 @@ class Strategy1Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy1Param(
                 startMarketTime = 19910101,
-                endMarketTime =if(fromBKStrategyActivity)  today()  else  20180101,
+                endMarketTime =if(fromBKStrategyActivity)  today()  else  today(),
                 lowMarketValue =if(fromBKStrategyActivity) 0.0 else 1000000000.0,
                 highMarketValue =if(fromBKStrategyActivity) 100000000000000.0  else 100000000000000.0,
                 ztRange = 20,
@@ -160,6 +161,33 @@ class Strategy1Activity : AppCompatActivity() {
             outputResult(param)
         }
 
+
+        binding.preBtn.setOnClickListener {
+            val c = binding.endTimeTv.editableText.toString()
+            val d = SimpleDateFormat("yyyyMMdd").parse(c)
+
+            val cal= Calendar.getInstance()
+            cal.apply { timeInMillis = d.time }
+                .add(Calendar.DAY_OF_MONTH, -1)
+
+            val s = SimpleDateFormat("yyyyMMdd").format(cal.time)
+            binding.endTimeTv.setText(s)
+            binding.chooseStockBtn.callOnClick()
+
+        }
+
+
+        binding.postBtn.setOnClickListener {
+            val c = binding.endTimeTv.editableText.toString()
+            val d = SimpleDateFormat("yyyyMMdd").parse(c)
+
+            val cal= Calendar.getInstance()
+            cal.apply { timeInMillis = d.time }
+                .add(Calendar.DAY_OF_MONTH, 1)
+            val s = SimpleDateFormat("yyyyMMdd").format(cal.time)
+            binding.endTimeTv.setText(s)
+            binding.chooseStockBtn.callOnClick()
+        }
 
         binding.chooseStockBtn.setOnClickListener {
             binding.root.requestFocus()
@@ -264,6 +292,30 @@ class Strategy1Activity : AppCompatActivity() {
 
         }
 
+
+        binding.followBkCb.setOnCheckedChangeListener { buttonView, isChecked ->
+            if(isChecked){
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val followBKs = Injector.appDatabase.bkDao().getFollowedBKS()
+                    val sb = StringBuilder()
+                    followBKs.forEach {
+                        sb.append(it.code + ",")
+                    }
+                    var s = sb.dropLastWhile { it == ',' }
+                    if(s.isNullOrEmpty()){
+                        s="ALL"
+                    }
+                    launch(Dispatchers.Main) {
+                        binding.conceptAndBKTv.setText(s.toString())
+                        binding.chooseStockBtn.callOnClick()
+                    }
+                }
+            }else{
+                binding.conceptAndBKTv.setText("ALL")
+                binding.chooseStockBtn.callOnClick()
+            }
+
+        }
     }
 
     private fun updateUI(param: Strategy1Param) {

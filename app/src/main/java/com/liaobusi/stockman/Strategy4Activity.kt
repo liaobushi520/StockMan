@@ -2,7 +2,6 @@ package com.liaobusi.stockman
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -12,14 +11,19 @@ import android.widget.PopupWindow
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.liaobusi.stockman.databinding.ActivityStrategy4Binding
+import com.liaobusi.stockman.databinding.ItemFollowBinding
 import com.liaobusi.stockman.databinding.ItemStockBinding
-import com.liaobusi.stockman.databinding.LayoutPopupWindowBinding
 import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
+import com.liaobusi.stockman.db.BK
 import com.liaobusi.stockman.db.Follow
+import com.liaobusi.stockman.db.Stock
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.repo.*
 import kotlinx.coroutines.*
+import java.lang.StringBuilder
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -50,7 +54,7 @@ class Strategy4Activity : AppCompatActivity() {
         binding = ActivityStrategy4Binding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
 
-        supportActionBar?.title="均线强势"
+        supportActionBar?.title = "均线强势"
 
         var fromBKStrategyActivity = false
         if (intent.hasExtra("bk")) {
@@ -82,12 +86,12 @@ class Strategy4Activity : AppCompatActivity() {
             val param = Strategy4Param(
                 startMarketTime = 19910101,
                 endMarketTime = if (fromBKStrategyActivity) today() else today(),
-                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 100000000.0,
                 highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
                 range = 5,
                 endTime = endTime,
                 averageDay = 5,
-                allowBelowCount = 0,
+                allowBelowCount = if (binding.onlyActiveRateCb.isChecked) 5 else 0,
                 divergeRate = 0.00,
                 abnormalRange = 5,
                 abnormalRate = 2.0,
@@ -116,7 +120,7 @@ class Strategy4Activity : AppCompatActivity() {
                 range = 10,
                 endTime = endTime,
                 averageDay = 10,
-                allowBelowCount = 0,
+                allowBelowCount = if (binding.onlyActiveRateCb.isChecked) 10 else 0,
                 divergeRate = 0.00,
                 abnormalRange = 10,
                 abnormalRate = 2.0,
@@ -137,12 +141,40 @@ class Strategy4Activity : AppCompatActivity() {
             val param = Strategy4Param(
                 startMarketTime = 19910101,
                 endMarketTime = if (fromBKStrategyActivity) today() else today(),
-                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 100000000.0,
                 highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
                 range = 20,
                 endTime = endTime,
                 averageDay = 20,
-                allowBelowCount = 0,
+                allowBelowCount = if (binding.onlyActiveRateCb.isChecked) 20 else 0,
+                divergeRate = 0.00,
+                abnormalRange = 15,
+                abnormalRate = 2.0,
+                bkList = bkList
+            )
+            updateUI(param)
+            outputResult(param)
+        }
+
+
+        binding.line30Btn.setOnClickListener {
+            binding.root.requestFocus()
+            val endTime =
+                binding.endTimeTv.editableText.toString().toIntOrNull()
+            if (endTime == null) {
+                Toast.makeText(this@Strategy4Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            val bkList = checkBKInput() ?: return@setOnClickListener
+            val param = Strategy4Param(
+                startMarketTime = 19910101,
+                endMarketTime = if (fromBKStrategyActivity) today() else today(),
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 100000000.0,
+                highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
+                range = 30,
+                endTime = endTime,
+                averageDay = 30,
+                allowBelowCount = if (binding.onlyActiveRateCb.isChecked) 30 else 0,
                 divergeRate = 0.00,
                 abnormalRange = 15,
                 abnormalRate = 2.0,
@@ -165,12 +197,12 @@ class Strategy4Activity : AppCompatActivity() {
             val param = Strategy4Param(
                 startMarketTime = 19910101,
                 endMarketTime = if (fromBKStrategyActivity) today() else today(),
-                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 100000000.0,
                 highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
                 range = 60,
                 endTime = endTime,
                 averageDay = 60,
-                allowBelowCount = 0,
+                allowBelowCount = if (binding.onlyActiveRateCb.isChecked) 60 else 0,
                 divergeRate = 0.00,
                 abnormalRange = 20,
                 abnormalRate = 2.0,
@@ -180,10 +212,36 @@ class Strategy4Activity : AppCompatActivity() {
             outputResult(param)
         }
 
+        binding.preBtn.setOnClickListener {
+            val c = binding.endTimeTv.editableText.toString()
+            val d = SimpleDateFormat("yyyyMMdd").parse(c)
 
+            val cal = Calendar.getInstance()
+            cal.apply { timeInMillis = d.time }
+                .add(Calendar.DAY_OF_MONTH, -1)
+
+            val s = SimpleDateFormat("yyyyMMdd").format(cal.time)
+            binding.endTimeTv.setText(s)
+            binding.chooseStockBtn.callOnClick()
+
+        }
+
+
+        binding.postBtn.setOnClickListener {
+            val c = binding.endTimeTv.editableText.toString()
+            val d = SimpleDateFormat("yyyyMMdd").parse(c)
+
+            val cal = Calendar.getInstance()
+            cal.apply { timeInMillis = d.time }
+                .add(Calendar.DAY_OF_MONTH, 1)
+            val s = SimpleDateFormat("yyyyMMdd").format(cal.time)
+            binding.endTimeTv.setText(s)
+            binding.chooseStockBtn.callOnClick()
+        }
 
         binding.chooseStockBtn.setOnClickListener {
             binding.root.requestFocus()
+
 
             val endTime =
                 binding.endTimeTv.editableText.toString().toIntOrNull()
@@ -215,6 +273,12 @@ class Strategy4Activity : AppCompatActivity() {
                 Toast.makeText(this@Strategy4Activity, "查找区间不合法", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
+
+            if (binding.onlyActiveRateCb.isChecked) {
+                binding.divergeRateTv.setText("0.0")
+                binding.allowBelowCountTv.setText(timeRange.toString())
+            }
+
             val allowBelowCount =
                 binding.allowBelowCountTv.editableText.toString().toIntOrNull()
             if (allowBelowCount == null) {
@@ -261,7 +325,7 @@ class Strategy4Activity : AppCompatActivity() {
                 val list = StockRepo.strategy4(
                     startMarketTime = startMarketTime,
                     endMarketTime = endMarketTime,
-                    lowMarketValue = lowMarketValue * 100000000,
+                    lowMarketValue = lowMarketValue * 10000000,
                     highMarketValue = highMarketValue * 100000000,
                     range = timeRange,
                     endTime = endTime,
@@ -408,11 +472,36 @@ class Strategy4Activity : AppCompatActivity() {
                 })
 
                 val ll = l.subList(0, min(l.size, rankCount))
-                output(StrategyResult(ll, -1 ))
+                output(StrategyResult(ll, -1))
             }
 
 
         }
+
+        binding.followBkCb.setOnCheckedChangeListener { buttonView, isChecked ->
+            if (isChecked) {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val followBKs = Injector.appDatabase.bkDao().getFollowedBKS()
+                    val sb = StringBuilder()
+                    followBKs.forEach {
+                        sb.append(it.code + ",")
+                    }
+                    var s = sb.dropLastWhile { it == ',' }
+                    if (s.isNullOrEmpty()) {
+                        s = "ALL"
+                    }
+                    launch(Dispatchers.Main) {
+                        binding.conceptAndBKTv.setText(s.toString())
+                        binding.chooseStockBtn.callOnClick()
+                    }
+                }
+            } else {
+                binding.conceptAndBKTv.setText("ALL")
+                binding.chooseStockBtn.callOnClick()
+            }
+
+        }
+
 
     }
 
@@ -502,7 +591,10 @@ class Strategy4Activity : AppCompatActivity() {
             binding.gdrsCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 output(strategyResult)
             }
-            binding.resultLL.removeAllViews()
+
+            binding.noZTInRangeCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                output(strategyResult)
+            }
 
             var r = list
             r = mutableListOf<StockResult>().apply { addAll(r) }
@@ -516,6 +608,9 @@ class Strategy4Activity : AppCompatActivity() {
                 r = r.filter { return@filter it.cowBack }
             }
 
+            if (binding.noZTInRangeCb.isChecked) {
+                r = r.filter { return@filter it.ztCountInRange == 0 }
+            }
 
             if (binding.ztCountCb.isChecked) {
                 Collections.sort(r, kotlin.Comparator { v0, v1 ->
@@ -523,9 +618,9 @@ class Strategy4Activity : AppCompatActivity() {
                 })
             }
 
-            if(binding.gdrsCb.isChecked){
-                val c=binding.gdrsCountTv.text.toString().toIntOrNull()?:5
-                r= StockRepo.filterStockByGDRS(r,c)
+            if (binding.gdrsCb.isChecked) {
+                val c = binding.gdrsCountTv.text.toString().toIntOrNull() ?: 5
+                r = StockRepo.filterStockByGDRS(r, c)
             }
 
 
@@ -540,98 +635,153 @@ class Strategy4Activity : AppCompatActivity() {
             }
             r = newList
 
+            val strategyResult2 = StrategyResult(r, strategyResult.total)
+
 
             val ztCount = list.count { it.nextDayZT }
-            val s = if (strategyResult.total > 0 && r.isNotEmpty()) {
-                "拟合度${DecimalFormat("#.0").format(r.size * 100f / strategyResult.total)}%"
+            val s = if (strategyResult2.total > 0 && r.isNotEmpty()) {
+                "拟合度${DecimalFormat("#.0").format(r.size * 100f / strategyResult2.total)}%"
             } else ""
             binding.resultCount.text = "选股结果(${ztCount}/${r.size})  ${s}"
 
+            binding.rv.layoutManager = LinearLayoutManager(this@Strategy4Activity)
+            binding.rv.adapter = ResultAdapter(strategyResult2.stockResults.toMutableList())
+        }
+    }
 
-            r.forEach { result ->
+
+    inner class ResultAdapter(private val data:  MutableList<StockResult>) :
+        RecyclerView.Adapter<ResultAdapter.VH>() {
+
+
+        inner class VH(val binding: ItemStockBinding) : RecyclerView.ViewHolder(binding.root) {
+
+            fun bind(result: StockResult, position: Int) {
                 val stock = result.stock
-                val itemBinding =
-                    ItemStockBinding.inflate(LayoutInflater.from(Injector.context)).apply {
+                binding.apply {
+
+                    if (result.follow) {
+                        this.root.setBackgroundColor(0x33333333)
+                    } else {
+                        this.root.setBackgroundColor(0xffffffff.toInt())
+                    }
+
+                    this.stockName.text = stock.name
+                    val formatText = result.toFormatText()
+                    if (formatText.isNotEmpty()) {
+                        this.labelTv.visibility = View.VISIBLE
+                        this.labelTv.text = formatText
+                    } else {
+                        this.labelTv.visibility = View.INVISIBLE
+                    }
+
+                    if (result.activeRate > 2) {
+                        this.activeLabelTv.visibility = View.VISIBLE
+                        this.activeLabelTv.text = result.activeRate.toInt().toString()
+                    } else {
+                        this.activeLabelTv.visibility = View.INVISIBLE
+                    }
+
+                    this.goodIv.visibility =
+                        if (result.nextDayZT) View.VISIBLE else View.GONE
+                    root.setOnClickListener {
+                        stock.openWeb(this@Strategy4Activity)
+                    }
+
+                    var ev: MotionEvent? = null
+                    root.setOnTouchListener { view, motionEvent ->
+                        if (motionEvent.action == MotionEvent.ACTION_DOWN) {
+                            ev = motionEvent
+                        }
+                        return@setOnTouchListener false
+                    }
+
+                    root.setOnLongClickListener {
+                        val b =
+                            LayoutStockPopupWindowBinding.inflate(LayoutInflater.from(it.context))
 
                         if (result.follow) {
-                            this.root.setBackgroundColor(0x33333333)
+                            b.followBtn.text = "取消关注"
                         }
 
 
-                        this.stockName.text = stock.name
-                        val formatText = result.toFormatText()
-                        if (formatText.isNotEmpty()) {
-                            this.labelTv.visibility = View.VISIBLE
-                            this.labelTv.text = formatText
-                        } else {
-                            this.labelTv.visibility = View.INVISIBLE
-                        }
+                        val pw = PopupWindow(
+                            b.root,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            true
+                        )
 
-                        if (result.activeRate > 2) {
-                            this.activeLabelTv.visibility = View.VISIBLE
-                            this.activeLabelTv.text = result.activeRate.toInt().toString()
-                        } else {
-                            this.activeLabelTv.visibility = View.INVISIBLE
-                        }
+                        b.followBtn.setOnClickListener {
+                            pw.dismiss()
+                            lifecycleScope.launch(Dispatchers.IO) {
 
-                        this.goodIv.visibility =
-                            if (result.nextDayZT) View.VISIBLE else View.GONE
-                        root.setOnClickListener {
-                            stock.openWeb(this@Strategy4Activity)
-                        }
+                                val p=data.indexOf(result)
+                                if (result.follow) {
+                                    Injector.appDatabase.followDao()
+                                        .deleteFollow(Follow(result.stock.code, 1))
+
+                                    result.follow = false
 
 
-                        var ev: MotionEvent? = null
-                        root.setOnTouchListener { view, motionEvent ->
-                            if (motionEvent.action == MotionEvent.ACTION_DOWN) {
-                                ev = motionEvent
-                            }
-                            return@setOnTouchListener false
-                        }
-
-                        root.setOnLongClickListener {
-                            val b =
-                                LayoutStockPopupWindowBinding.inflate(LayoutInflater.from(it.context))
-
-                            if (result.follow) {
-                                b.followBtn.text = "取消关注"
-                            }
 
 
-                            val pw = PopupWindow(
-                                b.root,
-                                ViewGroup.LayoutParams.WRAP_CONTENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT,
-                                true
-                            )
 
-                            b.followBtn.setOnClickListener {
-                                pw.dismiss()
-                                lifecycleScope.launch(Dispatchers.IO) {
-                                    if (result.follow) {
-                                        Injector.appDatabase.followDao()
-                                            .deleteFollow(Follow(result.stock.code, 1))
-                                        result.follow = false
-                                        output(strategyResult)
-                                    } else {
-                                        result.follow = true
-                                        Injector.appDatabase.followDao()
-                                            .insertFollow(Follow(result.stock.code, 1))
-                                        output(strategyResult)
+                                    lifecycleScope.launch (Dispatchers.Main){
+
+
+                                        data.remove(result)
+                                        notifyItemRemoved(p)
+                                        delay(300)
+                                        data.add(itemCount-1,result)
+                                        notifyItemInserted(itemCount-1)
                                     }
+                                } else {
+                                    result.follow = true
+                                    Injector.appDatabase.followDao()
+                                        .insertFollow(Follow(result.stock.code, 1))
+                                    lifecycleScope.launch (Dispatchers.Main){
 
+
+                                        data.remove(result)
+                                        notifyItemRemoved(p)
+                                        delay(300)
+                                        data.add(0,result)
+                                        notifyItemInserted(0)
+
+
+                                    }
 
                                 }
 
+
                             }
-                            pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -300)
-                            return@setOnLongClickListener true
+
                         }
-
-
+                        pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -300)
+                        return@setOnLongClickListener true
                     }
-                binding.resultLL.addView(itemBinding.root)
+
+
+                }
+
+
             }
+
         }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+            return VH(ItemStockBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+        }
+
+        override fun getItemCount(): Int {
+            return data.size
+        }
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            holder.bind(data[position], position)
+        }
+
+
     }
 }

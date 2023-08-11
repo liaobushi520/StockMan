@@ -89,6 +89,15 @@
             android:text="策略八(涨停强势)"
             android:textColor="#fff" />
 
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/s9"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="#000f11"
+            android:text="策略八(底部起爆堆量)"
+            android:textColor="#fff" />
+
     </LinearLayout>
 
 
