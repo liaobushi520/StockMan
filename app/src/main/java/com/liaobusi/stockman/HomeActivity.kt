@@ -115,8 +115,8 @@ class HomeActivity : AppCompatActivity() {
                 StockRepo.getBKStocks()
                 StockRepo.getHistoryGDRS()
                 val r = StockRepo.getHistoryStocks(
-                    20220201,
-                    SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())).toInt()
+                    Date(System.currentTimeMillis()).before(180),
+                    today()
                 )
                 launch(Dispatchers.Main) {
                     if (!r) {
@@ -133,14 +133,20 @@ class HomeActivity : AppCompatActivity() {
 
             }
         }
+
         lifecycleScope.launch(Dispatchers.IO) {
+
             val d = Injector.appDatabase.stockDao()
             val h = Injector.appDatabase.historyStockDao()
             val bkStockDao = Injector.appDatabase.bkStockDao()
             val bkDao = Injector.appDatabase.bkDao()
 
+            h.getHistoryBefore("001299",20230101).forEach {
+                Log.e("XX",it.toString())
+            }
 
-            StockRepo.getRealTimeStockData("0.300059")
+
+           // StockRepo.getRealTimeStockData("0.300059")
             StockRepo.getRealTimeStocks()
             StockRepo.getRealTimeBKs()
 
@@ -156,6 +162,11 @@ class HomeActivity : AppCompatActivity() {
             }
             h.deleteErrorHistory()
 
+
+            StockRepo.getHistoryStocks(
+                Date(System.currentTimeMillis()).before(180),
+                today()
+            )
 
 
 
@@ -174,8 +185,7 @@ class HomeActivity : AppCompatActivity() {
 //            bkStockDao.getStocksByBKCode("BK0420").forEach {
 //                Log.e("XXX",it.toString())
 //            }
-            val today =
-                SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())).toInt()
+
 
 //            h.getHistoryBefore2("600975",20220812,1000).forEach {
 //                Log.e("DDD",it.toString())

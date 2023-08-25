@@ -349,6 +349,7 @@ object StockRepo {
             while (start <= allStock.size - 1) {
                 val sub = allStock.subList(start, end)
                 val codeBuild = StringBuilder()
+
                 sub.forEach {
                     codeBuild.append("cn_" + it.code + ",")
                 }
@@ -1529,6 +1530,7 @@ object StockRepo {
         }
 
 
+
         // val stocks=listOf( stockDao.getStockByCode("301056"))
         val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())
         val follows = Injector.appDatabase.followDao().getFollowStocks()
@@ -1540,6 +1542,7 @@ object StockRepo {
             )
 
             if (histories.size - averageDay < range) {
+                writeLog(it.code,"${it.name}历史记录不足")
                 return@compute null
             }
             var s = 0
