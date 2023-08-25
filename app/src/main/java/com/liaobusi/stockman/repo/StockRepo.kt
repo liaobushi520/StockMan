@@ -1658,13 +1658,20 @@ object StockRepo {
 
             val kLineSlopeRate = kLineSlopeRate3(histories.subList(0, range - 1))
 
+            var dd=0f
+            if(perTotalTurnOverRate>=perSampleTurnOverRate){
+                dd=perTotalTurnOverRate/perSampleTurnOverRate
+            }else{
+                dd=-perSampleTurnOverRate/perTotalTurnOverRate
+            }
+
 
             val activeRate =
-                (perTotalTurnOverRate/100 * 0.2f + (perTotalTurnOverRate-perSampleTurnOverRate) * 0.2f / perSampleTurnOverRate +   kLineSlopeRate * 0.3f + perSampleZTRate * 0.1f + chgDeviation  * 0.1f + totalAverageDiverge  * 0.1f)*100/range
+                (perTotalTurnOverRate/100 * 0.2f + dd/100 * 0.2f  +   kLineSlopeRate * 0.3f + perSampleZTRate * 0.1f + chgDeviation  * 0.1f + totalAverageDiverge  * 0.1f)*1000/range
 
             Log.i(
                 "股票超人",
-                "${it.name} ${histories.first().date}止${range}内平均换手率${perTotalTurnOverRate/100} , 换手率变化率${(perTotalTurnOverRate-perSampleTurnOverRate) / perSampleTurnOverRate} ,涨跌幅${kLineSlopeRate}  , 均线偏差${totalAverageDiverge}, 平均涨停概率${perSampleZTRate}  ,  与板块偏差$chgDeviation ，活跃度$activeRate "
+                "${it.name} ${histories.first().date}止${range}内平均换手率${perTotalTurnOverRate/100} , 换手率变化率${dd/100} ,涨跌幅${kLineSlopeRate}  , 均线偏差${totalAverageDiverge}, 平均涨停概率${perSampleZTRate}  ,  与板块偏差$chgDeviation ，活跃度$activeRate "
             )
 
             //放量异动
@@ -1852,9 +1859,17 @@ object StockRepo {
                     it.name + " ${bkLast.date}-${bkFirst.date} 板块涨跌幅$bkChg  大盘涨跌幅$dpChg 区间涨幅${bkChg - dpChg}"
                 )
 
+
+                var dd=0f
+                if(perTurnOverRate>=samplePerTurnoverRate){
+                    dd=perTurnOverRate/samplePerTurnoverRate
+                }else{
+                    dd=-samplePerTurnoverRate/perTurnOverRate
+                }
+
                 Log.i(
                     "股票超人",
-                    "${it.name} ${histories[0].date}止平均换手率${perTurnOverRate/100},换手率变化率${(perTurnOverRate-samplePerTurnoverRate) / samplePerTurnoverRate},涨跌幅${kLineSlopeRate},板块涨停率${zt},大盘差值${(bkChg - dpChg)}，在均线之上的概率${aboveRate}"
+                    "${it.name} ${histories[0].date}止平均换手率${perTurnOverRate/100},换手率变化率${dd/100},涨跌幅${kLineSlopeRate},板块涨停率${zt},大盘差值${(bkChg - dpChg)}，在均线之上的概率${aboveRate}"
                 )
 
 
@@ -1880,7 +1895,7 @@ object StockRepo {
                     dayang = dayang,
                     lianyangCount = lianyangCount,
                     highTurnOverRate = highTurnOverRate,
-                    activeRate = (kLineSlopeRate  * 0.3f + perTurnOverRate/100 * 0.2f + ((perTurnOverRate-samplePerTurnoverRate) / samplePerTurnoverRate) * 0.25f + zt * 0.1f + (bkChg - dpChg)  * 0.1f + aboveRate * 0.05f) * 500/range,
+                    activeRate = (kLineSlopeRate  * 0.3f + perTurnOverRate/100 * 0.25f + dd/100 * 0.2f + zt * 0.1f + (bkChg - dpChg)  * 0.1f + aboveRate * 0.05f) * 1000/range,
                     perZTRate = ztOne,
                     touchLine = touchLine,
                     follow = follows.filter { f -> f.code == it.code }.isNotEmpty(),

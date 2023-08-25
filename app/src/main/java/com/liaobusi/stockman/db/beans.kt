@@ -198,7 +198,8 @@ val HistoryStock.longUpShadow: Boolean
 @Database(
     entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class,BKStock::class,Follow::class,GDRS::class,Hide::class], version = 14,
     autoMigrations = [
-        AutoMigration(from = 13, to = 14)
+
+//        AutoMigration(from = 10, to = 14)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
