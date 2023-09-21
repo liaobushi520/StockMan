@@ -141,9 +141,6 @@ class HomeActivity : AppCompatActivity() {
             val bkStockDao = Injector.appDatabase.bkStockDao()
             val bkDao = Injector.appDatabase.bkDao()
 
-            h.getHistoryBefore("001299",20230101).forEach {
-                Log.e("XX",it.toString())
-            }
 
 
            // StockRepo.getRealTimeStockData("0.300059")
@@ -163,10 +160,7 @@ class HomeActivity : AppCompatActivity() {
             h.deleteErrorHistory()
 
 
-            StockRepo.getHistoryStocks(
-                Date(System.currentTimeMillis()).before(180),
-                today()
-            )
+
 
 
 

@@ -15,6 +15,7 @@
         android:theme="@style/Theme.StockMan"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
+
         <activity
             android:name=".SettingActivity"
             android:exported="false" />
@@ -67,8 +68,8 @@
             android:name=".Strategy1Activity"
             android:exported="true" />
     </application>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
 </manifest>

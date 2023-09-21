@@ -154,7 +154,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="  仅活跃比较" />
+                    android:text=" 仅活跃比较" />
 
                 <androidx.appcompat.widget.AppCompatCheckBox
                     android:id="@+id/onlyActiveRateCb"
@@ -162,6 +162,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
 
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" 取活跃度前20" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/active20Cb"
+                    android:checked="false"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
             </LinearLayout>
 
 

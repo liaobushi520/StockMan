@@ -1,7 +1,6 @@
 package com.liaobusi.stockman
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -9,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup.LayoutParams
 import android.widget.PopupWindow
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.liaobusi.stockman.databinding.ActivityBkstrategyBinding
 import com.liaobusi.stockman.databinding.ItemStockBinding
@@ -16,13 +16,17 @@ import com.liaobusi.stockman.databinding.LayoutPopupWindowBinding
 import com.liaobusi.stockman.db.Follow
 import com.liaobusi.stockman.db.Hide
 import com.liaobusi.stockman.db.openWeb
-import com.liaobusi.stockman.repo.*
+import com.liaobusi.stockman.repo.BKResult
+import com.liaobusi.stockman.repo.StockRepo
+import com.liaobusi.stockman.repo.Strategy7Param
+import com.liaobusi.stockman.repo.toFormatText
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import java.lang.StringBuilder
+import java.lang.Integer.min
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Collections
+import java.util.Date
 
 class BKStrategyActivity : AppCompatActivity() {
     private lateinit var binding: ActivityBkstrategyBinding
@@ -244,6 +248,8 @@ class BKStrategyActivity : AppCompatActivity() {
                 output(list)
             }
 
+
+
             binding.resultLL.removeAllViews()
             var r = list
             r = mutableListOf<BKResult>().apply { addAll(r) }
@@ -266,6 +272,38 @@ class BKStrategyActivity : AppCompatActivity() {
 
             if (!binding.tradeCb.isChecked) {
                 r = r.filter { it.bk.type != 0 }
+            }
+
+
+            val bkCodes = StringBuilder()
+            binding.active20Cb.setOnCheckedChangeListener { compoundButton, b ->
+                bkCodes.clear()
+                var l = r
+                if (binding.active20Cb.isChecked) {
+                    l = r.subList(0, min(r.size, 20))
+                }
+                l.forEach { result ->
+                    if (result.bk.code.startsWith("BK")) {
+                        bkCodes.append(result.bk.code + ",")
+                    }
+                }
+                if (bkCodes.endsWith(",")) {
+                    bkCodes.deleteAt(bkCodes.length - 1)
+                }
+            }
+
+
+            var l = r
+            if (binding.active20Cb.isChecked) {
+                l = r.subList(0, min(r.size, 20))
+            }
+            l.forEach { result ->
+                if (result.bk.code.startsWith("BK")) {
+                    bkCodes.append(result.bk.code + ",")
+                }
+            }
+            if (bkCodes.endsWith(",")) {
+                bkCodes.deleteAt(bkCodes.length - 1)
             }
 
 
@@ -293,16 +331,6 @@ class BKStrategyActivity : AppCompatActivity() {
 
             binding.resultCount.text = "板块结果(${r.size}/${t})"
 
-            val bkCodes = StringBuilder()
-            r.forEach { result ->
-                if (result.bk.code.startsWith("BK")) {
-                    bkCodes.append(result.bk.code + ",")
-                }
-
-            }
-            if (bkCodes.endsWith(",")) {
-                bkCodes.deleteAt(bkCodes.length - 1)
-            }
 
 
 
@@ -316,7 +344,7 @@ class BKStrategyActivity : AppCompatActivity() {
                             this.root.setBackgroundColor(0x33333333)
                         }
 
-                        if(result.hide){
+                        if (result.hide) {
                             this.root.setBackgroundColor(0xffB0E0E6.toInt())
                         }
 
@@ -362,10 +390,9 @@ class BKStrategyActivity : AppCompatActivity() {
                                 if (result.follow) {
                                     followBtn.text = "取消关注"
                                 }
-                                if(result.hide){
-                                    hideBtn.text="取消隐藏"
+                                if (result.hide) {
+                                    hideBtn.text = "取消隐藏"
                                 }
-
 
 
                                 val withAllBks = binding.withAllBksCb.isChecked
@@ -436,11 +463,11 @@ class BKStrategyActivity : AppCompatActivity() {
                                 hideBtn.setOnClickListener {
                                     pw.dismiss()
                                     lifecycleScope.launch(Dispatchers.IO) {
-                                        if(result.hide){
+                                        if (result.hide) {
                                             result.hide = false
                                             Injector.appDatabase.hideDao()
                                                 .deleteHide(Hide(result.bk.code, 2))
-                                        }else{
+                                        } else {
                                             result.hide = true
                                             Injector.appDatabase.hideDao()
                                                 .insertHide(Hide(result.bk.code, 2))
