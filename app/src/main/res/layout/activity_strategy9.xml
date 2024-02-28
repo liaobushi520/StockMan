@@ -8,7 +8,8 @@
     tools:context=".Strategy2Activity">
 
 
-    <ScrollView
+    <com.liaobusi.stockman.view.DelayScrollView
+        android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -113,14 +114,28 @@
 
                 <TextView
                     android:layout_width="wrap_content"
-                    android:text="天，起爆点换手率是前一天"
+                    android:text="天，起爆点量能是前"
+                    android:layout_height="wrap_content"/>
+
+                <EditText
+                    android:id="@+id/sampleDaysTv"
+                    android:layout_width="wrap_content"
+                    android:text="5"
+                    android:inputType="number"
+                    android:paddingEnd="10dp"
+                    android:layout_height="wrap_content"
+                    />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:text="天平均量能"
                     android:layout_height="wrap_content"/>
 
 
                 <EditText
                     android:id="@+id/explosionTurnoverRateRadioTv"
                     android:layout_width="wrap_content"
-                    android:text="3"
+                    android:text="4"
                     android:inputType="number"
                     android:paddingEnd="10dp"
                     android:layout_height="wrap_content"
@@ -149,7 +164,7 @@
                 <EditText
                     android:id="@+id/explosionDaysTv"
                     android:layout_width="wrap_content"
-                    android:text="7"
+                    android:text="2"
                     android:paddingEnd="10dp"
                     android:layout_height="wrap_content"
                     />
@@ -157,12 +172,12 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="天，每日放量不低于平均量能" />
+                    android:text="天，起爆后平均量能是起爆前" />
 
                 <EditText
-                    android:id="@+id/lowestTurnoverRadioTv"
+                    android:id="@+id/afterBeforeRadioTv"
                     android:layout_width="wrap_content"
-                    android:text="0.6"
+                    android:text="1.5"
                     android:paddingEnd="10dp"
                     android:layout_height="wrap_content"
                     />
@@ -181,16 +196,63 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
+
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="起爆后最大涨幅低于" />
+                    android:text="起爆后平均量能不能低于起爆点量能" />
+
+                <EditText
+                    android:id="@+id/afterRadioTv"
+                    android:layout_width="wrap_content"
+                    android:text="0.6"
+                    android:paddingEnd="10dp"
+                    android:layout_height="wrap_content"
+                    />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="倍" />
+
+            </LinearLayout>
+
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="起爆后最大跌幅高于" />
+
+
+                <EditText
+                    android:id="@+id/minIncreaseTv"
+                    android:layout_width="wrap_content"
+                    android:text="-5"
+                    android:inputType="number"
+                    android:paddingEnd="10dp"
+                    android:layout_height="wrap_content"
+                    />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="%,最大涨幅低于" />
+
 
 
                 <EditText
                     android:id="@+id/maxIncreaseTv"
                     android:layout_width="wrap_content"
-                    android:text="20"
+                    android:text="15"
+                    android:inputType="number"
                     android:paddingEnd="10dp"
                     android:layout_height="wrap_content"
                     />
@@ -203,6 +265,23 @@
             </LinearLayout>
 
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="排除爆量之后有涨停" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/exceptZTCb"
+                    android:checked="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -311,6 +390,7 @@
                 android:textColor="#000"
                 android:text="选股结果" />
 
+
             <LinearLayout
                 android:id="@+id/resultLL"
                 android:layout_width="match_parent"
@@ -319,10 +399,9 @@
             </LinearLayout>
 
 
-
         </LinearLayout>
 
 
-    </ScrollView>
+    </com.liaobusi.stockman.view.DelayScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

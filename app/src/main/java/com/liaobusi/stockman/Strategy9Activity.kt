@@ -2,6 +2,7 @@ package com.liaobusi.stockman
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -19,6 +20,7 @@ import com.liaobusi.stockman.repo.StockRepo
 import com.liaobusi.stockman.repo.StockResult
 import com.liaobusi.stockman.repo.toFormatText
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -32,7 +34,7 @@ class Strategy9Activity : AppCompatActivity() {
         binding = ActivityStrategy9Binding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
 
-        supportActionBar?.title = "底部超跌横盘"
+        supportActionBar?.title = "底部起爆堆量"
         if (intent.hasExtra("bk")) {
             val bk = intent.getStringExtra("bk")
             binding.conceptAndBKTv.setText(bk)
@@ -52,7 +54,7 @@ class Strategy9Activity : AppCompatActivity() {
             val c = binding.endTimeTv.editableText.toString()
             val d = SimpleDateFormat("yyyyMMdd").parse(c)
 
-            val cal= Calendar.getInstance()
+            val cal = Calendar.getInstance()
             cal.apply { timeInMillis = d.time }
                 .add(Calendar.DAY_OF_MONTH, -1)
 
@@ -63,11 +65,13 @@ class Strategy9Activity : AppCompatActivity() {
         }
 
 
+
+
         binding.postBtn.setOnClickListener {
             val c = binding.endTimeTv.editableText.toString()
             val d = SimpleDateFormat("yyyyMMdd").parse(c)
 
-            val cal= Calendar.getInstance()
+            val cal = Calendar.getInstance()
             cal.apply { timeInMillis = d.time }
                 .add(Calendar.DAY_OF_MONTH, 1)
             val s = SimpleDateFormat("yyyyMMdd").format(cal.time)
@@ -75,7 +79,10 @@ class Strategy9Activity : AppCompatActivity() {
             binding.chooseStockBtn.callOnClick()
         }
 
+        var job: Job?=null
+
         binding.chooseStockBtn.setOnClickListener {
+            job?.cancel()
             binding.root.requestFocus()
             val startMarketTime = binding.startMarketTime.editableText.toString().toIntOrNull()
             if (startMarketTime == null) {
@@ -109,6 +116,13 @@ class Strategy9Activity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            val sampleDays =
+                binding.sampleDaysTv.editableText.toString().toIntOrNull()
+            if (sampleDays == null) {
+                Toast.makeText(this@Strategy9Activity, "取样时间不合法", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
 
             val explosionDays =
                 binding.explosionDaysTv.editableText.toString().toIntOrNull()
@@ -126,10 +140,26 @@ class Strategy9Activity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            val lowestTurnoverRadio =
-                binding.lowestTurnoverRadioTv.editableText.toString().toFloatOrNull()
-            if (lowestTurnoverRadio == null) {
-                Toast.makeText(this@Strategy9Activity, "最低换手率不合法", Toast.LENGTH_LONG).show()
+            val afterBeforeRadio =
+                binding.afterBeforeRadioTv.editableText.toString().toFloatOrNull()
+            if (afterBeforeRadio == null) {
+                Toast.makeText(this@Strategy9Activity, "起爆点前后量能倍率最低不合法", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+
+            val afterRadio =
+                binding.afterRadioTv.editableText.toString().toFloatOrNull()
+            if (afterRadio == null) {
+                Toast.makeText(this@Strategy9Activity, "起爆后量能是起爆点倍率最低不合法", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+
+            val minIncrease =
+                binding.minIncreaseTv.editableText.toString().toFloatOrNull()
+            if (minIncrease == null) {
+                Toast.makeText(this@Strategy9Activity, "最低涨幅不合法", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
 
@@ -137,14 +167,14 @@ class Strategy9Activity : AppCompatActivity() {
             val maxIncrease =
                 binding.maxIncreaseTv.editableText.toString().toFloatOrNull()
             if (maxIncrease == null) {
-                Toast.makeText(this@Strategy9Activity, "最低涨幅不合法", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@Strategy9Activity, "最高涨幅不合法", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
 
 
             val bkList = checkBKInput() ?: return@setOnClickListener
 
-            lifecycleScope.launch(Dispatchers.IO) {
+            job = lifecycleScope.launch(Dispatchers.IO) {
                 val list = StockRepo.strategy9(
                     startMarketTime = startMarketTime,
                     endMarketTime = endMarketTime,
@@ -152,10 +182,13 @@ class Strategy9Activity : AppCompatActivity() {
                     highMarketValue = highMarketValue * 100000000,
                     range = timeRange,
                     endTime = endTime,
+                    minIncreaseAfterExplosion = minIncrease / 100,
                     maxIncreaseAfterExplosion = maxIncrease / 100,
                     explosionDays = explosionDays,
                     explosionTurnoverRateRadio = explosionTurnoverRateRadio,
-                    lowestTurnoverRadio = lowestTurnoverRadio,
+                    afterBeforeRadio = afterBeforeRadio,
+                    afterRadio = afterRadio,
+                    sampleDays = sampleDays,
                     bkList = bkList
                 )
                 output(list.stockResults)
@@ -172,10 +205,19 @@ class Strategy9Activity : AppCompatActivity() {
                 output(list)
             }
 
+
+            binding.exceptZTCb.setOnCheckedChangeListener { compoundButton, b ->
+                output(list)
+            }
+
             binding.resultLL.removeAllViews()
             var r = list
             if (!binding.changyebanCb.isChecked) {
                 r = list.filter { return@filter !it.stock.code.startsWith("300") }
+            }
+
+            if (binding.exceptZTCb.isChecked) {
+                r = r.filter { return@filter it.ztCountInRange == 0 }
             }
 
             val newList = mutableListOf<StockResult>()
@@ -190,9 +232,7 @@ class Strategy9Activity : AppCompatActivity() {
             r = newList
 
 
-
-
-            val ztCount = list.count { it.nextDayZT }
+            val ztCount = r.count { it.nextDayZT }
             binding.resultCount.text = "选股结果(${ztCount}/${r.size})"
 
             r.forEach { result ->
@@ -276,6 +316,8 @@ class Strategy9Activity : AppCompatActivity() {
                 binding.resultLL.addView(itemBinding.root)
             }
         }
+
+
     }
 
 

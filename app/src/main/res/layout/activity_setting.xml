@@ -10,6 +10,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:orientation="vertical"
+        android:layout_marginHorizontal="16dp"
         android:layout_height="match_parent">
 
         <LinearLayout
@@ -26,6 +27,33 @@
                 android:id="@+id/hideSwitch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="修复数据日期 "
+                />
+            <EditText
+                android:id="@+id/fixedDateEt"
+                android:layout_width="100dp"
+                android:text="20230908"
+                android:layout_height="wrap_content"/>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/fixDataBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="确定"
+                />
+
 
         </LinearLayout>
 

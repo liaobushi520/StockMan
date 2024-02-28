@@ -172,6 +172,8 @@ interface HistoryStockDao {
     @Query("select * from historystock where code=:code AND date >= :date order by date desc")
     fun getHistoryBefore(code: String, date: Int): List<HistoryStock>
 
+
+
     @Query("select * from historystock where code=:code AND date > :date order by date asc limit :limit")
     fun getHistoryBefore2(code: String, date: Int, limit: Int = 5): List<HistoryStock>
 

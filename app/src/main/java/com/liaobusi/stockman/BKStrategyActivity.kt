@@ -21,6 +21,7 @@ import com.liaobusi.stockman.repo.StockRepo
 import com.liaobusi.stockman.repo.Strategy7Param
 import com.liaobusi.stockman.repo.toFormatText
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.lang.Integer.min
 import java.text.SimpleDateFormat
@@ -164,9 +165,10 @@ class BKStrategyActivity : AppCompatActivity() {
         }
 
 
+        var job: Job?=null
         binding.chooseStockBtn.setOnClickListener {
+            job?.cancel()
             binding.root.requestFocus()
-
             val endTime =
                 binding.endTimeTv.editableText.toString().toIntOrNull()
             if (endTime == null) {
@@ -213,7 +215,7 @@ class BKStrategyActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            lifecycleScope.launch(Dispatchers.IO) {
+         job=  lifecycleScope.launch(Dispatchers.IO) {
                 val list = StockRepo.strategy7(
                     range = timeRange,
                     endTime = endTime,

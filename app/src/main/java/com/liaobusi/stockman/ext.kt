@@ -26,6 +26,7 @@ fun <T> List<T>.split(groupCount: Int = 3): List<List<T>> {
         start = end
 
     }
+
     return result.toList()
 }
 

@@ -16,7 +16,9 @@ import com.liaobusi.stockman.databinding.ActivityHomeBinding
 import com.liaobusi.stockman.db.specialBK
 import com.liaobusi.stockman.repo.StockRepo
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -134,12 +136,16 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
+
+
         lifecycleScope.launch(Dispatchers.IO) {
 
             val d = Injector.appDatabase.stockDao()
             val h = Injector.appDatabase.historyStockDao()
             val bkStockDao = Injector.appDatabase.bkStockDao()
             val bkDao = Injector.appDatabase.bkDao()
+
+
 
 
 
@@ -232,7 +238,9 @@ class HomeActivity : AppCompatActivity() {
 //
 //            h.deleteHistory(l)
 
-            //  StockRepo.getHistoryStocks( 20220805,20220812)
+
+           //修复数据
+           //   StockRepo.getHistoryStocks( 20230926,20230926)
 
 
         }

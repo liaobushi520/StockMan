@@ -239,10 +239,11 @@ class Strategy4Activity : AppCompatActivity() {
             binding.chooseStockBtn.callOnClick()
         }
 
+        var job:Job?=null
+
         binding.chooseStockBtn.setOnClickListener {
+            job?.cancel()
             binding.root.requestFocus()
-
-
             val endTime =
                 binding.endTimeTv.editableText.toString().toIntOrNull()
             if (endTime == null) {
@@ -321,7 +322,7 @@ class Strategy4Activity : AppCompatActivity() {
                 return@setOnClickListener
             }
             val bkList = checkBKInput() ?: return@setOnClickListener
-            lifecycleScope.launch(Dispatchers.IO) {
+            job= lifecycleScope.launch(Dispatchers.IO) {
                 val list = StockRepo.strategy4(
                     startMarketTime = startMarketTime,
                     endMarketTime = endMarketTime,
