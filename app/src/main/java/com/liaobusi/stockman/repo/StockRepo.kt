@@ -12,6 +12,7 @@ import com.liaobusi.stockman.api.StockTrend
 import com.liaobusi.stockman.before
 import com.liaobusi.stockman.compute
 import com.liaobusi.stockman.db.*
+import com.liaobusi.stockman.howDayShowZTFlag
 import com.liaobusi.stockman.isShowHiddenStockAndBK
 import com.liaobusi.stockman.writeLog
 import kotlinx.coroutines.*
@@ -114,6 +115,12 @@ data class Strategy8Param(
 
 
 object StockRepo {
+
+
+    suspend fun refreshData() {
+        getRealTimeStocks()
+        getRealTimeBKs()
+    }
 
 
     suspend fun filterStockByGDRS(stocks: List<StockResult>, count: Int): List<StockResult> =
@@ -337,12 +344,11 @@ object StockRepo {
         //[{"status":0,"hq":[["2022-08-02","13.31","13.82","1.26","10.03%","13.02","13.82","3294343","444015.31","20.89%"]],"code":"cn_000547"}]
         val dao = Injector.appDatabase.stockDao()
         val dao1 = Injector.appDatabase.historyStockDao()
-        // val allStock = dao.getAllStock()
         val allStock = dao.getAllStockByMarketTime(startDate).filter {
             return@filter true
         }
         var start = 0
-        val step = 50
+        val step = 1
         var end = min(start + step, allStock.size)
 
         try {
@@ -402,7 +408,7 @@ object StockRepo {
                     ).show()
                 }
 
-                start = end + 1
+                start = end
                 end = min(start + step, allStock.size)
             }
         } catch (e: Throwable) {
@@ -1374,7 +1380,7 @@ object StockRepo {
         afterRadio: Float = 0.8f,
         minIncreaseAfterExplosion: Float = 0.05f,
         maxIncreaseAfterExplosion: Float = 0.15f,
-        sampleDays:Int=5,
+        sampleDays: Int = 5,
         endTime: Int = 20230715,
         bkList: List<String>? = null
     ) = withContext(Dispatchers.IO) {
@@ -1401,7 +1407,7 @@ object StockRepo {
         }
 
 
-       // val stocks = listOf(stockDao.getStockByCode("600243"))
+        // val stocks = listOf(stockDao.getStockByCode("600243"))
         val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())
         val follows = Injector.appDatabase.followDao().getFollowStocks()
 
@@ -1419,22 +1425,22 @@ object StockRepo {
 
             var explosionIndex = -1
             var explosionBeforeTurnoverRate = 0.0
-            var activeRate=0.0
-            var r=0.0
+            var activeRate = 0.0
+            var r = 0.0
             run {
                 histories.subList(0, range).forEachIndexed here@{ index, current ->
 
                     var total = 0.0
-                    for (i in index + 1 until index + sampleDays+1) {
+                    for (i in index + 1 until index + sampleDays + 1) {
                         total += histories[i].turnoverRate
                     }
                     val averageTurnoverRate = total / sampleDays
                     if (current.turnoverRate / averageTurnoverRate > explosionTurnoverRateRadio && current.chg > 0) {
                         explosionIndex = index
                         explosionBeforeTurnoverRate = averageTurnoverRate
-                        r=current.turnoverRate / averageTurnoverRate
-                    }else{
-                        if(explosionIndex!=-1){
+                        r = current.turnoverRate / averageTurnoverRate
+                    } else {
+                        if (explosionIndex != -1) {
                             return@run
                         }
                     }
@@ -1455,7 +1461,7 @@ object StockRepo {
 
 
 
-            if ( explosionAfterTurnoverRate/explosionBeforeTurnoverRate < afterBeforeRadio) {
+            if (explosionAfterTurnoverRate / explosionBeforeTurnoverRate < afterBeforeRadio) {
                 Log.e(
                     "底部超跌横盘",
                     "${it.name}起爆后缩量, 平均换手率是之前${explosionAfterTurnoverRate / explosionBeforeTurnoverRate}倍"
@@ -1470,7 +1476,7 @@ object StockRepo {
             )
 
 
-            if ( explosionAfterTurnoverRate/histories[explosionIndex].turnoverRate < afterRadio) {
+            if (explosionAfterTurnoverRate / histories[explosionIndex].turnoverRate < afterRadio) {
                 Log.e(
                     "底部超跌横盘",
                     "${it.name}起爆后明显缩量 ${explosionAfterTurnoverRate / histories[explosionIndex].turnoverRate}"
@@ -1483,7 +1489,8 @@ object StockRepo {
                 "${it.name}起爆后量能是起爆点 ${explosionAfterTurnoverRate / histories[explosionIndex].turnoverRate}倍"
             )
 
-            activeRate= explosionAfterTurnoverRate/histories[explosionIndex].turnoverRate+explosionAfterTurnoverRate/explosionBeforeTurnoverRate+r
+            activeRate =
+                explosionAfterTurnoverRate / histories[explosionIndex].turnoverRate + explosionAfterTurnoverRate / explosionBeforeTurnoverRate + r
 
 
             val highestPrice = historyDao.getHistoryHighestPrice(
@@ -1499,7 +1506,7 @@ object StockRepo {
 
             if (histories[explosionIndex].closePrice * (1 + minIncreaseAfterExplosion) > lowestPrice) {
 
-                if(histories[explosionIndex].closePrice * (1 + minIncreaseAfterExplosion) > histories[0].closePrice){
+                if (histories[explosionIndex].closePrice * (1 + minIncreaseAfterExplosion) > histories[0].closePrice) {
                     Log.e(
                         "底部超跌横盘",
                         "跌幅过大--${it.name}区间涨幅${(lowestPrice - histories[explosionIndex].closePrice) * 100 / histories[explosionIndex].closePrice}%"
@@ -1512,7 +1519,7 @@ object StockRepo {
 
 
 
-            if (histories[explosionIndex ].closePrice * (1 + maxIncreaseAfterExplosion) < highestPrice) {
+            if (histories[explosionIndex].closePrice * (1 + maxIncreaseAfterExplosion) < highestPrice) {
                 Log.e(
                     "底部超跌横盘",
                     "涨幅过大--${it.name}区间涨幅${(highestPrice - histories[explosionIndex].closePrice) * 100 / histories[explosionIndex].closePrice}%"
@@ -1526,8 +1533,8 @@ object StockRepo {
 
 
             //爆量之后涨停数量
-            val list2 = historyDao.getHistoryRange(it.code, histories[explosionIndex].date,endTime)
-            val ztCountInRange=list2.count{
+            val list2 = historyDao.getHistoryRange(it.code, histories[explosionIndex].date, endTime)
+            val ztCountInRange = list2.count {
                 it.ZT
             }
 
@@ -1545,9 +1552,9 @@ object StockRepo {
 
         Collections.sort(result, kotlin.Comparator
         { v0, v1 ->
-            if(v1.activeRate - v0.activeRate==0.0f){
+            if (v1.activeRate - v0.activeRate == 0.0f) {
                 return@Comparator 0
-            }else if(v1.activeRate-v0.activeRate>0){
+            } else if (v1.activeRate - v0.activeRate > 0) {
                 return@Comparator 1
             }
             return@Comparator -1
@@ -1773,7 +1780,8 @@ object StockRepo {
             val cowBack = cowBack(histories)
 
 
-            val list = historyDao.getHistoryBefore2(it.code, endTime)
+            val list =
+                historyDao.getHistoryBefore2(it.code, endTime, howDayShowZTFlag(Injector.context))
             val hasZT = list.find { it.ZT } != null
 
             return@compute StockResult(
@@ -1833,7 +1841,7 @@ object StockRepo {
         val result = bks.filter { !it.specialBK }
             .compute(3) {
 
-                if(!this.isActive){
+                if (!this.isActive) {
                     return@compute null
                 }
 
@@ -2390,7 +2398,7 @@ data class StockResult(
     var follow: Boolean = false,
     var ztCountInRange: Int = 0,
 
-)
+    )
 
 data class StrategyResult(
     val stockResults: List<StockResult>,

@@ -143,7 +143,7 @@ data class HistoryStock(
 val HistoryStock.ZT: Boolean
     get() {
         if (this.ztPrice == -1f) {
-            if (this.code.startsWith("300") || this.code.startsWith("688")) {
+            if (this.code.startsWith("300") || this.code.startsWith("688")||this.code.startsWith("301")) {
                 return this.chg > 19
             } else {
                 return this.chg > 9.6
@@ -155,7 +155,7 @@ val HistoryStock.ZT: Boolean
 val HistoryStock.DT: Boolean
     get() {
         if (this.dtPrice == -1f) {
-            if (this.code.startsWith("300") || this.code.startsWith("688")) {
+            if (this.code.startsWith("300") || this.code.startsWith("688")||this.code.startsWith("301")) {
                 return this.chg < -19
             } else {
                 return this.chg < -9.6
@@ -166,7 +166,7 @@ val HistoryStock.DT: Boolean
 
 val HistoryStock.DY: Boolean
     get() {
-        if (this.code.startsWith("300") || this.code.startsWith("688")) {
+        if (this.code.startsWith("300") || this.code.startsWith("688")||this.code.startsWith("301")) {
             return this.chg >= 10
         } else {
             return this.chg >= 5

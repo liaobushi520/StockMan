@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -49,12 +51,33 @@ class Strategy4Activity : AppCompatActivity() {
     }
 
     private lateinit var binding: ActivityStrategy4Binding
+
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.page_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.refresh -> {
+                lifecycleScope.launch {
+                    StockRepo.refreshData()
+                }
+                return true
+            }
+
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityStrategy4Binding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
 
         supportActionBar?.title = "均线强势"
+
 
         var fromBKStrategyActivity = false
         if (intent.hasExtra("bk")) {
@@ -239,7 +262,7 @@ class Strategy4Activity : AppCompatActivity() {
             binding.chooseStockBtn.callOnClick()
         }
 
-        var job:Job?=null
+        var job: Job? = null
 
         binding.chooseStockBtn.setOnClickListener {
             job?.cancel()
@@ -322,7 +345,7 @@ class Strategy4Activity : AppCompatActivity() {
                 return@setOnClickListener
             }
             val bkList = checkBKInput() ?: return@setOnClickListener
-            job= lifecycleScope.launch(Dispatchers.IO) {
+            job = lifecycleScope.launch(Dispatchers.IO) {
                 val list = StockRepo.strategy4(
                     startMarketTime = startMarketTime,
                     endMarketTime = endMarketTime,
@@ -597,12 +620,22 @@ class Strategy4Activity : AppCompatActivity() {
                 output(strategyResult)
             }
 
+
+            binding.onlyZTCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                output(strategyResult)
+            }
+
             var r = list
             r = mutableListOf<StockResult>().apply { addAll(r) }
 
 
             if (!binding.changyebanCb.isChecked) {
                 r = r.filter { return@filter !it.stock.code.startsWith("300") }.toMutableList()
+            }
+
+
+            if(binding.onlyZTCb.isChecked){
+                r=r.filter { return@filter it.zt }
             }
 
             if (binding.cowBackCb.isChecked) {
@@ -639,7 +672,7 @@ class Strategy4Activity : AppCompatActivity() {
             val strategyResult2 = StrategyResult(r, strategyResult.total)
 
 
-            val ztCount = list.count { it.nextDayZT }
+            val ztCount = r.count { it.nextDayZT }
             val s = if (strategyResult2.total > 0 && r.isNotEmpty()) {
                 "拟合度${DecimalFormat("#.0").format(r.size * 100f / strategyResult2.total)}%"
             } else ""
@@ -651,7 +684,7 @@ class Strategy4Activity : AppCompatActivity() {
     }
 
 
-    inner class ResultAdapter(private val data:  MutableList<StockResult>) :
+    inner class ResultAdapter(private val data: MutableList<StockResult>) :
         RecyclerView.Adapter<ResultAdapter.VH>() {
 
 
@@ -717,7 +750,7 @@ class Strategy4Activity : AppCompatActivity() {
                             pw.dismiss()
                             lifecycleScope.launch(Dispatchers.IO) {
 
-                                val p=data.indexOf(result)
+                                val p = data.indexOf(result)
                                 if (result.follow) {
                                     Injector.appDatabase.followDao()
                                         .deleteFollow(Follow(result.stock.code, 1))
@@ -728,26 +761,26 @@ class Strategy4Activity : AppCompatActivity() {
 
 
 
-                                    lifecycleScope.launch (Dispatchers.Main){
+                                    lifecycleScope.launch(Dispatchers.Main) {
 
 
                                         data.remove(result)
                                         notifyItemRemoved(p)
                                         delay(300)
-                                        data.add(itemCount-1,result)
-                                        notifyItemInserted(itemCount-1)
+                                        data.add(itemCount - 1, result)
+                                        notifyItemInserted(itemCount - 1)
                                     }
                                 } else {
                                     result.follow = true
                                     Injector.appDatabase.followDao()
                                         .insertFollow(Follow(result.stock.code, 1))
-                                    lifecycleScope.launch (Dispatchers.Main){
+                                    lifecycleScope.launch(Dispatchers.Main) {
 
 
                                         data.remove(result)
                                         notifyItemRemoved(p)
                                         delay(300)
-                                        data.add(0,result)
+                                        data.add(0, result)
                                         notifyItemInserted(0)
 
 

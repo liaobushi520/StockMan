@@ -289,6 +289,34 @@ class Strategy2Activity : AppCompatActivity() {
 
 
         }
+
+
+        binding.preBtn.setOnClickListener {
+            val c = binding.endTimeTv.editableText.toString()
+            val d = SimpleDateFormat("yyyyMMdd").parse(c)
+
+            val cal = Calendar.getInstance()
+            cal.apply { timeInMillis = d.time }
+                .add(Calendar.DAY_OF_MONTH, -1)
+
+            val s = SimpleDateFormat("yyyyMMdd").format(cal.time)
+            binding.endTimeTv.setText(s)
+            binding.chooseStockBtn.callOnClick()
+
+        }
+
+
+        binding.postBtn.setOnClickListener {
+            val c = binding.endTimeTv.editableText.toString()
+            val d = SimpleDateFormat("yyyyMMdd").parse(c)
+
+            val cal = Calendar.getInstance()
+            cal.apply { timeInMillis = d.time }
+                .add(Calendar.DAY_OF_MONTH, 1)
+            val s = SimpleDateFormat("yyyyMMdd").format(cal.time)
+            binding.endTimeTv.setText(s)
+            binding.chooseStockBtn.callOnClick()
+        }
     }
 
     private fun checkBKInput(): List<String>? {
