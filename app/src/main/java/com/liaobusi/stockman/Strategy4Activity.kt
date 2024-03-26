@@ -716,8 +716,15 @@ class Strategy4Activity : AppCompatActivity() {
                         this.activeLabelTv.visibility = View.INVISIBLE
                     }
 
-                    this.goodIv.visibility =
-                        if (result.nextDayZT) View.VISIBLE else View.GONE
+                    this.goodIv.visibility = if (result.nextDayZT) View.VISIBLE else View.GONE
+
+
+                    this.cryIv.visibility= if (result.nextDayCry) View.VISIBLE else View.GONE
+
+
+
+
+
                     root.setOnClickListener {
                         stock.openWeb(this@Strategy4Activity)
                     }

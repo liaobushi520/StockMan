@@ -1783,6 +1783,12 @@ object StockRepo {
             val list =
                 historyDao.getHistoryBefore2(it.code, endTime, howDayShowZTFlag(Injector.context))
             val hasZT = list.find { it.ZT } != null
+            val first = list.firstOrNull()
+            var nextDayCry = false
+            if (first != null) {
+                nextDayCry = first.chg < -5
+            }
+
 
             return@compute StockResult(
                 it,
@@ -1795,6 +1801,7 @@ object StockRepo {
                 longUpShadow = longUpShadow,
                 cowBack = cowBack,
                 nextDayZT = hasZT,
+                nextDayCry = nextDayCry,
                 touchLine = touchLine,
                 activeRate = activeRate.toFloat(),
                 follow = follows.filter { f -> f.code == it.code }.isNotEmpty(),
@@ -2393,6 +2400,7 @@ data class StockResult(
     val hyAfterZT: Int = 0,
     //之后有涨停
     val nextDayZT: Boolean = false,
+    val nextDayCry: Boolean = false,
     //活跃度
     var activeRate: Float = 0f,
     var follow: Boolean = false,

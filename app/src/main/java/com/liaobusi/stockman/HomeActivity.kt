@@ -34,7 +34,11 @@ class HomeActivity : AppCompatActivity() {
             }
             R.id.action_setting->{
                  SettingActivity.startSettingActivity(this)
+                 return true
+            }
 
+            R.id.action_will_zt->{
+                WillZTActivity.startWillZTActivity(this)
                 return true
             }
         }

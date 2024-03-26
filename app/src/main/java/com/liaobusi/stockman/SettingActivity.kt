@@ -58,10 +58,18 @@ class SettingActivity : AppCompatActivity() {
             val date = binding.fixedDateEt.editableText?.toString()?.toIntOrNull()
             if (date != null) {
                 lifecycleScope.launch {
-                    StockRepo.getHistoryStocks(20230926, 20230926)
+                    StockRepo.getHistoryStocks(date, date)
                 }
             }
 
+        }
+
+
+        binding.autoRefresh.isChecked=sp.getBoolean("auto_refresh",false)
+
+        binding.autoRefresh.setOnCheckedChangeListener { buttonView, isChecked ->
+            sp.edit().putBoolean("auto_refresh", isChecked).apply()
+            Injector.autoRefresh(isChecked)
         }
 
 

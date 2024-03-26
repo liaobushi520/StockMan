@@ -6,6 +6,9 @@
     <item android:id="@+id/action_follow_list" android:title="关注列表"
         android:orderInCategory="100" app:showAsAction="never" />
 
+    <item android:id="@+id/action_will_zt" android:title="冲刺涨停"
+        android:orderInCategory="100" app:showAsAction="never" />
+
     <item android:id="@+id/action_setting" android:title="设置"
         android:orderInCategory="100" app:showAsAction="never" />
 

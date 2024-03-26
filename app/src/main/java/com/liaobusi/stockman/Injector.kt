@@ -8,7 +8,10 @@ import com.liaobusi.stockman.api.getOkHttpClientBuilder
 import com.liaobusi.stockman.db.AppDatabase
 import com.liaobusi.stockman.db.BK
 import com.liaobusi.stockman.db.specialBK
+import com.liaobusi.stockman.repo.StockRepo
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -60,6 +63,20 @@ object Injector {
             conceptBks = appDatabase.bkDao().getConceptBKs().filter { !it.specialBK }
         }
 
+    }
+
+    private var autoRefreshJob:Job?=null
+    fun autoRefresh(enable:Boolean){
+        autoRefreshJob?.cancel()
+        if(enable){
+           autoRefreshJob= GlobalScope.launch {
+                while (true){
+                    StockRepo.getRealTimeBKs()
+                    StockRepo.getRealTimeStocks()
+                    delay(5000)
+                }
+            }
+        }
     }
 
 

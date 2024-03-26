@@ -10,6 +10,9 @@ interface StockDao {
     @Query("select * from stock where code in ( select code from follow where type=1) order by chg DESC")
     fun getFollowedStocks():List<Stock>
 
+    @Query("select * from stock where  chg>8.5 order by chg ASC")
+    fun getWillZTStocks():List<Stock>
+
     @Query("select * from stock where toMarketTime < :endTime AND toMarketTime >:startTime AND circulationMarketValue <= :highMarketValue AND circulationMarketValue >= :lowMarketValue AND name not like '%ST%'  order by circulationMarketValue desc")
     fun getStock(
         startTime: Int,
