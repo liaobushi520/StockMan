@@ -21,6 +21,11 @@ fun howDayShowZTFlag(context: Context): Int {
     return sp.getInt("how_day_show_zt_flag", 1)
 }
 
+fun isShowLianBanFlag(context: Context):Boolean{
+    val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
+    return sp.getBoolean("show_lianban_count_flag",true)
+}
+
 class SettingActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingBinding
 
@@ -71,6 +76,14 @@ class SettingActivity : AppCompatActivity() {
             sp.edit().putBoolean("auto_refresh", isChecked).apply()
             Injector.autoRefresh(isChecked)
         }
+
+
+        binding.showLianbanCount.isChecked=sp.getBoolean("show_lianban_count_flag",true)
+
+        binding.showLianbanCount.setOnCheckedChangeListener { buttonView, isChecked ->
+            sp.edit().putBoolean("show_lianban_count_flag", isChecked).apply()
+        }
+
 
 
         binding.howDayShowZTFlagConfirmBtn.setOnClickListener {

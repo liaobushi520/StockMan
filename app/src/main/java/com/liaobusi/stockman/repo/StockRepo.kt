@@ -86,7 +86,8 @@ data class Strategy4Param(
     //异常放量区间
     val abnormalRange: Int = 20,
     val abnormalRate: Double = 3.0,
-    val bkList: List<String>? = null
+    val bkList: List<String>? = null,
+    val stockList: List<Stock>? = null
 )
 
 //板块强势
@@ -1580,14 +1581,19 @@ object StockRepo {
         //异常放量区间
         abnormalRange: Int = 20,
         abnormalRate: Double = 3.0,
-        bkList: List<String>? = null
+        bkList: List<String>? = null,
+        stockList: List<Stock>? = null
     ) = withContext(Dispatchers.IO) {
         val stockDao = Injector.appDatabase.stockDao()
         val historyDao = Injector.appDatabase.historyStockDao()
         val bkStockDao = Injector.appDatabase.bkStockDao()
 
+        val list = stockList?.filter {
+            (it.toMarketTime in startMarketTime..endMarketTime) && (it.circulationMarketValue in lowMarketValue..highMarketValue)
+        } ?: listOf()
+
         val stocks = if (bkList?.isNotEmpty() == true) {
-            bkList.flatMap { bkCode ->
+            (bkList.flatMap { bkCode ->
                 return@flatMap bkStockDao.getStocksByBKCode2(
                     bkCode,
                     startTime = startMarketTime,
@@ -1595,14 +1601,16 @@ object StockRepo {
                     lowMarketValue = lowMarketValue,
                     highMarketValue = highMarketValue
                 )
-            }.distinctBy { it.code }
+            } + list).distinctBy { it.code }
         } else {
-            stockDao.getStock(
-                startTime = startMarketTime,
-                endTime = endMarketTime,
-                lowMarketValue = lowMarketValue,
-                highMarketValue = highMarketValue
-            )
+            list.ifEmpty {
+                stockDao.getStock(
+                    startTime = startMarketTime,
+                    endTime = endMarketTime,
+                    lowMarketValue = lowMarketValue,
+                    highMarketValue = highMarketValue
+                )
+            }
         }
 
 
@@ -1670,6 +1678,20 @@ object StockRepo {
             //大阳线
             val dayang = histories[0].DY
             val zt = histories[0].ZT
+
+
+            //连扳数
+            var lianbanCount = 0
+            var stop = false
+            var i = 0
+            while (!stop&&i<histories.size) {
+                if (histories[i].ZT) {
+                    lianbanCount++
+                    i++
+                } else {
+                    stop = true
+                }
+            }
 
 
             var highest = 0.0f
@@ -1805,7 +1827,8 @@ object StockRepo {
                 touchLine = touchLine,
                 activeRate = activeRate.toFloat(),
                 follow = follows.filter { f -> f.code == it.code }.isNotEmpty(),
-                ztCountInRange = ztCount2
+                ztCountInRange = ztCount2,
+                lianbanCount =lianbanCount
             )
 
         }
@@ -2405,8 +2428,8 @@ data class StockResult(
     var activeRate: Float = 0f,
     var follow: Boolean = false,
     var ztCountInRange: Int = 0,
-
-    )
+    val lianbanCount: Int = 0
+)
 
 data class StrategyResult(
     val stockResults: List<StockResult>,

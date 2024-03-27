@@ -4,6 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_height="wrap_content">
 
+
+
     <TextView
         android:layout_width="wrap_content"
         android:id="@+id/stockName"
@@ -71,5 +73,24 @@
         android:background="#66333333"
         app:layout_constraintBottom_toBottomOf="parent"
         />
+
+
+
+
+       <TextView
+           android:id="@+id/lianbanCountFlagTv"
+           android:gravity="center"
+           android:layout_width="16dp"
+           android:layout_height="0dp"
+           app:layout_constraintTop_toTopOf="parent"
+           app:layout_constraintBottom_toBottomOf="parent"
+           app:layout_constraintStart_toStartOf="parent"
+           android:background="#ffff0000"
+           android:layout_gravity="center"
+           android:textColor="#444444"
+           android:textStyle="bold"
+           />
+
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

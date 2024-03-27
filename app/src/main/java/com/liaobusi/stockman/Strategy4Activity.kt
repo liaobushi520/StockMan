@@ -2,6 +2,8 @@ package com.liaobusi.stockman
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -11,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupWindow
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -105,6 +108,7 @@ class Strategy4Activity : AppCompatActivity() {
                 Toast.makeText(this@Strategy4Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
+
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy4Param(
                 startMarketTime = 19910101,
@@ -118,7 +122,8 @@ class Strategy4Activity : AppCompatActivity() {
                 divergeRate = 0.00,
                 abnormalRange = 5,
                 abnormalRate = 2.0,
-                bkList = bkList
+                bkList = bkList,
+                stockList = Injector.getSnapshot()
             )
             updateUI(param)
             outputResult(param)
@@ -147,7 +152,9 @@ class Strategy4Activity : AppCompatActivity() {
                 divergeRate = 0.00,
                 abnormalRange = 10,
                 abnormalRate = 2.0,
-                bkList = bkList
+                bkList = bkList,
+                stockList = Injector.getSnapshot()
+
             )
             updateUI(param)
             outputResult(param)
@@ -173,7 +180,9 @@ class Strategy4Activity : AppCompatActivity() {
                 divergeRate = 0.00,
                 abnormalRange = 15,
                 abnormalRate = 2.0,
-                bkList = bkList
+                bkList = bkList,
+                stockList = Injector.getSnapshot()
+
             )
             updateUI(param)
             outputResult(param)
@@ -201,7 +210,9 @@ class Strategy4Activity : AppCompatActivity() {
                 divergeRate = 0.00,
                 abnormalRange = 15,
                 abnormalRate = 2.0,
-                bkList = bkList
+                bkList = bkList,
+                stockList = Injector.getSnapshot()
+
             )
             updateUI(param)
             outputResult(param)
@@ -229,7 +240,9 @@ class Strategy4Activity : AppCompatActivity() {
                 divergeRate = 0.00,
                 abnormalRange = 20,
                 abnormalRate = 2.0,
-                bkList = bkList
+                bkList = bkList,
+                stockList = Injector.getSnapshot()
+
             )
             updateUI(param)
             outputResult(param)
@@ -358,12 +371,37 @@ class Strategy4Activity : AppCompatActivity() {
                     divergeRate = divergeRate / 100,
                     abnormalRange = abnormalRange,
                     abnormalRate = abnormalRate,
-                    bkList = bkList
+                    bkList = bkList,
+                    stockList = Injector.getSnapshot()
+
                 )
                 output(list)
             }
 
         }
+
+        if (Injector.getSnapshot().isNotEmpty()) {
+            binding.snapshotBtn.text = "取消快照"
+        } else {
+            binding.snapshotBtn.text = "保存当前快照"
+        }
+
+        binding.snapshotBtn.setOnClickListener {
+            if (binding.snapshotBtn.text.toString() == "保存当前快照") {
+                Injector.takeSnapshot(
+                    (binding.rv.adapter as? ResultAdapter)?.getStockList() ?: listOf()
+                )
+                binding.snapshotBtn.text = "取消快照"
+            } else {
+                Injector.deleteSnapshot()
+                binding.snapshotBtn.text = "保存当前快照"
+            }
+
+        }
+
+
+
+
         binding.startBtn.setOnClickListener {
 
             binding.root.requestFocus()
@@ -472,7 +510,8 @@ class Strategy4Activity : AppCompatActivity() {
                             divergeRate = divergeRate / 100,
                             abnormalRange = abnormalRange,
                             abnormalRate = abnormalRate,
-                            bkList = bkList
+                            bkList = bkList,
+                            stockList = Injector.getSnapshot()
                         )
                         return@async mutableListOf<StockResult>().apply {
                             addAll(r.stockResults)
@@ -560,7 +599,8 @@ class Strategy4Activity : AppCompatActivity() {
                 divergeRate = strictParam.divergeRate,
                 abnormalRate = strictParam.abnormalRate,
                 abnormalRange = strictParam.abnormalRange,
-                bkList = strictParam.bkList
+                bkList = strictParam.bkList,
+                stockList = strictParam.stockList
 
             )
             output(list)
@@ -604,7 +644,10 @@ class Strategy4Activity : AppCompatActivity() {
             binding.changyebanCb.setOnCheckedChangeListener { compoundButton, b ->
                 output(strategyResult)
             }
-            binding.ztCountCb.setOnCheckedChangeListener { compoundButton, b ->
+            binding.activityLevelCb.setOnCheckedChangeListener { compoundButton, b ->
+                if (b) {
+                    binding.ztPromotionCb.isChecked = false
+                }
                 output(strategyResult)
             }
 
@@ -625,6 +668,13 @@ class Strategy4Activity : AppCompatActivity() {
                 output(strategyResult)
             }
 
+            binding.ztPromotionCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.activityLevelCb.isChecked = false
+                }
+                output(strategyResult)
+            }
+
             var r = list
             r = mutableListOf<StockResult>().apply { addAll(r) }
 
@@ -634,8 +684,8 @@ class Strategy4Activity : AppCompatActivity() {
             }
 
 
-            if(binding.onlyZTCb.isChecked){
-                r=r.filter { return@filter it.zt }
+            if (binding.onlyZTCb.isChecked) {
+                r = r.filter { return@filter it.zt }
             }
 
             if (binding.cowBackCb.isChecked) {
@@ -646,7 +696,7 @@ class Strategy4Activity : AppCompatActivity() {
                 r = r.filter { return@filter it.ztCountInRange == 0 }
             }
 
-            if (binding.ztCountCb.isChecked) {
+            if (binding.activityLevelCb.isChecked) {
                 Collections.sort(r, kotlin.Comparator { v0, v1 ->
                     return@Comparator v1.activeRate.compareTo(v0.activeRate)
                 })
@@ -655,6 +705,10 @@ class Strategy4Activity : AppCompatActivity() {
             if (binding.gdrsCb.isChecked) {
                 val c = binding.gdrsCountTv.text.toString().toIntOrNull() ?: 5
                 r = StockRepo.filterStockByGDRS(r, c)
+            }
+
+            if (binding.ztPromotionCb.isChecked) {
+                r = r.filter { it.zt }.sortedByDescending { it.lianbanCount }
             }
 
 
@@ -679,17 +733,23 @@ class Strategy4Activity : AppCompatActivity() {
             binding.resultCount.text = "选股结果(${ztCount}/${r.size})  ${s}"
 
             binding.rv.layoutManager = LinearLayoutManager(this@Strategy4Activity)
-            binding.rv.adapter = ResultAdapter(strategyResult2.stockResults.toMutableList())
+            binding.rv.adapter = ResultAdapter(strategyResult2.stockResults.toMutableList(),binding.ztPromotionCb.isChecked)
         }
     }
 
 
-    inner class ResultAdapter(private val data: MutableList<StockResult>) :
+    inner class ResultAdapter(private val data: MutableList<StockResult>,private val ztPromotion:Boolean=false) :
         RecyclerView.Adapter<ResultAdapter.VH>() {
+
+
+        fun getStockList(): List<Stock> {
+            return data.map { it.stock }
+        }
 
 
         inner class VH(val binding: ItemStockBinding) : RecyclerView.ViewHolder(binding.root) {
 
+            @RequiresApi(Build.VERSION_CODES.O)
             fun bind(result: StockResult, position: Int) {
                 val stock = result.stock
                 binding.apply {
@@ -699,6 +759,30 @@ class Strategy4Activity : AppCompatActivity() {
                     } else {
                         this.root.setBackgroundColor(0xffffffff.toInt())
                     }
+
+
+                    if(ztPromotion|| isShowLianBanFlag(binding.root.context)){
+                        if (result.lianbanCount > 0) {
+                            binding.lianbanCountFlagTv.setBackgroundColor(
+                                Color.valueOf(
+                                    1f,
+                                    0f,
+                                    0f,
+                                    result.lianbanCount / 10f
+                                ).toArgb()
+                            )
+                            binding.lianbanCountFlagTv.visibility = View.VISIBLE
+                            binding.lianbanCountFlagTv.text = result.lianbanCount.toString()
+                        } else {
+                            binding.lianbanCountFlagTv.visibility = View.GONE
+                        }
+                    }else{
+                        binding.lianbanCountFlagTv.visibility = View.GONE
+                    }
+
+
+
+
 
                     this.stockName.text = stock.name
                     val formatText = result.toFormatText()
@@ -717,12 +801,7 @@ class Strategy4Activity : AppCompatActivity() {
                     }
 
                     this.goodIv.visibility = if (result.nextDayZT) View.VISIBLE else View.GONE
-
-
-                    this.cryIv.visibility= if (result.nextDayCry) View.VISIBLE else View.GONE
-
-
-
+                    this.cryIv.visibility = if (result.nextDayCry) View.VISIBLE else View.GONE
 
 
                     root.setOnClickListener {

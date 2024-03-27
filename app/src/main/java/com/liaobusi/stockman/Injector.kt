@@ -7,6 +7,7 @@ import androidx.room.Room
 import com.liaobusi.stockman.api.getOkHttpClientBuilder
 import com.liaobusi.stockman.db.AppDatabase
 import com.liaobusi.stockman.db.BK
+import com.liaobusi.stockman.db.Stock
 import com.liaobusi.stockman.db.specialBK
 import com.liaobusi.stockman.repo.StockRepo
 import kotlinx.coroutines.GlobalScope
@@ -65,18 +66,39 @@ object Injector {
 
     }
 
-    private var autoRefreshJob:Job?=null
-    fun autoRefresh(enable:Boolean){
+    private var autoRefreshJob: Job? = null
+
+    fun startAutoRefresh() {
+        val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
+        autoRefresh(sp.getBoolean("auto_refresh", false))
+    }
+
+    fun autoRefresh(enable: Boolean) {
         autoRefreshJob?.cancel()
-        if(enable){
-           autoRefreshJob= GlobalScope.launch {
-                while (true){
+        if (enable) {
+            autoRefreshJob = GlobalScope.launch {
+                while (true) {
                     StockRepo.getRealTimeBKs()
                     StockRepo.getRealTimeStocks()
-                    delay(5000)
+                    delay(10000)
                 }
             }
         }
+    }
+
+
+    private val snapshotList = mutableListOf<Stock>()
+    fun getSnapshot(): List<Stock> {
+        return snapshotList
+    }
+
+    fun deleteSnapshot() {
+        snapshotList.clear()
+    }
+
+    fun takeSnapshot(stocks: List<Stock>) {
+        snapshotList.clear()
+        snapshotList.addAll(stocks)
     }
 
 

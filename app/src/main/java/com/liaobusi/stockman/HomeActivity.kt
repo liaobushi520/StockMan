@@ -32,12 +32,13 @@ class HomeActivity : AppCompatActivity() {
                 FollowListActivity.startFollowListActivity(this)
                 return true
             }
-            R.id.action_setting->{
-                 SettingActivity.startSettingActivity(this)
-                 return true
+
+            R.id.action_setting -> {
+                SettingActivity.startSettingActivity(this)
+                return true
             }
 
-            R.id.action_will_zt->{
+            R.id.action_will_zt -> {
                 WillZTActivity.startWillZTActivity(this)
                 return true
             }
@@ -150,10 +151,7 @@ class HomeActivity : AppCompatActivity() {
             val bkDao = Injector.appDatabase.bkDao()
 
 
-
-
-
-           // StockRepo.getRealTimeStockData("0.300059")
+            // StockRepo.getRealTimeStockData("0.300059")
             StockRepo.getRealTimeStocks()
             StockRepo.getRealTimeBKs()
 
@@ -161,17 +159,20 @@ class HomeActivity : AppCompatActivity() {
             if (System.currentTimeMillis() - sp.getLong(
                     "fetch_bk_stocks_time",
                     0
-                ) > 5 * 24 * 60 * 60 * 1000
+                ) > 1 * 24 * 60 * 60 * 1000
             ) {
                 StockRepo.getBKStocks()
-                StockRepo.getHistoryGDRS()
                 sp.edit().putLong("fetch_bk_stocks_time", System.currentTimeMillis()).apply()
             }
-            h.deleteErrorHistory()
 
-
-
-
+            if (System.currentTimeMillis() - sp.getLong(
+                    "fetch_gdrs_time",
+                    0
+                ) > 5 * 24 * 60 * 60 * 1000
+            ) {
+                StockRepo.getHistoryGDRS()
+                sp.edit().putLong("fetch_gdrs_time", System.currentTimeMillis()).apply()
+            }
 
 
 //            bkStockDao.getStocksByBKCode("BK0438").forEach {
@@ -243,11 +244,14 @@ class HomeActivity : AppCompatActivity() {
 //            h.deleteHistory(l)
 
 
-           //修复数据
-           //   StockRepo.getHistoryStocks( 20230926,20230926)
+            //修复数据
+            //   StockRepo.getHistoryStocks( 20230926,20230926)
 
 
         }
+
+
+        Injector.startAutoRefresh()
 
     }
 }
