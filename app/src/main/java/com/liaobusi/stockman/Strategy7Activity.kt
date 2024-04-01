@@ -375,11 +375,15 @@ class Strategy7Activity : AppCompatActivity() {
                             this.root.setBackgroundColor(0x33333333)
                         }
 
-                        if (result.nextDayZT) {
-                            this.goodIv.visibility = View.VISIBLE
-                        } else {
-                            this.goodIv.visibility = View.GONE
+                        this.nextDayIv.visibility =
+                            if (result.nextDayZT || result.nextDayCry) View.VISIBLE else View.GONE
+                        if (result.nextDayCry) {
+                            this.nextDayIv.setImageResource(R.drawable.ic_cry)
                         }
+                        if (result.nextDayZT) {
+                            this.nextDayIv.setImageResource(R.drawable.ic_thumb_up)
+                        }
+
                         val formatText = result.toFormatText()
                         if (formatText.isNotEmpty()) {
                             this.labelTv.visibility = View.VISIBLE

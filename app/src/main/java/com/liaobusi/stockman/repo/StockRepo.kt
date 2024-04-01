@@ -1684,7 +1684,7 @@ object StockRepo {
             var lianbanCount = 0
             var stop = false
             var i = 0
-            while (!stop&&i<histories.size) {
+            while (!stop && i < histories.size) {
                 if (histories[i].ZT) {
                     lianbanCount++
                     i++
@@ -1706,6 +1706,7 @@ object StockRepo {
                     ztCount2++
                 }
             }
+
             //过前高信号
             val overPreHigh = histories[0].highest > highest
 
@@ -1828,7 +1829,8 @@ object StockRepo {
                 activeRate = activeRate.toFloat(),
                 follow = follows.filter { f -> f.code == it.code }.isNotEmpty(),
                 ztCountInRange = ztCount2,
-                lianbanCount =lianbanCount
+                lianbanCount = lianbanCount,
+                chg = histories[0].chg
             )
 
         }
@@ -2428,7 +2430,8 @@ data class StockResult(
     var activeRate: Float = 0f,
     var follow: Boolean = false,
     var ztCountInRange: Int = 0,
-    val lianbanCount: Int = 0
+    val lianbanCount: Int = 0,
+    val chg: Float = 0f
 )
 
 data class StrategyResult(

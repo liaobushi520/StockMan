@@ -26,6 +26,12 @@ fun isShowLianBanFlag(context: Context):Boolean{
     return sp.getBoolean("show_lianban_count_flag",true)
 }
 
+fun isShowCurrentChg(context: Context):Boolean{
+    val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
+    return sp.getBoolean("show_current_chg",false)
+}
+
+
 class SettingActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingBinding
 
@@ -76,6 +82,15 @@ class SettingActivity : AppCompatActivity() {
             sp.edit().putBoolean("auto_refresh", isChecked).apply()
             Injector.autoRefresh(isChecked)
         }
+
+
+        binding.showCurrentChg.isChecked=sp.getBoolean("show_current_chg",false)
+
+        binding.showCurrentChg.setOnCheckedChangeListener { buttonView, isChecked ->
+            sp.edit().putBoolean("show_current_chg", isChecked).apply()
+            Injector.autoRefresh(isChecked)
+        }
+
 
 
         binding.showLianbanCount.isChecked=sp.getBoolean("show_lianban_count_flag",true)

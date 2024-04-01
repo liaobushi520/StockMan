@@ -72,6 +72,15 @@
         <activity
             android:name=".Strategy1Activity"
             android:exported="true" />
+
+        <receiver android:name=".MyReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="TODO">
+            <intent-filter>
+                <action android:name="com.app.disable2"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

@@ -465,8 +465,16 @@ class Strategy1Activity : AppCompatActivity() {
                         } else {
                             this.labelTv.visibility = View.INVISIBLE
                         }
-                        this.goodIv.visibility =
-                            if (result.nextDayZT) View.VISIBLE else View.GONE
+
+                        this.nextDayIv.visibility =
+                            if (result.nextDayZT || result.nextDayCry) View.VISIBLE else View.GONE
+                        if (result.nextDayCry) {
+                            this.nextDayIv.setImageResource(R.drawable.ic_cry)
+                        }
+                        if (result.nextDayZT) {
+                            this.nextDayIv.setImageResource(R.drawable.ic_thumb_up)
+                        }
+
 
                         root.setOnClickListener {
                             stock.openWeb(this@Strategy1Activity)

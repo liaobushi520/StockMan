@@ -76,8 +76,15 @@ class Strategy2Activity : AppCompatActivity() {
                     ItemStockBinding.inflate(LayoutInflater.from(Injector.context)).apply {
                         this.stockName.text = result.stock.name
 
-                        this.goodIv.visibility =
-                            if (result.nextDayZT) View.VISIBLE else View.GONE
+                        this.nextDayIv.visibility =
+                            if (result.nextDayZT || result.nextDayCry) View.VISIBLE else View.GONE
+                        if (result.nextDayCry) {
+                            this.nextDayIv.setImageResource(R.drawable.ic_cry)
+                        }
+                        if (result.nextDayZT) {
+                            this.nextDayIv.setImageResource(R.drawable.ic_thumb_up)
+                        }
+
 
                         root.setOnClickListener {
                             result.stock.openWeb(this@Strategy2Activity)

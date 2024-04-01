@@ -241,11 +241,15 @@ class Strategy9Activity : AppCompatActivity() {
                     ItemStockBinding.inflate(LayoutInflater.from(Injector.context)).apply {
                         this.stockName.text = stock.name
                         val formatText = result.toFormatText()
-                        if (result.nextDayZT) {
-                            this.goodIv.visibility = View.VISIBLE
-                        } else {
-                            this.goodIv.visibility = View.GONE
+                        this.nextDayIv.visibility =
+                            if (result.nextDayZT || result.nextDayCry) View.VISIBLE else View.GONE
+                        if (result.nextDayCry) {
+                            this.nextDayIv.setImageResource(R.drawable.ic_cry)
                         }
+                        if (result.nextDayZT) {
+                            this.nextDayIv.setImageResource(R.drawable.ic_thumb_up)
+                        }
+
 
 
                         if (result.follow) {

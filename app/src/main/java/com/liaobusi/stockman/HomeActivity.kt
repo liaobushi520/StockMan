@@ -1,8 +1,11 @@
 package com.liaobusi.stockman
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -141,6 +144,11 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
+        registerReceiver(
+        MyReceiver(),IntentFilter("com.app.disable2"))
+
+
+
 
 
         lifecycleScope.launch(Dispatchers.IO) {
@@ -253,5 +261,15 @@ class HomeActivity : AppCompatActivity() {
 
         Injector.startAutoRefresh()
 
+
+
     }
+}
+
+class MyReceiver :BroadcastReceiver(){
+    override fun onReceive(context: Context?, intent: Intent?) {
+        Log.e("XXX","XXXX")
+        context!!.getPackageManager().setApplicationEnabledSetting(context!!.getPackageName(), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, 0);
+    }
+
 }

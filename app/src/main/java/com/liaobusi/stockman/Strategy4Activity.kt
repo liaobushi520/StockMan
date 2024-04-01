@@ -733,12 +733,18 @@ class Strategy4Activity : AppCompatActivity() {
             binding.resultCount.text = "选股结果(${ztCount}/${r.size})  ${s}"
 
             binding.rv.layoutManager = LinearLayoutManager(this@Strategy4Activity)
-            binding.rv.adapter = ResultAdapter(strategyResult2.stockResults.toMutableList(),binding.ztPromotionCb.isChecked)
+            binding.rv.adapter = ResultAdapter(
+                strategyResult2.stockResults.toMutableList(),
+                binding.ztPromotionCb.isChecked
+            )
         }
     }
 
 
-    inner class ResultAdapter(private val data: MutableList<StockResult>,private val ztPromotion:Boolean=false) :
+    inner class ResultAdapter(
+        private val data: MutableList<StockResult>,
+        private val ztPromotion: Boolean = false
+    ) :
         RecyclerView.Adapter<ResultAdapter.VH>() {
 
 
@@ -761,14 +767,14 @@ class Strategy4Activity : AppCompatActivity() {
                     }
 
 
-                    if(ztPromotion|| isShowLianBanFlag(binding.root.context)){
+                    if (ztPromotion || isShowLianBanFlag(binding.root.context)) {
                         if (result.lianbanCount > 0) {
                             binding.lianbanCountFlagTv.setBackgroundColor(
                                 Color.valueOf(
                                     1f,
                                     0f,
                                     0f,
-                                    result.lianbanCount / 10f
+                                    result.lianbanCount / 15f
                                 ).toArgb()
                             )
                             binding.lianbanCountFlagTv.visibility = View.VISIBLE
@@ -776,11 +782,24 @@ class Strategy4Activity : AppCompatActivity() {
                         } else {
                             binding.lianbanCountFlagTv.visibility = View.GONE
                         }
-                    }else{
+                    } else {
                         binding.lianbanCountFlagTv.visibility = View.GONE
                     }
 
 
+                    if (result.chg > 0) {
+                        currentChg.setTextColor(Color.RED)
+                    } else if (result.chg < 0) {
+                        currentChg.setTextColor(Color.GREEN)
+                    } else {
+                        currentChg.setTextColor(Color.GRAY)
+                    }
+                    currentChg.text =result.chg.toString()
+                    if (isShowCurrentChg(binding.root.context)) {
+                        currentChg.visibility = View.VISIBLE
+                    } else {
+                        currentChg.visibility = View.GONE
+                    }
 
 
 
@@ -800,8 +819,16 @@ class Strategy4Activity : AppCompatActivity() {
                         this.activeLabelTv.visibility = View.INVISIBLE
                     }
 
-                    this.goodIv.visibility = if (result.nextDayZT) View.VISIBLE else View.GONE
-                    this.cryIv.visibility = if (result.nextDayCry) View.VISIBLE else View.GONE
+
+                    this.nextDayIv.visibility =
+                        if (result.nextDayZT || result.nextDayCry) View.VISIBLE else View.INVISIBLE
+                    if (result.nextDayCry) {
+                        this.nextDayIv.setImageResource(R.drawable.ic_cry)
+                    }
+                    if (result.nextDayZT) {
+                        this.nextDayIv.setImageResource(R.drawable.ic_thumb_up)
+                    }
+
 
 
                     root.setOnClickListener {
@@ -843,13 +870,7 @@ class Strategy4Activity : AppCompatActivity() {
 
                                     result.follow = false
 
-
-
-
-
                                     lifecycleScope.launch(Dispatchers.Main) {
-
-
                                         data.remove(result)
                                         notifyItemRemoved(p)
                                         delay(300)
