@@ -154,23 +154,27 @@ object StockRepo {
         dao.getAllStock().forEach {
 
             val j = GlobalScope.async {
-                val marhetCode = if (it.marketCode() == 0) "SZ" else "SH"
-                val f = "(SECUCODE=\"${it.code}.${marhetCode}\")"
-                val response = api.getGDRS(f)
-                if (response.success) {
-                    val gdrss = response.result.data.mapIndexed { index, gdrsBean ->
-                        val date = SimpleDateFormat("yyyy-MM-dd").parse(gdrsBean.END_DATE)
-                        var s = gdrsBean.TOTAL_NUM_RATIO
-                        if (index != response.result.data.size - 1) {
-                            if (gdrsBean.TOTAL_NUM_RATIO == 0.0f && response.result.data[index + 1].HOLDER_TOTAL_NUM > 0) {
-                                s =
-                                    ((gdrsBean.HOLDER_TOTAL_NUM - response.result.data[index + 1].HOLDER_TOTAL_NUM).toFloat() / response.result.data[index + 1].HOLDER_TOTAL_NUM)
+                try {
+                    val marhetCode = if (it.marketCode() == 0) "SZ" else "SH"
+                    val f = "(SECUCODE=\"${it.code}.${marhetCode}\")"
+                    val response = api.getGDRS(f)
+                    if (response.success) {
+                        val gdrss = response.result.data.mapIndexed { index, gdrsBean ->
+                            val date = SimpleDateFormat("yyyy-MM-dd").parse(gdrsBean.END_DATE)
+                            var s = gdrsBean.TOTAL_NUM_RATIO
+                            if (index != response.result.data.size - 1) {
+                                if (gdrsBean.TOTAL_NUM_RATIO == 0.0f && response.result.data[index + 1].HOLDER_TOTAL_NUM > 0) {
+                                    s =
+                                        ((gdrsBean.HOLDER_TOTAL_NUM - response.result.data[index + 1].HOLDER_TOTAL_NUM).toFloat() / response.result.data[index + 1].HOLDER_TOTAL_NUM)
+                                }
                             }
+                            GDRS(gdrsBean.SECURITY_CODE, date.time, s, gdrsBean.HOLDER_TOTAL_NUM)
                         }
-                        GDRS(gdrsBean.SECURITY_CODE, date.time, s, gdrsBean.HOLDER_TOTAL_NUM)
-                    }
 
-                    gdrsDao.insert(gdrss)
+                        gdrsDao.insert(gdrss)
+                    }
+                }catch (e:Throwable){
+                    e.printStackTrace()
                 }
             }
             jobs.add(j)

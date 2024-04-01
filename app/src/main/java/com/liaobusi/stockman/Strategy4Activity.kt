@@ -143,7 +143,7 @@ class Strategy4Activity : AppCompatActivity() {
             val param = Strategy4Param(
                 startMarketTime = 19910101,
                 endMarketTime = if (fromBKStrategyActivity) today() else today(),
-                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 1000000000.0,
+                lowMarketValue = if (fromBKStrategyActivity) 0.0 else 100000000.0,
                 highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
                 range = 10,
                 endTime = endTime,
@@ -362,7 +362,7 @@ class Strategy4Activity : AppCompatActivity() {
                 val list = StockRepo.strategy4(
                     startMarketTime = startMarketTime,
                     endMarketTime = endMarketTime,
-                    lowMarketValue = lowMarketValue * 10000000,
+                    lowMarketValue = lowMarketValue * 100000000,
                     highMarketValue = highMarketValue * 100000000,
                     range = timeRange,
                     endTime = endTime,
@@ -671,8 +671,19 @@ class Strategy4Activity : AppCompatActivity() {
             binding.ztPromotionCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 if (isChecked) {
                     binding.activityLevelCb.isChecked = false
+                    binding.zhongjunCb.isChecked=false
                 }
                 output(strategyResult)
+            }
+
+
+            binding.zhongjunCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked){
+                    binding.ztPromotionCb.isChecked=false
+                    binding.activityLevelCb.isChecked=false
+                }
+                output(strategyResult)
+
             }
 
             var r = list
@@ -709,6 +720,10 @@ class Strategy4Activity : AppCompatActivity() {
 
             if (binding.ztPromotionCb.isChecked) {
                 r = r.filter { it.zt }.sortedByDescending { it.lianbanCount }
+            }
+
+            if (binding.zhongjunCb.isChecked){
+                r=r.filter { it.stock.circulationMarketValue>8000000000 }
             }
 
 

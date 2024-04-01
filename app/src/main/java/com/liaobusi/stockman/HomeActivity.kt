@@ -144,11 +144,6 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
-        registerReceiver(
-        MyReceiver(),IntentFilter("com.app.disable2"))
-
-
-
 
 
         lifecycleScope.launch(Dispatchers.IO) {
@@ -266,10 +261,4 @@ class HomeActivity : AppCompatActivity() {
     }
 }
 
-class MyReceiver :BroadcastReceiver(){
-    override fun onReceive(context: Context?, intent: Intent?) {
-        Log.e("XXX","XXXX")
-        context!!.getPackageManager().setApplicationEnabledSetting(context!!.getPackageName(), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, 0);
-    }
 
-}

@@ -67,9 +67,10 @@ class SettingActivity : AppCompatActivity() {
 
         binding.fixDataBtn.setOnClickListener {
             val date = binding.fixedDateEt.editableText?.toString()?.toIntOrNull()
-            if (date != null) {
+            val date2=binding.fixedDate2Et.editableText?.toString()?.toIntOrNull()
+            if (date != null&&date2!=null&&date2>=date) {
                 lifecycleScope.launch {
-                    StockRepo.getHistoryStocks(date, date)
+                    StockRepo.getHistoryStocks(date, date2)
                 }
             }
 
