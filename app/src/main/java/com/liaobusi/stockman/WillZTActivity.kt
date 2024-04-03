@@ -67,11 +67,9 @@ class WillZTFragment : Fragment() {
         lifecycleScope.launch(Dispatchers.IO) {
             while (true) {
                 StockRepo.getRealTimeStocks()
-
                 val willZtStocks = Injector.appDatabase.stockDao().getWillZTStocks()
-
-                launch (Dispatchers.Main){
-                    (binding.rv.adapter as WillZTAdapter).submitList((willZtStocks) as MutableList<Any>)
+                launch(Dispatchers.Main) {
+                    (binding.rv.adapter as WillZTAdapter).submitList((willZtStocks) as MutableList<Stock>)
                 }
                 delay(2000)
             }
@@ -80,41 +78,23 @@ class WillZTFragment : Fragment() {
         return binding.root
     }
 
-    inner class DiffCallback : DiffUtil.ItemCallback<Any>() {
-        override fun areItemsTheSame(oldItem: Any, newItem: Any): Boolean {
-
-            if (oldItem is Stock && newItem is Stock) {
-                return oldItem.code == newItem.code
-            }
-
-            if (oldItem is BK && newItem is BK) {
-                return oldItem.code == newItem.code
-            }
-
-            return false
-
+    inner class DiffCallback : DiffUtil.ItemCallback<Stock>() {
+        override fun areItemsTheSame(oldItem: Stock, newItem: Stock): Boolean {
+            return oldItem.code == newItem.code
         }
 
-        override fun areContentsTheSame(oldItem: Any, newItem: Any): Boolean {
-            if (oldItem is Stock && newItem is Stock) {
-                return oldItem.chg == newItem.chg && oldItem.price == newItem.price
-            }
-
-            if (oldItem is BK && newItem is BK) {
-                return oldItem.chg == newItem.chg && oldItem.price == newItem.price
-            }
-
-            return false
+        override fun areContentsTheSame(oldItem: Stock, newItem: Stock): Boolean {
+            return oldItem.chg == newItem.chg && oldItem.price == newItem.price
         }
 
     }
 
-    inner class WillZTAdapter : ListAdapter<Any, WillZTAdapter.VH>(DiffCallback()) {
+    inner class WillZTAdapter : ListAdapter<Stock, WillZTAdapter.VH>(DiffCallback()) {
 
 
         inner class VH(val binding: ItemWillZtBinding) : RecyclerView.ViewHolder(binding.root) {
 
-            fun bind(item: Any, position: Int) {
+            fun bind(item: Stock, position: Int) {
                 binding.chgTv.setTextColor(Color.BLACK)
                 if (item is Stock) {
                     binding.name.text = item.name
@@ -127,95 +107,6 @@ class WillZTFragment : Fragment() {
                     binding.root.setOnClickListener {
                         item.openWeb(it.context)
                     }
-
-                    var ev: MotionEvent? = null
-                    binding.root.setOnTouchListener { view, motionEvent ->
-                        if (motionEvent.action == MotionEvent.ACTION_DOWN) {
-                            ev = motionEvent
-                        }
-                        return@setOnTouchListener false
-                    }
-
-                    binding.root.setOnLongClickListener {
-                        val b =
-                            LayoutStockPopupWindowBinding.inflate(LayoutInflater.from(it.context))
-                        b.followBtn.text = "取消关注"
-                        val pw = PopupWindow(
-                            b.root,
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                            true
-                        )
-                        b.followBtn.setOnClickListener {
-                            pw.dismiss()
-                            lifecycleScope.launch(Dispatchers.IO) {
-                                Injector.appDatabase.followDao()
-                                    .deleteFollow(Follow(item.code, 1))
-                                launch(Dispatchers.Main) {
-                                    val newList = currentList.toMutableList().apply {
-                                        remove(item)
-                                    }
-                                    submitList(newList)
-                                }
-                            }
-
-                        }
-                        pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -300)
-                        return@setOnLongClickListener true
-                    }
-                }
-
-                if (item is BK) {
-                    binding.name.text = item.name
-                    binding.chgTv.text = item.chg.toString() + "%"
-
-
-                    if (item.chg > 0) {
-                        binding.chgTv.setTextColor(Color.RED)
-                    } else if (item.chg < 0) {
-                        binding.chgTv.setTextColor(Color.parseColor("#ff00ad43"))
-                    }
-
-                    binding.root.setOnClickListener {
-                        item.openWeb(it.context)
-                    }
-                    var ev: MotionEvent? = null
-                    binding.root.setOnTouchListener { view, motionEvent ->
-                        if (motionEvent.action == MotionEvent.ACTION_DOWN) {
-                            ev = motionEvent
-                        }
-                        return@setOnTouchListener false
-                    }
-
-                    binding.root.setOnLongClickListener {
-                        val b =
-                            LayoutStockPopupWindowBinding.inflate(LayoutInflater.from(it.context))
-                        b.followBtn.text = "取消关注"
-                        val pw = PopupWindow(
-                            b.root,
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                            true
-                        )
-                        b.followBtn.setOnClickListener {
-                            pw.dismiss()
-                            lifecycleScope.launch(Dispatchers.IO) {
-                                Injector.appDatabase.followDao()
-                                    .deleteFollow(Follow(item.code, 1))
-                                launch(Dispatchers.Main) {
-
-                                    val newList = currentList.toMutableList().apply {
-                                        remove(item)
-                                    }
-                                    submitList(newList)
-                                }
-                            }
-
-                        }
-                        pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -300)
-                        return@setOnLongClickListener true
-                    }
-
                 }
 
 

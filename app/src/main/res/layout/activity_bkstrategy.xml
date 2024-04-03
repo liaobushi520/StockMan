@@ -151,6 +151,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
 
+
+            </LinearLayout>
+
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -158,7 +169,7 @@
 
                 <androidx.appcompat.widget.AppCompatCheckBox
                     android:id="@+id/onlyActiveRateCb"
-                    android:checked="false"
+                    android:checked="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
 
@@ -173,58 +184,65 @@
                     android:checked="false"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" 涨停模式" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/ztModeCb"
+                    android:checked="false"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
             </LinearLayout>
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
+                <!--                <TextView-->
+                <!--                    android:layout_width="wrap_content"-->
+                <!--                    android:layout_height="wrap_content"-->
+                <!--                    android:text="抗跌" />-->
 
+                <!--                <androidx.appcompat.widget.AppCompatCheckBox-->
+                <!--                    android:id="@+id/kdCb"-->
+                <!--                    android:layout_width="wrap_content"-->
+                <!--                    android:layout_height="wrap_content"/>-->
 
-            <RadioGroup
-                android:id="@+id/cbGroup"
-                android:visibility="gone"
-                android:layout_width="wrap_content"
-                android:orientation="horizontal"
-                android:layout_height="wrap_content">
-
-                <androidx.appcompat.widget.AppCompatRadioButton
-                    android:id="@+id/s1Cb"
-                    android:text="策略1"
+                <TextView
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    android:text="活跃度" />
 
-                <androidx.appcompat.widget.AppCompatRadioButton
-                    android:id="@+id/s2Cb"
-                    android:text="策略2"
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/activeRateCb"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content" />
 
 
-                <androidx.appcompat.widget.AppCompatRadioButton
-                    android:id="@+id/s3Cb"
-                    android:text="策略3"
+                <TextView
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    android:text="涨幅排序" />
 
-                <androidx.appcompat.widget.AppCompatRadioButton
-                    android:id="@+id/s6Cb"
-                    android:text="策略6"
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/zfCb"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-
-                <androidx.appcompat.widget.AppCompatRadioButton
-                    android:id="@+id/s8Cb"
-                    android:text="策略8"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content" />
 
 
-                <androidx.appcompat.widget.AppCompatRadioButton
-                    android:id="@+id/dcCb"
-                    android:text="东财"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            </RadioGroup>
 
 
+
+
+
+
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -241,17 +259,6 @@
 <!--                    android:id="@+id/kdCb"-->
 <!--                    android:layout_width="wrap_content"-->
 <!--                    android:layout_height="wrap_content"/>-->
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="活跃度" />
-
-                <androidx.appcompat.widget.AppCompatCheckBox
-                    android:id="@+id/activeRateCb"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -282,7 +289,7 @@
 
                 <androidx.appcompat.widget.AppCompatCheckBox
                     android:id="@+id/withAllBksCb"
-                    android:checked="true"
+                    android:checked="false"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
 

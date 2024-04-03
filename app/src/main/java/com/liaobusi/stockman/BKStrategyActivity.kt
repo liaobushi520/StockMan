@@ -1,13 +1,18 @@
 package com.liaobusi.stockman
 
 import android.content.Intent
+import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup.LayoutParams
 import android.widget.PopupWindow
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.liaobusi.stockman.databinding.ActivityBkstrategyBinding
@@ -31,11 +36,38 @@ import java.util.Date
 
 class BKStrategyActivity : AppCompatActivity() {
     private lateinit var binding: ActivityBkstrategyBinding
+
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.page_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.refresh -> {
+                lifecycleScope.launch {
+                    StockRepo.refreshData()
+                    launch (Dispatchers.Main){
+                        binding.chooseStockBtn.callOnClick()
+                    }
+                }
+                return true
+            }
+
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityBkstrategyBinding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
         supportActionBar?.title = "板块强势"
+
+        Injector.bkZTCountMap.clear()
+
+
         binding.endTimeTv.setText(SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())))
 
         binding.line5Btn.setOnClickListener {
@@ -165,7 +197,7 @@ class BKStrategyActivity : AppCompatActivity() {
         }
 
 
-        var job: Job?=null
+        var job: Job? = null
         binding.chooseStockBtn.setOnClickListener {
             job?.cancel()
             binding.root.requestFocus()
@@ -215,7 +247,7 @@ class BKStrategyActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-         job=  lifecycleScope.launch(Dispatchers.IO) {
+            job = lifecycleScope.launch(Dispatchers.IO) {
                 val list = StockRepo.strategy7(
                     range = timeRange,
                     endTime = endTime,
@@ -231,6 +263,7 @@ class BKStrategyActivity : AppCompatActivity() {
 
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun output(list: List<BKResult>) {
         lifecycleScope.launch(Dispatchers.Main) {
 
@@ -239,6 +272,9 @@ class BKStrategyActivity : AppCompatActivity() {
 //            }
 
             binding.activeRateCb.setOnCheckedChangeListener { compoundButton, b ->
+                if (b) {
+                    binding.zfCb.isChecked = false
+                }
                 output(list)
             }
 
@@ -247,6 +283,20 @@ class BKStrategyActivity : AppCompatActivity() {
             }
 
             binding.tradeCb.setOnCheckedChangeListener { compoundButton, b ->
+                output(list)
+            }
+
+            binding.zfCb.setOnCheckedChangeListener { compoundButton, b ->
+                if (b) {
+                    binding.activeRateCb.isChecked = false
+                }
+                output(list)
+            }
+
+
+
+
+            binding.ztModeCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 output(list)
             }
 
@@ -262,11 +312,27 @@ class BKStrategyActivity : AppCompatActivity() {
 //                }
 //            }
 
+
+            if (binding.ztModeCb.isChecked) {
+                r = r.filter { it.ztCount > 0 }
+                Collections.sort(r, kotlin.Comparator { v0, v1 ->
+                    return@Comparator v1.ztCount.compareTo(v0.ztCount)
+                })
+            }
+
             if (binding.activeRateCb.isChecked) {
                 Collections.sort(r, kotlin.Comparator { v0, v1 ->
                     return@Comparator v1.activeRate.compareTo(v0.activeRate)
                 })
             }
+
+            if (binding.zfCb.isChecked) {
+                Collections.sort(r, kotlin.Comparator { v0, v1 ->
+                    return@Comparator v1.chg.compareTo(v0.chg)
+                })
+            }
+
+
 
             if (!binding.conceptCb.isChecked) {
                 r = r.filter { it.bk.type != 1 }
@@ -275,6 +341,7 @@ class BKStrategyActivity : AppCompatActivity() {
             if (!binding.tradeCb.isChecked) {
                 r = r.filter { it.bk.type != 0 }
             }
+
 
 
             val bkCodes = StringBuilder()
@@ -373,6 +440,43 @@ class BKStrategyActivity : AppCompatActivity() {
                                 ev = motionEvent
                             }
                             return@setOnTouchListener false
+                        }
+
+
+
+
+
+                        if (result.chg > 0) {
+                            currentChg.setTextColor(Color.RED)
+                        } else if (result.chg < 0) {
+                            currentChg.setTextColor(Color.GREEN)
+                        } else {
+                            currentChg.setTextColor(Color.GRAY)
+                        }
+                        currentChg.text = result.chg.toString()
+                        if (isShowCurrentChg(binding.root.context)) {
+                            currentChg.visibility = View.VISIBLE
+                        } else {
+                            currentChg.visibility = View.GONE
+                        }
+
+                        if (binding.ztModeCb.isChecked) {
+                            if (result.ztCount > 0) {
+                                lianbanCountFlagTv.setBackgroundColor(
+                                    Color.valueOf(
+                                        1f,
+                                        0f,
+                                        0f,
+                                        result.ztCount / 15f
+                                    ).toArgb()
+                                )
+                                lianbanCountFlagTv.visibility = View.VISIBLE
+                                lianbanCountFlagTv.text = result.ztCount.toString()
+                            } else {
+                                lianbanCountFlagTv.visibility = View.GONE
+                            }
+                        } else {
+                            lianbanCountFlagTv.visibility = View.GONE
                         }
 
                         root.setOnLongClickListener {
@@ -484,57 +588,7 @@ class BKStrategyActivity : AppCompatActivity() {
                         }
 
                         root.setOnClickListener {
-                            val cbId = binding.cbGroup.checkedRadioButtonId
-
-                            when (cbId) {
-                                R.id.s1Cb -> {
-                                    Strategy1Activity.openZTXPStrategy(
-                                        this@BKStrategyActivity,
-                                        result.bk.code,
-                                        binding.endTimeTv.text.toString()
-                                    )
-                                }
-
-                                R.id.s2Cb -> {
-                                    Strategy2Activity.openZTRCStrategy(
-                                        this@BKStrategyActivity,
-                                        result.bk.code,
-                                        binding.endTimeTv.text.toString()
-                                    )
-                                }
-
-                                R.id.s3Cb -> {
-                                    Strategy4Activity.openJXQSStrategy(
-                                        this@BKStrategyActivity,
-                                        result.bk.code,
-                                        binding.endTimeTv.text.toString()
-                                    )
-                                }
-
-                                R.id.s6Cb -> {
-                                    val i = Intent(
-                                        this@BKStrategyActivity,
-                                        Strategy6Activity::class.java
-                                    ).apply {
-                                        putExtra("bk", result.bk.code)
-                                    }
-                                    startActivity(i)
-                                }
-
-                                R.id.s8Cb -> {
-                                    Strategy7Activity.openZTQSStrategy(
-                                        this@BKStrategyActivity,
-                                        result.bk.code,
-                                        binding.endTimeTv.text.toString()
-                                    )
-                                }
-
-                                else -> {
-                                    result.bk.openWeb(this@BKStrategyActivity)
-                                }
-
-                            }
-
+                            result.bk.openWeb(this@BKStrategyActivity)
                         }
                     }
                 binding.resultLL.addView(itemBinding.root)

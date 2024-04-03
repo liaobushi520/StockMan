@@ -173,7 +173,7 @@ object StockRepo {
 
                         gdrsDao.insert(gdrss)
                     }
-                }catch (e:Throwable){
+                } catch (e: Throwable) {
                     e.printStackTrace()
                 }
             }
@@ -353,7 +353,7 @@ object StockRepo {
             return@filter true
         }
         var start = 0
-        val step = 1
+        val step = 5
         var end = min(start + step, allStock.size)
 
         try {
@@ -443,26 +443,32 @@ object StockRepo {
     }
 
 
-    private fun getBKZTRate(bk: BK, date: Int, days: Int = 5): Float {
+    private fun getBKZTRate(bk: BK, date: Int, days: Int = 5): Pair<Int, Float> {
         val historyStockDao = Injector.appDatabase.historyStockDao()
         val bkStockDao = Injector.appDatabase.bkStockDao()
         var ztTotal = 0f
         val stocks = bkStockDao.getStocksByBKCode(bk.code)
         stocks.forEach {
-            val list = historyStockDao.getHistoryAfter2(it.code, date, days)
-            val c = list.count { it.ZT }
-            ztTotal += c
-            Log.i(
-                "股票超人",
-                "板块${bk.name}-${bk.code} 股票${it.name}-${it.code}--近${days}内有${c}次涨停"
-            )
-
+            val key = it.code + date + days
+            val value = Injector.bkZTCountMap[key]
+            if (value != null) {
+                ztTotal += value
+            } else {
+                val list = historyStockDao.getHistoryAfter2(it.code, date, days)
+                val c = list.count { it.ZT }
+                Injector.bkZTCountMap[key] = c
+                ztTotal += c
+                Log.i(
+                    "股票超人",
+                    "板块${bk.name}-${bk.code} 股票${it.name}-${it.code}--近${days}内有${c}次涨停"
+                )
+            }
         }
         Log.i(
             "股票超人",
             "板块${bk.name}-${bk.code}--${date}--近${days}内有${ztTotal}次涨停，板块内股票涨停概率${ztTotal / (days * stocks.size)}"
         )
-        return ztTotal / (days * stocks.size)
+        return Pair(ztTotal.toInt(), ztTotal / (days * stocks.size))
     }
 
 
@@ -2014,12 +2020,14 @@ object StockRepo {
                     dayang = dayang,
                     lianyangCount = lianyangCount,
                     highTurnOverRate = highTurnOverRate,
-                    activeRate = (kLineSlopeRate * 0.3f + perTurnOverRate / 100 * 0.25f + dd / 100 * 0.2f + zt * 0.1f + (bkChg - dpChg) * 0.1f + aboveRate * 0.05f) * 1000 / range,
-                    perZTRate = ztOne,
+                    activeRate = (kLineSlopeRate * 0.3f + perTurnOverRate / 100 * 0.25f + dd / 100 * 0.2f + zt.second * 0.1f + (bkChg - dpChg) * 0.1f + aboveRate * 0.05f) * 1000 / range,
+                    perZTRate = ztOne.second,
                     touchLine = touchLine,
                     follow = follows.filter { f -> f.code == it.code }.isNotEmpty(),
                     hide = if (isShowHiddenStockAndBK) hides.filter { f -> f.code == it.code }
-                        .isNotEmpty() else false
+                        .isNotEmpty() else false,
+                    chg = histories[0].chg,
+                    ztCount = ztOne.first
                 )
 
             }
@@ -2362,9 +2370,12 @@ data class BKResult(
     //板块涨停率
     var perZTRate: Float = 0f,
 
+
     val touchLine: Boolean = false,
     var follow: Boolean = false,
-    var hide: Boolean = false
+    var hide: Boolean = false,
+    val chg: Float,
+    val ztCount: Int
 )
 
 val BKResult.signalCount: Int

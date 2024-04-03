@@ -333,21 +333,45 @@
                 android:layout_height="wrap_content"/>
 
         </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="创业板" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/changyebanCb"
+                    android:checked="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="北交所" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/bjsCb"
+                    android:checked="false"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+
+
+            </LinearLayout>
+
+
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="创业板" />
-
-            <androidx.appcompat.widget.AppCompatCheckBox
-                android:id="@+id/changyebanCb"
-                android:checked="true"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
 
             <TextView
                 android:layout_width="wrap_content"
@@ -356,6 +380,7 @@
 
             <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/activityLevelCb"
+                android:checked="true"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
 
@@ -417,7 +442,7 @@
 
             <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/onlyActiveRateCb"
-                android:checked="false"
+                android:checked="true"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
 

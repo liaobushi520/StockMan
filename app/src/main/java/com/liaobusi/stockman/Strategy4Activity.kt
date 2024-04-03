@@ -66,6 +66,9 @@ class Strategy4Activity : AppCompatActivity() {
             R.id.refresh -> {
                 lifecycleScope.launch {
                     StockRepo.refreshData()
+                    launch (Dispatchers.Main){
+                        binding.chooseStockBtn.callOnClick()
+                    }
                 }
                 return true
             }
@@ -644,6 +647,11 @@ class Strategy4Activity : AppCompatActivity() {
             binding.changyebanCb.setOnCheckedChangeListener { compoundButton, b ->
                 output(strategyResult)
             }
+
+            binding.bjsCb.setOnCheckedChangeListener { compoundButton, b ->
+                output(strategyResult)
+            }
+
             binding.activityLevelCb.setOnCheckedChangeListener { compoundButton, b ->
                 if (b) {
                     binding.ztPromotionCb.isChecked = false
@@ -672,6 +680,7 @@ class Strategy4Activity : AppCompatActivity() {
                 if (isChecked) {
                     binding.activityLevelCb.isChecked = false
                     binding.zhongjunCb.isChecked=false
+                    binding.onlyActiveRateCb.isChecked=true
                 }
                 output(strategyResult)
             }
@@ -680,7 +689,8 @@ class Strategy4Activity : AppCompatActivity() {
             binding.zhongjunCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 if (isChecked){
                     binding.ztPromotionCb.isChecked=false
-                    binding.activityLevelCb.isChecked=false
+                    binding.activityLevelCb.isChecked=true
+                    binding.onlyActiveRateCb.isChecked=false
                 }
                 output(strategyResult)
 
@@ -694,6 +704,9 @@ class Strategy4Activity : AppCompatActivity() {
                 r = r.filter { return@filter !it.stock.code.startsWith("300") }.toMutableList()
             }
 
+            if (!binding.bjsCb.isChecked) {
+                r = r.filter { return@filter !it.stock.code.startsWith("831") }.toMutableList()
+            }
 
             if (binding.onlyZTCb.isChecked) {
                 r = r.filter { return@filter it.zt }

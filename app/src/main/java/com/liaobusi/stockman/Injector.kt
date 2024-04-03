@@ -18,6 +18,9 @@ import kotlinx.coroutines.launch
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.time.LocalDateTime
+import java.util.Calendar
+import java.util.Date
 
 val log = StringBuilder()
 
@@ -78,9 +81,17 @@ object Injector {
         if (enable) {
             autoRefreshJob = GlobalScope.launch {
                 while (true) {
-                    StockRepo.getRealTimeBKs()
-                    StockRepo.getRealTimeStocks()
-                    delay(10000)
+                    val cal= Calendar.getInstance().apply {
+                        time=Date()
+                    }
+                    val hour=cal.get(Calendar.HOUR_OF_DAY)
+                    if(hour in 9..13){
+                        StockRepo.getRealTimeBKs()
+                        StockRepo.getRealTimeStocks()
+                        delay(10000)
+                    }else{
+                        delay(1000*60*6)
+                    }
                 }
             }
         }
@@ -100,6 +111,8 @@ object Injector {
         snapshotList.clear()
         snapshotList.addAll(stocks)
     }
+
+    val bkZTCountMap = mutableMapOf<String, Int>()
 
 
 }

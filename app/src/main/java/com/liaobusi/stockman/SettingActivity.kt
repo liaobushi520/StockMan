@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import androidx.lifecycle.lifecycleScope
 import com.liaobusi.stockman.databinding.ActivitySettingBinding
 import com.liaobusi.stockman.repo.StockRepo
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 
@@ -69,7 +70,7 @@ class SettingActivity : AppCompatActivity() {
             val date = binding.fixedDateEt.editableText?.toString()?.toIntOrNull()
             val date2=binding.fixedDate2Et.editableText?.toString()?.toIntOrNull()
             if (date != null&&date2!=null&&date2>=date) {
-                lifecycleScope.launch {
+                GlobalScope.launch {
                     StockRepo.getHistoryStocks(date, date2)
                 }
             }
