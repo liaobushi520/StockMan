@@ -66,7 +66,7 @@ class Strategy4Activity : AppCompatActivity() {
             R.id.refresh -> {
                 lifecycleScope.launch {
                     StockRepo.refreshData()
-                    launch (Dispatchers.Main){
+                    launch(Dispatchers.Main) {
                         binding.chooseStockBtn.callOnClick()
                     }
                 }
@@ -679,18 +679,22 @@ class Strategy4Activity : AppCompatActivity() {
             binding.ztPromotionCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 if (isChecked) {
                     binding.activityLevelCb.isChecked = false
-                    binding.zhongjunCb.isChecked=false
-                    binding.onlyActiveRateCb.isChecked=true
+                    binding.zhongjunCb.isChecked = false
+                    binding.onlyActiveRateCb.isChecked = true
                 }
+                output(strategyResult)
+            }
+
+            binding.stCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 output(strategyResult)
             }
 
 
             binding.zhongjunCb.setOnCheckedChangeListener { buttonView, isChecked ->
-                if (isChecked){
-                    binding.ztPromotionCb.isChecked=false
-                    binding.activityLevelCb.isChecked=true
-                    binding.onlyActiveRateCb.isChecked=false
+                if (isChecked) {
+                    binding.ztPromotionCb.isChecked = false
+                    binding.activityLevelCb.isChecked = true
+                    binding.onlyActiveRateCb.isChecked = false
                 }
                 output(strategyResult)
 
@@ -706,6 +710,10 @@ class Strategy4Activity : AppCompatActivity() {
 
             if (!binding.bjsCb.isChecked) {
                 r = r.filter { return@filter !it.stock.code.startsWith("831") }.toMutableList()
+            }
+
+            if (!binding.stCb.isChecked) {
+                r = r.filter { return@filter !it.stock.name.startsWith("ST")||!it.stock.name.startsWith("*") }
             }
 
             if (binding.onlyZTCb.isChecked) {
@@ -735,8 +743,8 @@ class Strategy4Activity : AppCompatActivity() {
                 r = r.filter { it.zt }.sortedByDescending { it.lianbanCount }
             }
 
-            if (binding.zhongjunCb.isChecked){
-                r=r.filter { it.stock.circulationMarketValue>8000000000 }
+            if (binding.zhongjunCb.isChecked) {
+                r = r.filter { it.stock.circulationMarketValue > 8000000000 }
             }
 
 
@@ -822,7 +830,7 @@ class Strategy4Activity : AppCompatActivity() {
                     } else {
                         currentChg.setTextColor(Color.GRAY)
                     }
-                    currentChg.text =result.chg.toString()
+                    currentChg.text = result.chg.toString()
                     if (isShowCurrentChg(binding.root.context)) {
                         currentChg.visibility = View.VISIBLE
                     } else {

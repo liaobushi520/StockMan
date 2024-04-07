@@ -13,7 +13,7 @@ interface StockDao {
     @Query("select * from stock where  chg>8.5 order by chg ASC")
     fun getWillZTStocks():List<Stock>
 
-    @Query("select * from stock where toMarketTime < :endTime AND toMarketTime >:startTime AND circulationMarketValue <= :highMarketValue AND circulationMarketValue >= :lowMarketValue AND name not like '%ST%'  order by circulationMarketValue desc")
+    @Query("select * from stock where toMarketTime < :endTime AND toMarketTime >:startTime AND circulationMarketValue <= :highMarketValue AND circulationMarketValue >= :lowMarketValue  order by circulationMarketValue desc")
     fun getStock(
         startTime: Int,
         endTime: Int,
@@ -90,7 +90,7 @@ interface BKStockDao {
     fun getAll(): List<BKStock>
 
 
-    @Query("select * from stock where code in ( select stockCode  from bkstock where bkCode=:bkCode ) AND  toMarketTime < :endTime AND toMarketTime >:startTime AND circulationMarketValue <= :highMarketValue AND circulationMarketValue >= :lowMarketValue AND name not like '%ST%' ")
+    @Query("select * from stock where code in ( select stockCode  from bkstock where bkCode=:bkCode ) AND  toMarketTime < :endTime AND toMarketTime >:startTime AND circulationMarketValue <= :highMarketValue AND circulationMarketValue >= :lowMarketValue ")
     fun getStocksByBKCode2(
         bkCode: String,
         startTime: Int,
@@ -163,7 +163,7 @@ interface HideDao{
 @Dao
 interface HistoryStockDao {
 
-    @Query("select * from historystock where code=:code AND date <= :date order by date desc")
+    @Query("select * from historystock where code=:code AND date >= :date order by date desc")
     fun getHistoryAfter(code: String, date: Int): List<HistoryStock>
 
     @Query("select max(closePrice) from historystock where code=:code AND date <= :end AND date>= :start ")
@@ -172,16 +172,14 @@ interface HistoryStockDao {
     @Query("select min(closePrice) from historystock where code=:code AND date <= :end AND date>= :start ")
     fun getHistoryLowestPrice(code: String, start: Int, end: Int): Float
 
-    @Query("select * from historystock where code=:code AND date >= :date order by date desc")
+    @Query("select * from historystock where code=:code AND date <= :date order by date desc")
     fun getHistoryBefore(code: String, date: Int): List<HistoryStock>
 
-
+    @Query("select * from historystock where code=:code AND date <= :date order by date desc limit :limit")
+    fun getHistoryBefore3(code: String, date: Int, limit: Int = 5): List<HistoryStock>
 
     @Query("select * from historystock where code=:code AND date > :date order by date asc limit :limit")
-    fun getHistoryBefore2(code: String, date: Int, limit: Int = 5): List<HistoryStock>
-
-    @Query("select * from historystock where code=:code AND date <=:date order by date desc limit :limit")
-    fun getHistoryAfter2(code: String, date: Int, limit: Int = 10): List<HistoryStock>
+    fun getHistoryAfter3(code: String, date: Int, limit: Int = 5): List<HistoryStock>
 
 
     @Query("select * from historystock where chg>9.6 AND code=:code  AND date >= :start AND date<:end order by date desc")

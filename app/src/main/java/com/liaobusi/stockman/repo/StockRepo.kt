@@ -442,6 +442,42 @@ object StockRepo {
         bkStockDao.insertAll(l.flatten())
     }
 
+    private fun getHighestForBK(bk: BK, date: Int): Int {
+        val historyStockDao = Injector.appDatabase.historyStockDao()
+        val bkStockDao = Injector.appDatabase.bkStockDao()
+        val stocks = bkStockDao.getStocksByBKCode(bk.code)
+
+        var highestLianBanCount = 0
+
+        stocks.forEach {
+            //连板数
+            var lianbanCount = 0
+            val key = it.code + date
+
+            val v = Injector.stockLianBanCountMap[key]
+            if (v != null) {
+                lianbanCount = v
+            } else {
+                val histories = historyStockDao.getHistoryBefore3(it.code, date, 30)
+                var stop = false
+                var i = 0
+                while (!stop && i < histories.size) {
+                    if (histories[i].ZT) {
+                        lianbanCount++
+                        i++
+                    } else {
+                        stop = true
+                    }
+                }
+                Injector.stockLianBanCountMap[key] = lianbanCount
+            }
+
+            if (lianbanCount > highestLianBanCount) {
+                highestLianBanCount = lianbanCount
+            }
+        }
+        return highestLianBanCount
+    }
 
     private fun getBKZTRate(bk: BK, date: Int, days: Int = 5): Pair<Int, Float> {
         val historyStockDao = Injector.appDatabase.historyStockDao()
@@ -454,7 +490,7 @@ object StockRepo {
             if (value != null) {
                 ztTotal += value
             } else {
-                val list = historyStockDao.getHistoryAfter2(it.code, date, days)
+                val list = historyStockDao.getHistoryBefore3(it.code, date, days)
                 val c = list.count { it.ZT }
                 Injector.bkZTCountMap[key] = c
                 ztTotal += c
@@ -957,7 +993,7 @@ object StockRepo {
             //抗跌
             val kd = kd(histories)
 
-            val list = historyDao.getHistoryBefore2(it.code, endTime, 10)
+            val list = historyDao.getHistoryAfter3(it.code, endTime, 10)
             val hasZT = list.find { it.ZT } != null
 
 
@@ -1111,7 +1147,7 @@ object StockRepo {
                 s++
             }
 
-            val list = historyDao.getHistoryBefore2(it.code, endTime)
+            val list = historyDao.getHistoryAfter3(it.code, endTime)
             val hasZT = list.find { it.ZT } != null
 
             val h =
@@ -1284,7 +1320,7 @@ object StockRepo {
                 s = i + 1
             }
 
-            val list = historyDao.getHistoryBefore2(it.code, endTime)
+            val list = historyDao.getHistoryAfter3(it.code, endTime)
             val hasZT = list.find { it.ZT } != null
 
 
@@ -1539,7 +1575,7 @@ object StockRepo {
             }
 
 
-            val list = historyDao.getHistoryBefore2(it.code, endTime)
+            val list = historyDao.getHistoryAfter3(it.code, endTime)
             val hasZT = list.find { it.ZT } != null
 
 
@@ -1690,7 +1726,7 @@ object StockRepo {
             val zt = histories[0].ZT
 
 
-            //连扳数
+            //连板数
             var lianbanCount = 0
             var stop = false
             var i = 0
@@ -1814,7 +1850,7 @@ object StockRepo {
 
 
             val list =
-                historyDao.getHistoryBefore2(it.code, endTime, howDayShowZTFlag(Injector.context))
+                historyDao.getHistoryAfter3(it.code, endTime, howDayShowZTFlag(Injector.context))
             val hasZT = list.find { it.ZT } != null
             val first = list.firstOrNull()
             var nextDayCry = false
@@ -1961,6 +1997,7 @@ object StockRepo {
 
                 val zt = getBKZTRate(it, endTime, range)
                 val ztOne = getBKZTRate(it, endTime, 1)
+                val highestLianBanCount= getHighestForBK(it,endTime)
 
 
                 val sampleList = histories.subList(range, min(range * 2, histories.size))
@@ -2027,7 +2064,8 @@ object StockRepo {
                     hide = if (isShowHiddenStockAndBK) hides.filter { f -> f.code == it.code }
                         .isNotEmpty() else false,
                     chg = histories[0].chg,
-                    ztCount = ztOne.first
+                    ztCount = ztOne.first,
+                    highestLianBanCount = highestLianBanCount
                 )
 
             }
@@ -2375,7 +2413,8 @@ data class BKResult(
     var follow: Boolean = false,
     var hide: Boolean = false,
     val chg: Float,
-    val ztCount: Int
+    val ztCount: Int,
+    val highestLianBanCount:Int
 )
 
 val BKResult.signalCount: Int

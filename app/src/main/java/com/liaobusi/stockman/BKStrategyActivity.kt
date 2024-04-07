@@ -48,7 +48,7 @@ class BKStrategyActivity : AppCompatActivity() {
             R.id.refresh -> {
                 lifecycleScope.launch {
                     StockRepo.refreshData()
-                    launch (Dispatchers.Main){
+                    launch(Dispatchers.Main) {
                         binding.chooseStockBtn.callOnClick()
                     }
                 }
@@ -59,6 +59,7 @@ class BKStrategyActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityBkstrategyBinding.inflate(LayoutInflater.from(this))
@@ -66,6 +67,7 @@ class BKStrategyActivity : AppCompatActivity() {
         supportActionBar?.title = "板块强势"
 
         Injector.bkZTCountMap.clear()
+        Injector.stockLianBanCountMap.clear()
 
 
         binding.endTimeTv.setText(SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())))
@@ -274,6 +276,7 @@ class BKStrategyActivity : AppCompatActivity() {
             binding.activeRateCb.setOnCheckedChangeListener { compoundButton, b ->
                 if (b) {
                     binding.zfCb.isChecked = false
+                    binding.zgbCb.isChecked = false
                 }
                 output(list)
             }
@@ -289,6 +292,7 @@ class BKStrategyActivity : AppCompatActivity() {
             binding.zfCb.setOnCheckedChangeListener { compoundButton, b ->
                 if (b) {
                     binding.activeRateCb.isChecked = false
+                    binding.zgbCb.isChecked = false
                 }
                 output(list)
             }
@@ -297,6 +301,14 @@ class BKStrategyActivity : AppCompatActivity() {
 
 
             binding.ztModeCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                output(list)
+            }
+
+            binding.zgbCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.activeRateCb.isChecked = false
+                    binding.zfCb.isChecked = false
+                }
                 output(list)
             }
 
@@ -315,9 +327,15 @@ class BKStrategyActivity : AppCompatActivity() {
 
             if (binding.ztModeCb.isChecked) {
                 r = r.filter { it.ztCount > 0 }
-                Collections.sort(r, kotlin.Comparator { v0, v1 ->
-                    return@Comparator v1.ztCount.compareTo(v0.ztCount)
-                })
+                if (binding.zgbCb.isChecked) {
+                    Collections.sort(r, kotlin.Comparator { v0, v1 ->
+                        return@Comparator v1.highestLianBanCount.compareTo(v0.highestLianBanCount)
+                    })
+                } else {
+                    Collections.sort(r, kotlin.Comparator { v0, v1 ->
+                        return@Comparator v1.ztCount.compareTo(v0.ztCount)
+                    })
+                }
             }
 
             if (binding.activeRateCb.isChecked) {
@@ -333,7 +351,6 @@ class BKStrategyActivity : AppCompatActivity() {
             }
 
 
-
             if (!binding.conceptCb.isChecked) {
                 r = r.filter { it.bk.type != 1 }
             }
@@ -341,7 +358,6 @@ class BKStrategyActivity : AppCompatActivity() {
             if (!binding.tradeCb.isChecked) {
                 r = r.filter { it.bk.type != 0 }
             }
-
 
 
             val bkCodes = StringBuilder()
@@ -460,21 +476,42 @@ class BKStrategyActivity : AppCompatActivity() {
                             currentChg.visibility = View.GONE
                         }
 
+
+
+
                         if (binding.ztModeCb.isChecked) {
-                            if (result.ztCount > 0) {
-                                lianbanCountFlagTv.setBackgroundColor(
-                                    Color.valueOf(
-                                        1f,
-                                        0f,
-                                        0f,
-                                        result.ztCount / 15f
-                                    ).toArgb()
-                                )
-                                lianbanCountFlagTv.visibility = View.VISIBLE
-                                lianbanCountFlagTv.text = result.ztCount.toString()
+                            if (binding.zgbCb.isChecked) {
+                                if (result.highestLianBanCount > 0) {
+                                    lianbanCountFlagTv.setBackgroundColor(
+                                        Color.valueOf(
+                                            1f,
+                                            0f,
+                                            0f,
+                                            result.highestLianBanCount / 15f
+                                        ).toArgb()
+                                    )
+                                    lianbanCountFlagTv.visibility = View.VISIBLE
+                                    lianbanCountFlagTv.text = result.highestLianBanCount.toString()
+                                } else {
+                                    lianbanCountFlagTv.visibility = View.GONE
+                                }
                             } else {
-                                lianbanCountFlagTv.visibility = View.GONE
+                                if (result.ztCount > 0) {
+                                    lianbanCountFlagTv.setBackgroundColor(
+                                        Color.valueOf(
+                                            1f,
+                                            0f,
+                                            0f,
+                                            result.ztCount / 15f
+                                        ).toArgb()
+                                    )
+                                    lianbanCountFlagTv.visibility = View.VISIBLE
+                                    lianbanCountFlagTv.text = result.ztCount.toString()
+                                } else {
+                                    lianbanCountFlagTv.visibility = View.GONE
+                                }
                             }
+
                         } else {
                             lianbanCountFlagTv.visibility = View.GONE
                         }

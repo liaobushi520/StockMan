@@ -115,4 +115,7 @@ object Injector {
     val bkZTCountMap = mutableMapOf<String, Int>()
 
 
+    val stockLianBanCountMap = mutableMapOf<String, Int>()
+
+
 }

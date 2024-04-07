@@ -271,7 +271,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="连扳晋级模式" />
+                android:text="连板晋级模式" />
 
             <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/ztPromotionCb"
@@ -305,8 +305,8 @@
             <EditText
                 android:id="@+id/conceptAndBKTv"
                 android:text="ALL"
-                android:maxWidth="200dp"
                 android:maxLines="1"
+                android:maxWidth="100dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
 
@@ -357,6 +357,17 @@
 
                 <androidx.appcompat.widget.AppCompatCheckBox
                     android:id="@+id/bjsCb"
+                    android:checked="false"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ST" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/stCb"
                     android:checked="false"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
