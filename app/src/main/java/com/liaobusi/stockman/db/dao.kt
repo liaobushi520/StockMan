@@ -75,6 +75,13 @@ interface GDRSDao{
     fun getAll():List<GDRS>
 
 }
+@Dao
+interface  AnalysisBeanDao{
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(analysisBean: AnalysisBean)
+    @Query("select * from analysisbean where date>=:startDate order by date ASC ")
+    fun getAnalysisBeans(startDate:Int=0):List<AnalysisBean>
+}
 
 @Dao
 interface BKStockDao {
@@ -114,6 +121,9 @@ interface HistoryBKDao {
     @Query("select * from historybk where code=:code AND date>=:date   order by date asc limit 1")
     fun getHistoryByDate(code: String, date: Int): HistoryBK
 
+
+    @Query("select * from historybk where code=:code AND date=:date   order by date asc limit 1")
+    fun getHistoryByDate2(code: String, date: Int): HistoryBK
 
     @Query("select max(closePrice) from historybk where code=:code AND date <= :end AND date>= :start ")
     fun getHistoryHighestPrice(code: String, start: Int, end: Int): Float

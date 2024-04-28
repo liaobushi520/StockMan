@@ -19,6 +19,9 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
+            android:name=".AnalysisActivity"
+            android:exported="false" />
+        <activity
             android:name=".WillZTActivity"
             android:exported="false" />
         <activity
@@ -72,8 +75,6 @@
         <activity
             android:name=".Strategy1Activity"
             android:exported="true" />
-
-
     </application>
 
 </manifest>

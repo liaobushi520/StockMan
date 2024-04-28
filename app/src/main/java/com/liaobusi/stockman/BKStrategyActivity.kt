@@ -1,6 +1,5 @@
 package com.liaobusi.stockman
 
-import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -9,12 +8,15 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams
 import android.widget.PopupWindow
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.liaobusi.stockman.databinding.ActivityBkstrategyBinding
 import com.liaobusi.stockman.databinding.ItemStockBinding
 import com.liaobusi.stockman.databinding.LayoutPopupWindowBinding
@@ -23,10 +25,12 @@ import com.liaobusi.stockman.db.Hide
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.repo.BKResult
 import com.liaobusi.stockman.repo.StockRepo
+
 import com.liaobusi.stockman.repo.Strategy7Param
 import com.liaobusi.stockman.repo.toFormatText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.lang.Integer.min
 import java.text.SimpleDateFormat
@@ -66,9 +70,12 @@ class BKStrategyActivity : AppCompatActivity() {
         setContentView(binding.root)
         supportActionBar?.title = "板块强势"
 
+        lifecycleScope.launch {
+            StockRepo.refreshData()
+        }
+
         Injector.bkZTCountMap.clear()
         Injector.stockLianBanCountMap.clear()
-
 
         binding.endTimeTv.setText(SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())))
 
@@ -111,7 +118,6 @@ class BKStrategyActivity : AppCompatActivity() {
             outputResult(param)
         }
 
-
         binding.line20Btn.setOnClickListener {
             binding.root.requestFocus()
             val endTime =
@@ -130,7 +136,6 @@ class BKStrategyActivity : AppCompatActivity() {
             updateUI(param)
             outputResult(param)
         }
-
 
         binding.line30Btn.setOnClickListener {
             binding.root.requestFocus()
@@ -170,34 +175,29 @@ class BKStrategyActivity : AppCompatActivity() {
             outputResult(param)
         }
 
-
         binding.preBtn.setOnClickListener {
             val c = binding.endTimeTv.editableText.toString()
-            val d = SimpleDateFormat("yyyyMMdd").parse(c)
+            lifecycleScope.launch(Dispatchers.IO) {
+                val pre = preTradingDay(c.toInt()).toString()
+                launch(Dispatchers.Main) {
+                    binding.endTimeTv.setText(pre)
+                    binding.chooseStockBtn.callOnClick()
+                }
+            }
 
-            val cal = Calendar.getInstance()
-            cal.apply { timeInMillis = d.time }
-                .add(Calendar.DAY_OF_MONTH, -1)
-
-            val s = SimpleDateFormat("yyyyMMdd").format(cal.time)
-            binding.endTimeTv.setText(s)
-            binding.chooseStockBtn.callOnClick()
 
         }
-
 
         binding.postBtn.setOnClickListener {
             val c = binding.endTimeTv.editableText.toString()
-            val d = SimpleDateFormat("yyyyMMdd").parse(c)
-
-            val cal = Calendar.getInstance()
-            cal.apply { timeInMillis = d.time }
-                .add(Calendar.DAY_OF_MONTH, 1)
-            val s = SimpleDateFormat("yyyyMMdd").format(cal.time)
-            binding.endTimeTv.setText(s)
-            binding.chooseStockBtn.callOnClick()
+            lifecycleScope.launch(Dispatchers.IO) {
+                val next = nextTradingDay(c.toInt()).toString()
+                launch(Dispatchers.Main) {
+                    binding.endTimeTv.setText(next)
+                    binding.chooseStockBtn.callOnClick()
+                }
+            }
         }
-
 
         var job: Job? = null
         binding.chooseStockBtn.setOnClickListener {
@@ -261,8 +261,6 @@ class BKStrategyActivity : AppCompatActivity() {
             }
 
         }
-
-
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -297,9 +295,6 @@ class BKStrategyActivity : AppCompatActivity() {
                 output(list)
             }
 
-
-
-
             binding.ztModeCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 output(list)
             }
@@ -312,9 +307,6 @@ class BKStrategyActivity : AppCompatActivity() {
                 output(list)
             }
 
-
-
-            binding.resultLL.removeAllViews()
             var r = list
             r = mutableListOf<BKResult>().apply { addAll(r) }
 
@@ -415,222 +407,261 @@ class BKStrategyActivity : AppCompatActivity() {
 
 
             binding.resultCount.text = "板块结果(${r.size}/${t})"
+            binding.rv.layoutManager = LinearLayoutManager(this@BKStrategyActivity)
+            binding.rv.adapter = ResultAdapter(r, bkCodes.toString())
 
-
-
-
-            r.forEach { result ->
-
-
-                val itemBinding =
-                    ItemStockBinding.inflate(LayoutInflater.from(Injector.context)).apply {
-
-                        if (result.follow) {
-                            this.root.setBackgroundColor(0x33333333)
-                        }
-
-                        if (result.hide) {
-                            this.root.setBackgroundColor(0xffB0E0E6.toInt())
-                        }
-
-
-                        this.stockName.text = result.bk.name
-                        val formatText = result.toFormatText()
-                        if (formatText.isNotEmpty()) {
-                            this.labelTv.visibility = View.VISIBLE
-                            this.labelTv.text = formatText
-                        } else {
-                            this.labelTv.visibility = View.INVISIBLE
-                        }
-
-                        if (result.activeRate > 1) {
-                            this.activeLabelTv.visibility = View.VISIBLE
-                            this.activeLabelTv.text = result.activeRate.toInt().toString()
-                        } else {
-                            this.activeLabelTv.visibility = View.INVISIBLE
-                        }
-
-                        var ev: MotionEvent? = null
-                        root.setOnTouchListener { view, motionEvent ->
-                            if (motionEvent.action == MotionEvent.ACTION_DOWN) {
-                                ev = motionEvent
-                            }
-                            return@setOnTouchListener false
-                        }
-
-
-
-
-
-                        if (result.chg > 0) {
-                            currentChg.setTextColor(Color.RED)
-                        } else if (result.chg < 0) {
-                            currentChg.setTextColor(Color.GREEN)
-                        } else {
-                            currentChg.setTextColor(Color.GRAY)
-                        }
-                        currentChg.text = result.chg.toString()
-                        if (isShowCurrentChg(binding.root.context)) {
-                            currentChg.visibility = View.VISIBLE
-                        } else {
-                            currentChg.visibility = View.GONE
-                        }
-
-
-
-
-                        if (binding.ztModeCb.isChecked) {
-                            if (binding.zgbCb.isChecked) {
-                                if (result.highestLianBanCount > 0) {
-                                    lianbanCountFlagTv.setBackgroundColor(
-                                        Color.valueOf(
-                                            1f,
-                                            0f,
-                                            0f,
-                                            result.highestLianBanCount / 15f
-                                        ).toArgb()
-                                    )
-                                    lianbanCountFlagTv.visibility = View.VISIBLE
-                                    lianbanCountFlagTv.text = result.highestLianBanCount.toString()
-                                } else {
-                                    lianbanCountFlagTv.visibility = View.GONE
-                                }
-                            } else {
-                                if (result.ztCount > 0) {
-                                    lianbanCountFlagTv.setBackgroundColor(
-                                        Color.valueOf(
-                                            1f,
-                                            0f,
-                                            0f,
-                                            result.ztCount / 15f
-                                        ).toArgb()
-                                    )
-                                    lianbanCountFlagTv.visibility = View.VISIBLE
-                                    lianbanCountFlagTv.text = result.ztCount.toString()
-                                } else {
-                                    lianbanCountFlagTv.visibility = View.GONE
-                                }
-                            }
-
-                        } else {
-                            lianbanCountFlagTv.visibility = View.GONE
-                        }
-
-                        root.setOnLongClickListener {
-
-                            val b =
-                                LayoutPopupWindowBinding.inflate(LayoutInflater.from(it.context))
-
-
-                            val pw = PopupWindow(
-                                b.root,
-                                LayoutParams.WRAP_CONTENT,
-                                LayoutParams.WRAP_CONTENT,
-                                true
-                            )
-
-                            b.apply {
-                                if (result.follow) {
-                                    followBtn.text = "取消关注"
-                                }
-                                if (result.hide) {
-                                    hideBtn.text = "取消隐藏"
-                                }
-
-
-                                val withAllBks = binding.withAllBksCb.isChecked
-                                val codes = if (withAllBks) bkCodes.toString() else result.bk.code
-
-                                ztrcBtn.setOnClickListener {
-                                    Strategy2Activity.openZTRCStrategy(
-                                        this@BKStrategyActivity,
-                                        codes,
-                                        binding.endTimeTv.text.toString()
-                                    )
-                                }
-
-                                ztxpBtn.setOnClickListener {
-                                    Strategy1Activity.openZTXPStrategy(
-                                        this@BKStrategyActivity,
-                                        codes,
-                                        binding.endTimeTv.text.toString()
-                                    )
-                                }
-
-                                jxqsBtn.setOnClickListener {
-                                    Strategy4Activity.openJXQSStrategy(
-                                        this@BKStrategyActivity,
-                                        codes,
-                                        binding.endTimeTv.text.toString()
-                                    )
-                                }
-
-                                dfcfBtn.setOnClickListener {
-                                    result.bk.openWeb(this@BKStrategyActivity)
-                                }
-
-
-                                dbhpBtn.setOnClickListener {
-                                    Strategy6Activity.openDBHPStrategy(
-                                        this@BKStrategyActivity,
-                                        codes,
-                                        binding.endTimeTv.text.toString()
-                                    )
-                                }
-
-                                ztqsBtn.setOnClickListener {
-                                    Strategy7Activity.openZTQSStrategy(
-                                        this@BKStrategyActivity,
-                                        codes,
-                                        binding.endTimeTv.text.toString()
-                                    )
-                                }
-
-                                followBtn.setOnClickListener {
-                                    pw.dismiss()
-                                    lifecycleScope.launch(Dispatchers.IO) {
-                                        if (result.follow) {
-                                            result.follow = false
-                                            Injector.appDatabase.followDao()
-                                                .deleteFollow(Follow(result.bk.code, 2))
-                                            output(list)
-                                        } else {
-                                            result.follow = true
-                                            Injector.appDatabase.followDao()
-                                                .insertFollow(Follow(result.bk.code, 2))
-                                            output(list)
-                                        }
-                                    }
-                                }
-
-                                hideBtn.setOnClickListener {
-                                    pw.dismiss()
-                                    lifecycleScope.launch(Dispatchers.IO) {
-                                        if (result.hide) {
-                                            result.hide = false
-                                            Injector.appDatabase.hideDao()
-                                                .deleteHide(Hide(result.bk.code, 2))
-                                        } else {
-                                            result.hide = true
-                                            Injector.appDatabase.hideDao()
-                                                .insertHide(Hide(result.bk.code, 2))
-                                        }
-                                        output(list)
-                                    }
-                                }
-                            }
-
-                            pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -1000)
-                            return@setOnLongClickListener true
-                        }
-
-                        root.setOnClickListener {
-                            result.bk.openWeb(this@BKStrategyActivity)
-                        }
-                    }
-                binding.resultLL.addView(itemBinding.root)
-            }
         }
+    }
+
+    inner class ResultAdapter(
+        private val data: MutableList<BKResult>,
+        private val bkCodes: String
+    ) : RecyclerView.Adapter<ResultAdapter.VH>() {
+
+        inner class VH(private val itemBinding: ItemStockBinding) :
+            RecyclerView.ViewHolder(itemBinding.root) {
+
+            @RequiresApi(Build.VERSION_CODES.O)
+            fun bind(result: BKResult, position: Int) {
+                itemBinding.apply {
+                    this.root.setBackgroundColor(0xffffffff.toInt())
+
+                    if (result.follow) {
+                        this.root.setBackgroundColor(0x33333333)
+                    }
+
+                    if (result.hide) {
+                        this.root.setBackgroundColor(0xffB0E0E6.toInt())
+                    }
+
+                    this.stockName.text = result.bk.name
+                    val formatText = result.toFormatText()
+                    if (formatText.isNotEmpty()) {
+                        this.labelTv.visibility = View.VISIBLE
+                        this.labelTv.text = formatText
+                    } else {
+                        this.labelTv.visibility = View.INVISIBLE
+                    }
+
+                    if (result.activeRate > 1) {
+                        this.activeLabelTv.visibility = View.VISIBLE
+                        this.activeLabelTv.text = result.activeRate.toInt().toString()
+                    } else {
+                        this.activeLabelTv.visibility = View.INVISIBLE
+                    }
+
+                    var ev: MotionEvent? = null
+                    root.setOnTouchListener { view, motionEvent ->
+                        if (motionEvent.action == MotionEvent.ACTION_DOWN) {
+                            ev = motionEvent
+                        }
+                        return@setOnTouchListener false
+                    }
+
+                    if (result.chg > 0) {
+                        currentChg.setTextColor(Color.RED)
+                    } else if (result.chg < 0) {
+                        currentChg.setTextColor(STOCK_GREEN)
+                    } else {
+                        currentChg.setTextColor(Color.GRAY)
+                    }
+                    currentChg.text = result.chg.toString()
+                    if (isShowCurrentChg(binding.root.context)) {
+                        currentChg.visibility = View.VISIBLE
+                    } else {
+                        currentChg.visibility = View.GONE
+                    }
+
+                    if (binding.ztModeCb.isChecked) {
+                        if (binding.zgbCb.isChecked) {
+                            if (result.highestLianBanCount > 0) {
+                                lianbanCountFlagTv.setBackgroundColor(
+                                    Color.valueOf(
+                                        1f,
+                                        0f,
+                                        0f,
+                                        result.highestLianBanCount / 15f
+                                    ).toArgb()
+                                )
+                                lianbanCountFlagTv.visibility = View.VISIBLE
+                                lianbanCountFlagTv.text = result.highestLianBanCount.toString()
+                            } else {
+                                lianbanCountFlagTv.visibility = View.GONE
+                            }
+                        } else {
+                            if (result.ztCount > 0) {
+                                lianbanCountFlagTv.setBackgroundColor(
+                                    Color.valueOf(
+                                        1f,
+                                        0f,
+                                        0f,
+                                        result.ztCount / 15f
+                                    ).toArgb()
+                                )
+                                lianbanCountFlagTv.visibility = View.VISIBLE
+                                lianbanCountFlagTv.text = result.ztCount.toString()
+                            } else {
+                                lianbanCountFlagTv.visibility = View.GONE
+                            }
+                        }
+
+                    } else {
+                        lianbanCountFlagTv.visibility = View.GONE
+                    }
+
+                    root.setOnLongClickListener {
+
+                        val b =
+                            LayoutPopupWindowBinding.inflate(LayoutInflater.from(it.context))
+
+
+                        val pw = PopupWindow(
+                            b.root,
+                            LayoutParams.WRAP_CONTENT,
+                            LayoutParams.WRAP_CONTENT,
+                            true
+                        )
+
+                        b.apply {
+                            if (result.follow) {
+                                followBtn.text = "取消关注"
+                            }
+                            if (result.hide) {
+                                hideBtn.text = "取消隐藏"
+                            }
+
+
+                            val withAllBks = binding.withAllBksCb.isChecked
+                            val codes = if (withAllBks) bkCodes.toString() else result.bk.code
+
+                            ztrcBtn.setOnClickListener {
+                                Strategy2Activity.openZTRCStrategy(
+                                    this@BKStrategyActivity,
+                                    codes,
+                                    binding.endTimeTv.text.toString()
+                                )
+                            }
+
+                            ztxpBtn.setOnClickListener {
+                                Strategy1Activity.openZTXPStrategy(
+                                    this@BKStrategyActivity,
+                                    codes,
+                                    binding.endTimeTv.text.toString()
+                                )
+                            }
+
+                            jxqsBtn.setOnClickListener {
+                                Strategy4Activity.openJXQSStrategy(
+                                    this@BKStrategyActivity,
+                                    codes,
+                                    binding.endTimeTv.text.toString()
+                                )
+                            }
+
+                            dfcfBtn.setOnClickListener {
+                                result.bk.openWeb(this@BKStrategyActivity)
+                            }
+
+
+                            dbhpBtn.setOnClickListener {
+                                Strategy6Activity.openDBHPStrategy(
+                                    this@BKStrategyActivity,
+                                    codes,
+                                    binding.endTimeTv.text.toString()
+                                )
+                            }
+
+                            ztqsBtn.setOnClickListener {
+                                Strategy7Activity.openZTQSStrategy(
+                                    this@BKStrategyActivity,
+                                    codes,
+                                    binding.endTimeTv.text.toString()
+                                )
+                            }
+
+                            followBtn.setOnClickListener {
+                                pw.dismiss()
+                                lifecycleScope.launch(Dispatchers.IO) {
+                                    val p = data.indexOf(result)
+                                    if (result.follow) {
+                                        result.follow = false
+                                        Injector.appDatabase.followDao()
+                                            .deleteFollow(Follow(result.bk.code, 2))
+
+                                        lifecycleScope.launch(Dispatchers.Main) {
+                                            data.remove(result)
+                                            notifyItemRemoved(p)
+                                            delay(300)
+                                            data.add(itemCount - 1, result)
+                                            notifyItemInserted(itemCount - 1)
+                                        }
+
+                                    } else {
+                                        result.follow = true
+                                        Injector.appDatabase.followDao()
+                                            .insertFollow(Follow(result.bk.code, 2))
+
+                                        lifecycleScope.launch(Dispatchers.Main) {
+                                            data.remove(result)
+                                            notifyItemRemoved(p)
+                                            delay(300)
+                                            data.add(0, result)
+                                            notifyItemInserted(0)
+                                        }
+                                    }
+                                }
+                            }
+
+                            hideBtn.setOnClickListener {
+                                pw.dismiss()
+                                lifecycleScope.launch(Dispatchers.IO) {
+                                    val p = data.indexOf(result)
+                                    if (result.hide) {
+                                        result.hide = false
+                                        Injector.appDatabase.hideDao()
+                                            .deleteHide(Hide(result.bk.code, 2))
+                                    } else {
+                                        result.hide = true
+                                        Injector.appDatabase.hideDao()
+                                            .insertHide(Hide(result.bk.code, 2))
+                                    }
+                                    lifecycleScope.launch(Dispatchers.Main) {
+                                        notifyItemChanged(p)
+                                    }
+
+                                }
+                            }
+                        }
+
+                        pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -1000)
+                        return@setOnLongClickListener true
+                    }
+
+                    root.setOnClickListener {
+                        result.bk.openWeb(this@BKStrategyActivity)
+                    }
+                }
+
+
+            }
+
+        }
+
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ResultAdapter.VH {
+            return VH(ItemStockBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+        }
+
+        @RequiresApi(Build.VERSION_CODES.O)
+        override fun onBindViewHolder(holder: ResultAdapter.VH, position: Int) {
+            holder.bind(data[position], position)
+        }
+
+        override fun getItemCount(): Int {
+            return data.size
+        }
+
+
     }
 
     private fun updateUI(param: Strategy7Param) {
@@ -643,6 +674,7 @@ class BKStrategyActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun outputResult(strictParam: Strategy7Param) {
         lifecycleScope.launch(Dispatchers.IO) {
             val list = StockRepo.strategy7(

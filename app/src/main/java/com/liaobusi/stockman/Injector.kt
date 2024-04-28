@@ -33,7 +33,7 @@ fun writeLog(code: String, msg: String) {
         if (log.length > 1000) {
             log.clear()
         }
-        log.append(code).append("----").append(msg).append("\n")
+//        log.append(code).append("----").append(msg).append("\n")
     }
 
 }
@@ -85,7 +85,7 @@ object Injector {
                         time=Date()
                     }
                     val hour=cal.get(Calendar.HOUR_OF_DAY)
-                    if(hour in 9..13){
+                    if(hour in 9..15){
                         StockRepo.getRealTimeBKs()
                         StockRepo.getRealTimeStocks()
                         delay(10000)

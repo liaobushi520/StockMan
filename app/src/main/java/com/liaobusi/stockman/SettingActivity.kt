@@ -17,6 +17,11 @@ fun isShowHiddenStockAndBK(context: Context): Boolean {
     return sp.getBoolean("show_hidden_stock_bk", false)
 }
 
+fun isShowST(context: Context): Boolean {
+    val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
+    return sp.getBoolean("show_ST", false)
+}
+
 fun howDayShowZTFlag(context: Context): Int {
     val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
     return sp.getInt("how_day_show_zt_flag", 1)
@@ -53,18 +58,14 @@ class SettingActivity : AppCompatActivity() {
         supportActionBar?.title = "设置"
 
         val sp = getSharedPreferences("app", Context.MODE_PRIVATE)
+
         val show = sp.getBoolean("show_hidden_stock_bk", false)
         binding.hideSwitch.isChecked = show
-
-
-        val day = sp.getInt("how_day_show_zt_flag", 1)
-        binding.howDayShowZTFlagEt.setText(day.toString())
-
-
-
         binding.hideSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
             sp.edit().putBoolean("show_hidden_stock_bk", isChecked).apply()
         }
+
+
 
         binding.fixDataBtn.setOnClickListener {
             val date = binding.fixedDateEt.editableText?.toString()?.toIntOrNull()
@@ -72,14 +73,22 @@ class SettingActivity : AppCompatActivity() {
             if (date != null&&date2!=null&&date2>=date) {
                 GlobalScope.launch {
                     StockRepo.getHistoryStocks(date, date2)
+                    StockRepo.getHistoryBks(360,date2)
                 }
             }
 
         }
 
+        val showST = sp.getBoolean("show_ST", false)
+        binding.showSTSwitch.isChecked =showST
+        binding.showSTSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+            sp.edit().putBoolean("show_ST", isChecked).apply()
+
+        }
+
+
 
         binding.autoRefresh.isChecked=sp.getBoolean("auto_refresh",false)
-
         binding.autoRefresh.setOnCheckedChangeListener { buttonView, isChecked ->
             sp.edit().putBoolean("auto_refresh", isChecked).apply()
             Injector.autoRefresh(isChecked)
@@ -87,7 +96,6 @@ class SettingActivity : AppCompatActivity() {
 
 
         binding.showCurrentChg.isChecked=sp.getBoolean("show_current_chg",false)
-
         binding.showCurrentChg.setOnCheckedChangeListener { buttonView, isChecked ->
             sp.edit().putBoolean("show_current_chg", isChecked).apply()
             Injector.autoRefresh(isChecked)
@@ -96,15 +104,14 @@ class SettingActivity : AppCompatActivity() {
 
 
         binding.showLianbanCount.isChecked=sp.getBoolean("show_lianban_count_flag",true)
-
         binding.showLianbanCount.setOnCheckedChangeListener { buttonView, isChecked ->
             sp.edit().putBoolean("show_lianban_count_flag", isChecked).apply()
         }
 
 
-
+        val day = sp.getInt("how_day_show_zt_flag", 1)
+        binding.howDayShowZTFlagEt.setText(day.toString())
         binding.howDayShowZTFlagConfirmBtn.setOnClickListener {
-
             val d = binding.howDayShowZTFlagEt.editableText.toString().toIntOrNull()
             sp.edit().putInt("how_day_show_zt_flag", d ?: 1).apply()
 

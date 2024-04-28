@@ -1,12 +1,21 @@
 package com.liaobusi.stockman.repo
 
 import android.content.Context
+import android.content.Intent
+import android.graphics.Color
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 import android.util.Log
+import android.util.LruCache
 import android.widget.Toast
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.google.gson.Gson
+import com.liaobusi.stockman.BKStrategyActivity
 import com.liaobusi.stockman.Injector
+import com.liaobusi.stockman.STOCK_GREEN
+import com.liaobusi.stockman.Strategy4Activity
 import com.liaobusi.stockman.api.StockService
 import com.liaobusi.stockman.api.StockTrend
 import com.liaobusi.stockman.before
@@ -14,6 +23,7 @@ import com.liaobusi.stockman.compute
 import com.liaobusi.stockman.db.*
 import com.liaobusi.stockman.howDayShowZTFlag
 import com.liaobusi.stockman.isShowHiddenStockAndBK
+import com.liaobusi.stockman.isShowST
 import com.liaobusi.stockman.writeLog
 import kotlinx.coroutines.*
 import java.io.BufferedReader
@@ -448,8 +458,12 @@ object StockRepo {
         val stocks = bkStockDao.getStocksByBKCode(bk.code)
 
         var highestLianBanCount = 0
+        val showST = isShowST(Injector.context)
 
         stocks.forEach {
+            if (!showST && (it.name.startsWith("ST") || it.name.startsWith("*"))) {
+                return@forEach
+            }
             //连板数
             var lianbanCount = 0
             val key = it.code + date
@@ -484,7 +498,11 @@ object StockRepo {
         val bkStockDao = Injector.appDatabase.bkStockDao()
         var ztTotal = 0f
         val stocks = bkStockDao.getStocksByBKCode(bk.code)
+        val showST = isShowST(Injector.context)
         stocks.forEach {
+            if (!showST && (it.name.startsWith("ST") || it.name.startsWith("*"))) {
+                return@forEach
+            }
             val key = it.code + date + days
             val value = Injector.bkZTCountMap[key]
             if (value != null) {
@@ -508,7 +526,8 @@ object StockRepo {
     }
 
 
-    suspend fun getHistoryBks() = withContext(Dispatchers.IO) {
+    suspend fun getHistoryBks(count: Int=250,end:Int=20500000) = withContext(Dispatchers.IO) {
+
 
         val bkDao = Injector.appDatabase.bkDao()
         val historyDao = Injector.appDatabase.historyBKDao()
@@ -519,7 +538,7 @@ object StockRepo {
             val api = Injector.retrofit.create(StockService::class.java)
             val s = if (bk.code.startsWith("BK")) "90.${bk.code}" else "1.${bk.code}"
             val url =
-                "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${s}&klt=101&fqt=1&lmt=99&end=20500000&iscca=1&fields1=f1,f2,f3,f4,f5,f6,f7,f8&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64&forcect=1"
+                "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${s}&klt=101&fqt=1&lmt=${count}&end=${end}&iscca=1&fields1=f1,f2,f3,f4,f5,f6,f7,f8&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64&forcect=1"
             val response = api.getBKHistory(url)
             if (response.data == null) {
                 return@forEach
@@ -1611,6 +1630,209 @@ object StockRepo {
     }
 
 
+    val lrcCache = LruCache<String, List<BKResult>>(10)
+
+    //大盘分析
+    suspend fun dpAnalysis(date: Int): List<AnalysisResult> {
+        val endDay = SimpleDateFormat("yyyyMMdd").parse(date.toString())
+
+
+        val key = "5-5-0.0-${endDay.before(1)}-5"
+        val beforeBkResult = lrcCache.get(key) ?: strategy7(5, 5, 0.0, endDay.before(1), 5).apply {
+            lrcCache.put(key, this)
+        }
+
+        val tradeBkResult = mutableListOf<BKResult>()
+        val conceptBkResult = mutableListOf<BKResult>()
+        beforeBkResult.forEach {
+            if (it.bk.type == 0) {
+                tradeBkResult.add(it)
+            }
+            if (it.bk.type == 1) {
+                conceptBkResult.add(it)
+            }
+        }
+        val beforeBkMap = mutableMapOf<String, BKResult>().apply {
+            beforeBkResult.forEach {
+                this[it.bk.code] = it
+            }
+        }
+
+
+        val key1 = "5-5-0.0-${date}-5"
+        val bkResult = lrcCache.get(key1) ?: strategy7(5, 5, 0.0, date, 5).apply {
+            lrcCache.put(key1, this)
+        }
+
+
+        val tradeBkResult2 = mutableListOf<BKResult>()
+        val conceptBkResult2 = mutableListOf<BKResult>()
+        bkResult.forEach {
+            if (it.bk.type == 0) {
+                tradeBkResult2.add(it)
+            }
+            if (it.bk.type == 1) {
+                conceptBkResult2.add(it)
+            }
+        }
+
+        val bkMap = mutableMapOf<String, BKResult>().apply {
+            bkResult.forEach {
+                this[it.bk.code] = it
+            }
+        }
+
+
+        val beforeBkResultSortByChg = mutableListOf<BKResult>().apply { addAll(tradeBkResult) }
+        //涨幅排序
+        Collections.sort(beforeBkResultSortByChg, kotlin.Comparator { v0, v1 ->
+            return@Comparator v1.chg.compareTo(v0.chg)
+        })
+
+        val bkResultSortByChg = mutableListOf<BKResult>().apply { addAll(tradeBkResult2) }
+        //涨幅排序
+        Collections.sort(bkResultSortByChg, kotlin.Comparator { v0, v1 ->
+            return@Comparator v1.chg.compareTo(v0.chg)
+        })
+
+
+        val analysisResultList = mutableListOf<AnalysisResult>()
+        analysisResultList.add(AnalysisResult("今日行业板块涨幅前5") {
+            val i = Intent(it, BKStrategyActivity::class.java)
+            it.startActivity(i)
+        })
+        for (i in 0 until 5) {
+            val bk = bkResultSortByChg[i]
+            val ssb = SpannableStringBuilder()
+            ssb.append("行业板块").append(
+                bk.bk.name,
+                ForegroundColorSpan(Color.BLUE),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            ).append("今日").append(
+                "${bk.chg}",
+                ForegroundColorSpan(if (bk.chg < 0) STOCK_GREEN else Color.RED),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            ).append(",昨日").append(
+                "${beforeBkMap[bk.bk.code]?.chg}",
+                ForegroundColorSpan(if (beforeBkMap[bk.bk.code]!!.chg < 0) STOCK_GREEN else Color.RED),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            analysisResultList.add(AnalysisResult(ssb) {
+                bk.bk.openWeb(it)
+            })
+        }
+
+
+
+        analysisResultList.add(AnalysisResult("昨日行业板块涨幅前5") {
+            val i = Intent(it, BKStrategyActivity::class.java)
+            it.startActivity(i)
+        })
+
+        for (i in 0 until 5) {
+            val beforeBk = beforeBkResultSortByChg[i]
+            val ssb = SpannableStringBuilder()
+            ssb.append("行业板块").append(
+                beforeBk.bk.name,
+                ForegroundColorSpan(Color.BLUE),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            ).append("昨日").append(
+                "${beforeBk.chg}",
+                ForegroundColorSpan(if (beforeBk.chg < 0) STOCK_GREEN else Color.RED),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            ).append(",今日").append(
+                "${bkMap[beforeBk.bk.code]?.chg}",
+                ForegroundColorSpan(if (bkMap[beforeBk.bk.code]!!.chg < 0) STOCK_GREEN else Color.RED),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            analysisResultList.add(AnalysisResult(ssb) {
+                beforeBk.bk.openWeb(it)
+            })
+
+        }
+
+        var ztCount = 0
+        var dtCount = 0
+        var stZtCount = 0
+        var stDtCount = 0
+        val stockResult = strategy4(19900101, date, 0.0, 10000000000000.0, 5, 5, 0.0, date, 5)
+
+        var highestLianBanCount = 0
+
+        stockResult.stockResults.forEach { r: StockResult ->
+            if (r.zt) {
+                ztCount++
+                if (r.stock.isST()) {
+                    stZtCount++
+                }
+                if (r.lianbanCount > highestLianBanCount) {
+                    highestLianBanCount = r.lianbanCount
+                }
+            }
+            if (r.dt) {
+                dtCount++
+                if (r.stock.isST()) {
+                    stDtCount++
+                }
+            }
+        }
+        val noSTZTCount = ztCount - stZtCount
+        val noSTDTCount = dtCount - stDtCount
+
+        val ssb = SpannableStringBuilder()
+        ssb.append("涨跌停 (非ST)").append(
+            "$noSTZTCount", ForegroundColorSpan(Color.RED),
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        ).append(":").append(
+            "$noSTDTCount", ForegroundColorSpan(STOCK_GREEN),
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        ).append("   (ST)").append(
+            "$stZtCount", ForegroundColorSpan(Color.RED),
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        ).append(":").append(
+            "$stDtCount", ForegroundColorSpan(STOCK_GREEN),
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+
+        if (noSTZTCount in 16..29) {
+            ssb.append(
+                "(短线情绪差，谨慎交易!!!!)",
+                ForegroundColorSpan(Color.RED),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        } else if (noSTDTCount > 30 || noSTDTCount > noSTZTCount) {
+            ssb.append(
+                "(短线情绪极差，谨慎交易!!!!)",
+                ForegroundColorSpan(Color.RED),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+
+        analysisResultList.add(AnalysisResult(ssb) { context ->
+            val i = Intent(context, Strategy4Activity::class.java)
+            context.startActivity(i)
+        })
+
+
+        Injector.appDatabase.analysisBeanDao().insert(
+            AnalysisBean(
+                date,
+                ztCount - stZtCount,
+                dtCount - stDtCount,
+                highestLianBanCount,
+                stZtCount,
+                stDtCount,
+                highestLianBanCount
+            )
+        )
+
+        return analysisResultList
+
+    }
+
+    data class AnalysisResult(val content: CharSequence, val callback: (context: Context) -> Unit)
+
+
     /**
      * 均线强势
      */
@@ -1724,6 +1946,7 @@ object StockRepo {
             //大阳线
             val dayang = histories[0].DY
             val zt = histories[0].ZT
+            val dt = histories[0].DT
 
 
             //连板数
@@ -1865,6 +2088,7 @@ object StockRepo {
                 overPreHigh,
                 dayang = if (zt) false else dayang,
                 zt = zt,
+                dt = dt,
                 highTurnOverRate = highTurnOverRate,
                 lianyangCount = lianyangCount,
                 longUpShadow = longUpShadow,
@@ -1997,7 +2221,7 @@ object StockRepo {
 
                 val zt = getBKZTRate(it, endTime, range)
                 val ztOne = getBKZTRate(it, endTime, 1)
-                val highestLianBanCount= getHighestForBK(it,endTime)
+                val highestLianBanCount = getHighestForBK(it, endTime)
 
 
                 val sampleList = histories.subList(range, min(range * 2, histories.size))
@@ -2414,7 +2638,7 @@ data class BKResult(
     var hide: Boolean = false,
     val chg: Float,
     val ztCount: Int,
-    val highestLianBanCount:Int
+    val highestLianBanCount: Int
 )
 
 val BKResult.signalCount: Int
@@ -2485,7 +2709,8 @@ data class StockResult(
     var follow: Boolean = false,
     var ztCountInRange: Int = 0,
     val lianbanCount: Int = 0,
-    val chg: Float = 0f
+    val chg: Float = 0f,
+    val dt: Boolean = false,
 )
 
 data class StrategyResult(

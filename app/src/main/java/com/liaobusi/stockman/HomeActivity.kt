@@ -73,6 +73,11 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
+        binding.analysisBtn.setOnClickListener {
+            val i=Intent(this,AnalysisActivity::class.java)
+            startActivity(i)
+        }
+
         binding.s1.setOnClickListener {
             val i = Intent(this, Strategy1Activity::class.java)
             startActivity(i)
