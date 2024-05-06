@@ -223,3 +223,14 @@ interface HistoryStockDao {
 
 }
 
+
+@Dao
+interface ZTReplayDao{
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertAll(list:List<ZTReplayBean>)
+
+    @Query("select * from ztreplaybean where date=:date AND code=:code limit 1")
+    fun getZTReplay(date: Int,code: String):ZTReplayBean
+
+}
+

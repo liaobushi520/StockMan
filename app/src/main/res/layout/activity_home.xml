@@ -7,6 +7,18 @@
     android:id="@+id/root"
     tools:context=".HomeActivity">
 
+    <TextView
+        android:id="@+id/fpBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:textColor="#000000"
+        app:layout_constraintTop_toTopOf="@+id/analysisBtn"
+        app:layout_constraintBottom_toBottomOf="@+id/analysisBtn"
+        app:layout_constraintRight_toLeftOf="@+id/analysisBtn"
+        android:text="复盘"
+        />
+
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/analysisBtn"

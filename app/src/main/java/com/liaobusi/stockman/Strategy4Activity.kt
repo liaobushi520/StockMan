@@ -24,11 +24,7 @@ import com.liaobusi.stockman.databinding.ActivityStrategy4Binding
 import com.liaobusi.stockman.databinding.ItemFollowBinding
 import com.liaobusi.stockman.databinding.ItemStockBinding
 import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
-import com.liaobusi.stockman.db.BK
-import com.liaobusi.stockman.db.Follow
-import com.liaobusi.stockman.db.Stock
-import com.liaobusi.stockman.db.isST
-import com.liaobusi.stockman.db.openWeb
+import com.liaobusi.stockman.db.*
 import com.liaobusi.stockman.repo.*
 import kotlinx.coroutines.*
 import java.lang.StringBuilder
@@ -36,6 +32,12 @@ import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.min
+
+val colors = listOf(
+    Color.parseColor("#1565c0"), Color.parseColor("#ad1457"),
+    Color.parseColor("#283593"), Color.parseColor("#b71c1c"), Color.parseColor("#009688"),
+    Color.parseColor("#795548"), Color.parseColor("#e65100")
+)
 
 /**
  * 均线强势
@@ -256,8 +258,8 @@ class Strategy4Activity : AppCompatActivity() {
 
         binding.preBtn.setOnClickListener {
             val c = binding.endTimeTv.editableText.toString()
-            lifecycleScope.launch(Dispatchers.IO){
-                val pre=preTradingDay(c.toInt()).toString()
+            lifecycleScope.launch(Dispatchers.IO) {
+                val pre = preTradingDay(c.toInt()).toString()
                 launch(Dispatchers.Main) {
                     binding.endTimeTv.setText(pre)
                     binding.chooseStockBtn.callOnClick()
@@ -268,8 +270,8 @@ class Strategy4Activity : AppCompatActivity() {
 
         binding.postBtn.setOnClickListener {
             val c = binding.endTimeTv.editableText.toString()
-            lifecycleScope.launch(Dispatchers.IO){
-                val next=nextTradingDay(c.toInt()).toString()
+            lifecycleScope.launch(Dispatchers.IO) {
+                val next = nextTradingDay(c.toInt()).toString()
                 launch(Dispatchers.Main) {
                     binding.endTimeTv.setText(next)
                     binding.chooseStockBtn.callOnClick()
@@ -361,6 +363,7 @@ class Strategy4Activity : AppCompatActivity() {
             }
             val bkList = checkBKInput() ?: return@setOnClickListener
             job = lifecycleScope.launch(Dispatchers.IO) {
+                StockRepo.fetchZTReplay(date = endTime)
                 val list = StockRepo.strategy4(
                     startMarketTime = startMarketTime,
                     endMarketTime = endMarketTime,
@@ -656,7 +659,7 @@ class Strategy4Activity : AppCompatActivity() {
             binding.activityLevelCb.setOnCheckedChangeListener { compoundButton, b ->
                 if (b) {
                     binding.ztPromotionCb.isChecked = false
-                    binding.zfSortCb.isChecked=false
+                    binding.zfSortCb.isChecked = false
                 }
                 output(strategyResult)
             }
@@ -689,12 +692,15 @@ class Strategy4Activity : AppCompatActivity() {
             }
 
 
+
             binding.ztPromotionCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 if (isChecked) {
                     binding.activityLevelCb.isChecked = false
                     binding.zhongjunCb.isChecked = false
                     binding.onlyActiveRateCb.isChecked = true
-                    binding.zfSortCb.isChecked=false
+                    binding.zfSortCb.isChecked = false
+                } else {
+                    binding.groupCb.isChecked = false
                 }
                 output(strategyResult)
             }
@@ -704,8 +710,14 @@ class Strategy4Activity : AppCompatActivity() {
             }
 
             binding.zfSortCb.setOnCheckedChangeListener { buttonView, isChecked ->
-                if (isChecked){
-                    binding.activityLevelCb.isChecked=false
+                if (isChecked) {
+                    binding.activityLevelCb.isChecked = false
+                }
+                output(strategyResult)
+            }
+            binding.groupCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.ztPromotionCb.isChecked = true
                 }
                 output(strategyResult)
             }
@@ -749,8 +761,6 @@ class Strategy4Activity : AppCompatActivity() {
                 r = r.filter { return@filter it.dt }
             }
 
-
-
             if (binding.cowBackCb.isChecked) {
                 r = r.filter { return@filter it.cowBack }
             }
@@ -765,12 +775,11 @@ class Strategy4Activity : AppCompatActivity() {
                 })
             }
 
-            if (binding.zfSortCb.isChecked){
+            if (binding.zfSortCb.isChecked) {
                 Collections.sort(r, kotlin.Comparator { v0, v1 ->
-                    return@Comparator v1.chg.compareTo(v0.chg)
+                    return@Comparator v1.currentDayHistory!!.chg.compareTo(v0.currentDayHistory!!.chg)
                 })
             }
-
 
             if (binding.gdrsCb.isChecked) {
                 val c = binding.gdrsCountTv.text.toString().toIntOrNull() ?: 5
@@ -785,8 +794,36 @@ class Strategy4Activity : AppCompatActivity() {
                 r = r.filter { it.stock.circulationMarketValue > 8000000000 }
             }
 
-
-
+            val ll = mutableListOf<StockResult>()
+            if (binding.groupCb.isChecked) {
+                var i = 0
+                r.groupBy { it.ztReplay?.groupName ?: "" }.forEach { key, value ->
+                    Collections.sort(value, kotlin.Comparator { v0, v1 ->
+                        return@Comparator (v1.lianbanCount * 10 + v1.ztTimeDigitization).compareTo(
+                            v0.lianbanCount * 10 + v0.ztTimeDigitization
+                        )
+                    })
+                    val color = colors.get(i % colors.size)
+                    value.forEach {
+                        it.groupColor = color
+                    }
+                    ll.add(
+                        StockResult(
+                            isGroupHeader = true,
+                            groupColor = color,
+                            stock = value.first().stock,
+                            ztReplay = value.first().ztReplay
+                        )
+                    )
+                    ll.addAll(value)
+                    i++
+                }
+                r = ll
+            } else {
+                r.forEach {
+                    it.groupColor = Color.BLACK
+                }
+            }
 
 
             val newList = mutableListOf<StockResult>()
@@ -800,9 +837,8 @@ class Strategy4Activity : AppCompatActivity() {
             }
             r = newList
 
+
             val strategyResult2 = StrategyResult(r, strategyResult.total)
-
-
             val s = if (strategyResult2.total > 0 && r.isNotEmpty()) {
                 "拟合度${DecimalFormat("#.0").format(r.size * 100f / strategyResult2.total)}%"
             } else ""
@@ -822,7 +858,6 @@ class Strategy4Activity : AppCompatActivity() {
                         SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
                     )
             binding.resultCount.text = resultText
-
             binding.rv.layoutManager = LinearLayoutManager(this@Strategy4Activity)
             binding.rv.adapter = ResultAdapter(
                 strategyResult2.stockResults.toMutableList(),
@@ -844,10 +879,34 @@ class Strategy4Activity : AppCompatActivity() {
         }
 
 
-       inner class VH(val binding: ItemStockBinding) : RecyclerView.ViewHolder(binding.root) {
+        inner class VH(val binding: ItemStockBinding) : RecyclerView.ViewHolder(binding.root) {
 
             @RequiresApi(Build.VERSION_CODES.O)
             fun bind(result: StockResult, position: Int) {
+                if (result.isGroupHeader) {
+                    binding.root.setOnClickListener(null)
+                    binding.groupHeaderLL.visibility = View.VISIBLE
+                    binding.contentLL.visibility = View.GONE
+                    binding.expoundTv.visibility = View.GONE
+                    binding.groupHeaderTv.setTextColor(result.groupColor)
+                    binding.groupHeaderTv2.setTextColor(result.groupColor)
+                    if (result.ztReplay != null && result.ztReplay!!.groupName.isNotEmpty()) {
+                        binding.groupHeaderTv.text = result.ztReplay!!.groupName
+                        binding.groupHeaderTv.visibility = View.VISIBLE
+                    } else {
+                        binding.groupHeaderTv.visibility = View.GONE
+                    }
+                    if (result.ztReplay != null && result.ztReplay!!.reason.length > 1) {
+                        binding.groupHeaderTv2.visibility = View.VISIBLE
+                        binding.groupHeaderTv2.text = result.ztReplay!!.reason
+                    } else {
+                        binding.groupHeaderTv2.visibility = View.GONE
+                    }
+                    return
+                }
+                binding.groupHeaderLL.visibility = View.GONE
+                binding.contentLL.visibility = View.VISIBLE
+
                 val stock = result.stock
                 binding.apply {
 
@@ -857,6 +916,13 @@ class Strategy4Activity : AppCompatActivity() {
                         this.root.setBackgroundColor(0xffffffff.toInt())
                     }
 
+                    if (result.ztReplay != null && result.expandReason) {
+                        this.expoundTv.visibility = View.VISIBLE
+                        this.expoundTv.text =
+                            "${result.ztReplay!!.time}\n${result.ztReplay!!.expound}"
+                    } else {
+                        this.expoundTv.visibility = View.GONE
+                    }
 
                     if (ztPromotion || isShowLianBanFlag(binding.root.context)) {
                         if (result.lianbanCount > 0) {
@@ -877,24 +943,36 @@ class Strategy4Activity : AppCompatActivity() {
                         binding.lianbanCountFlagTv.visibility = View.GONE
                     }
 
-
-                    if (result.chg > 0) {
-                        currentChg.setTextColor(Color.RED)
-                    } else if (result.chg < 0) {
-                        currentChg.setTextColor(STOCK_GREEN)
-                    } else {
-                        currentChg.setTextColor(Color.GRAY)
-                    }
-                    currentChg.text = result.chg.toString()
-                    if (isShowCurrentChg(binding.root.context)) {
-                        currentChg.visibility = View.VISIBLE
-                    } else {
+                    if (result.currentDayHistory != null) {
+                        currentChg.setTextColor(result.currentDayHistory!!.color)
+                        currentChg.text = result.currentDayHistory!!.chg.toString()
+                        if (isShowCurrentChg(binding.root.context)) {
+                            currentChg.visibility = View.VISIBLE
+                        } else {
+                            currentChg.visibility = View.GONE
+                        }
+                    }else{
                         currentChg.visibility = View.GONE
+                    }
+
+                    if (result.nextDayHistory != null) {
+                        nextDayChg.setTextColor(result.nextDayHistory!!.color)
+                        nextDayChg.text = result.nextDayHistory!!.chg.toString()
+                        if (isShowNextChg(binding.root.context)) {
+                            nextDayChg.visibility = View.VISIBLE
+                        } else {
+                            nextDayChg.visibility = View.GONE
+                        }
+
+                    }else{
+                        nextDayChg.visibility = View.GONE
                     }
 
 
 
                     this.stockName.text = stock.name
+                    this.stockName.setTextColor(result.groupColor)
+
                     val formatText = result.toFormatText()
                     if (formatText.isNotEmpty()) {
                         this.labelTv.visibility = View.VISIBLE
@@ -920,8 +998,6 @@ class Strategy4Activity : AppCompatActivity() {
                         this.nextDayIv.setImageResource(R.drawable.ic_thumb_up)
                     }
 
-
-
                     root.setOnClickListener {
                         stock.openWeb(this@Strategy4Activity)
                     }
@@ -942,6 +1018,16 @@ class Strategy4Activity : AppCompatActivity() {
                             b.followBtn.text = "取消关注"
                         }
 
+                        if (result.expandReason) {
+                            b.expandReasonBtn.text = "折叠原因"
+                        }
+
+                        if (!result.zt) {
+                            b.expandReasonBtn.visibility = View.GONE
+                        } else {
+                            b.expandReasonBtn.visibility = View.VISIBLE
+                        }
+
 
                         val pw = PopupWindow(
                             b.root,
@@ -949,6 +1035,13 @@ class Strategy4Activity : AppCompatActivity() {
                             ViewGroup.LayoutParams.WRAP_CONTENT,
                             true
                         )
+
+                        b.expandReasonBtn.setOnClickListener {
+                            val p = data.indexOf(result)
+                            result.expandReason = !result.expandReason
+                            notifyItemChanged(p)
+                            pw.dismiss()
+                        }
 
                         b.followBtn.setOnClickListener {
                             pw.dismiss()

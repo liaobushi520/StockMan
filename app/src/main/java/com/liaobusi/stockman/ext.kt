@@ -31,7 +31,7 @@ fun <T> List<T>.split(groupCount: Int = 3): List<List<T>> {
 }
 
 suspend fun <T, R> List<T>.compute(
-    count:Int=6,
+    count: Int = 6,
     f: suspend (s: T) -> R?
 ): List<R> {
     val jobList = mutableListOf<Deferred<List<R>>>()
@@ -67,36 +67,50 @@ fun Date.before(before: Int): Int {
 }
 
 
-fun today():Int{
-    return  SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())).toInt()
+fun today(): Int {
+    return SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())).toInt()
 }
 
-fun View.multiClick(count:Int, callback:()->Unit){
+fun View.multiClick(count: Int, callback: () -> Unit) {
 
-    this.setTag(R.id.view_tag_count,0)
+    this.setTag(R.id.view_tag_count, 0)
 
-    var job: Job?=null
+    var job: Job? = null
     this.setOnClickListener {
-        var c=this.getTag(R.id.view_tag_count) as Int
+        var c = this.getTag(R.id.view_tag_count) as Int
         job?.cancel()
         c += 1
-        if(c==count){
-            this.setTag(R.id.view_tag_count,0)
+        if (c == count) {
+            this.setTag(R.id.view_tag_count, 0)
             callback()
-        }else{
-            this.setTag(R.id.view_tag_count,c)
-            job= GlobalScope.launch {
+        } else {
+            this.setTag(R.id.view_tag_count, c)
+            job = GlobalScope.launch {
                 delay(300)
-                setTag(R.id.view_tag_count,0)
+                setTag(R.id.view_tag_count, 0)
             }
         }
 
 
-
-
-
-
     }
 
+}
+
+
+public fun String.removeSurroundingWhenExist(prefix: CharSequence, suffix: CharSequence): String {
+    return if (startsWith(prefix)) {
+        if (endsWith(suffix)) {
+            substring(prefix.length, length - suffix.length)
+        } else {
+            substring(prefix.length, length)
+        }
+    } else {
+        if (endsWith(suffix)) {
+            substring(0, length - suffix.length)
+        } else {
+            this
+        }
+    }
+    return this
 }
 

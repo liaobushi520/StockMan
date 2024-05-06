@@ -24,7 +24,7 @@ import java.util.Date
 
 val log = StringBuilder()
 
-const val ENABLE_LOG = true
+const val ENABLE_LOG = false
 
 fun writeLog(code: String, msg: String) {
 

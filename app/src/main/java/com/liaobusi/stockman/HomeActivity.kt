@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -16,6 +17,8 @@ import android.view.View
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.liaobusi.stockman.databinding.ActivityHomeBinding
+import com.liaobusi.stockman.db.marketCode
+import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.db.specialBK
 import com.liaobusi.stockman.repo.StockRepo
 import kotlinx.coroutines.Dispatchers
@@ -74,7 +77,7 @@ class HomeActivity : AppCompatActivity() {
         }
 
         binding.analysisBtn.setOnClickListener {
-            val i=Intent(this,AnalysisActivity::class.java)
+            val i = Intent(this, AnalysisActivity::class.java)
             startActivity(i)
         }
 
@@ -95,6 +98,13 @@ class HomeActivity : AppCompatActivity() {
         binding.s4.setOnClickListener {
             val i = Intent(this, Strategy4Activity::class.java)
             startActivity(i)
+        }
+
+        binding.fpBtn.setOnClickListener {
+            val s = "https://www.jiuyangongshe.com/action/2024-04-30"
+            val uri: Uri = Uri.parse(s)
+            val intent = Intent(Intent.ACTION_VIEW, uri)
+            startActivity(intent)
         }
 
         binding.s5.setOnClickListener {
@@ -256,11 +266,12 @@ class HomeActivity : AppCompatActivity() {
             //   StockRepo.getHistoryStocks( 20230926,20230926)
 
 
+
+
         }
 
 
         Injector.startAutoRefresh()
-
 
 
     }

@@ -100,4 +100,6 @@ data class StockTrendData(
     val trends: List<String>
 )
 
+data class FPRequest(val date:String,val pc:Int=0)
+
 

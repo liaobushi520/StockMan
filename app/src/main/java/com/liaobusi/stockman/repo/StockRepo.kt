@@ -3,6 +3,7 @@ package com.liaobusi.stockman.repo
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.DiscretePathEffect
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
@@ -12,19 +13,12 @@ import android.widget.Toast
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.google.gson.Gson
-import com.liaobusi.stockman.BKStrategyActivity
-import com.liaobusi.stockman.Injector
-import com.liaobusi.stockman.STOCK_GREEN
-import com.liaobusi.stockman.Strategy4Activity
+import com.google.gson.reflect.TypeToken
+import com.liaobusi.stockman.*
+import com.liaobusi.stockman.api.FPRequest
 import com.liaobusi.stockman.api.StockService
 import com.liaobusi.stockman.api.StockTrend
-import com.liaobusi.stockman.before
-import com.liaobusi.stockman.compute
 import com.liaobusi.stockman.db.*
-import com.liaobusi.stockman.howDayShowZTFlag
-import com.liaobusi.stockman.isShowHiddenStockAndBK
-import com.liaobusi.stockman.isShowST
-import com.liaobusi.stockman.writeLog
 import kotlinx.coroutines.*
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -126,6 +120,91 @@ data class Strategy8Param(
 
 
 object StockRepo {
+
+
+    suspend fun fetchZTReplay(date: Int) = withContext(Dispatchers.IO) {
+        val api = Injector.retrofit.create(StockService::class.java)
+        val dateStr = date.toString()
+        val date2 = StringBuilder().append(dateStr.substring(0, 4)).append('-')
+            .append(dateStr.substring(4, 6)).append('-').append(dateStr.substring(6, 8))
+        val url = "https://www.jiuyangongshe.com/action/${date2}"
+        val rsp = api.getZTReplay2(url)
+        val str = rsp.string()
+        val start = str.indexOf("actionFieldList:") + "actionFieldList:".length
+        val end = str.indexOf(",totalCount:")
+        val content1 = str.substring(start, end)
+
+        var q = 0
+        q = content1.indexOf("action_field_id:", q) + "action_field_id:".length
+        val list = mutableListOf<Int>()
+        while (q > 0) {
+            val v = content1.indexOf("action_field_id:", q)
+            if (v > 0 && (content1.get(v + "action_field_id:".length + 2) == 'n')) {
+                list.add(v)
+            }
+            q = if (v < 0) v else v + "action_field_id:".length
+        }
+
+        val strList = mutableListOf<String>()
+        list.forEachIndexed { index, pos ->
+            val s = content1.substring(
+                pos,
+                if (index + 1 >= list.size) content1.length else list.get(index + 1)
+            )
+            strList.add(s)
+        }
+
+        val ztReplayBeanList = mutableListOf<ZTReplayBean>()
+
+        strList.forEach { content ->
+            val s = 0
+            val ss = content.indexOf("name:", s) + "name:".length
+            val ee = content.indexOf(",", ss)
+            val name = content.substring(ss, ee).removeSurroundingWhenExist("\"", "\"")
+            val ss1 = content.indexOf("reason:", ee) + "reason:".length
+            var ee1 = content.indexOf(",", ss1)
+            val reason = content.substring(ss1, ee1).removeSurroundingWhenExist("\"", "\"")
+
+            var stop = false
+            while (!stop) {
+                val v = content.indexOf("code:", ee1)
+                val ss2 = v + "code:".length
+                if (v > 0) {
+                    val ee2 = content.indexOf(",", ss2)
+                    val code =
+                        content.substring(ss2, ee2).removeSurroundingWhenExist("\"", "\"")
+                            .removePrefix("sh").removePrefix("sz")
+
+                    val ss3 = content.indexOf(",time:", ee2) + ",time:".length
+                    val ee3 = content.indexOf(",", ss3)
+                    val time = content.substring(ss3, ee3).removeSurroundingWhenExist("\"", "\"")
+
+
+                    val ss5 = content.indexOf("expound:", ee3) + "expound:".length
+                    val ee5 = content.indexOf(",", ss5)
+                    val expound = content.substring(ss5, ee5).removeSurroundingWhenExist("\"", "\"")
+
+                    val item = ZTReplayBean(
+                        date = date,
+                        code = code,
+                        reason.replace("\\n", "\n").replace("\\u002F", "\\"),
+                        name.replace("\\u002F", "\\", true),
+                        expound.replace("\\n", "\n").replace("\\u002F", "\\"),
+                        if (time.length < 2) "09:30:00" else time
+                    )
+                    ztReplayBeanList.add(
+                        item
+                    )
+                    ee1 = ee5
+                } else {
+                    stop = true
+                }
+
+            }
+        }
+        Injector.appDatabase.ztReplayDao().insertAll(ztReplayBeanList)
+
+    }
 
 
     suspend fun refreshData() {
@@ -526,7 +605,7 @@ object StockRepo {
     }
 
 
-    suspend fun getHistoryBks(count: Int=250,end:Int=20500000) = withContext(Dispatchers.IO) {
+    suspend fun getHistoryBks(count: Int = 250, end: Int = 20500000) = withContext(Dispatchers.IO) {
 
 
         val bkDao = Injector.appDatabase.bkDao()
@@ -1171,6 +1250,7 @@ object StockRepo {
 
             val h =
                 (histories[0].closePrice - ztStockHistory!!.closePrice) * 100 / ztStockHistory!!.closePrice
+
 
             Log.e(
                 "涨停强势",
@@ -2020,7 +2100,7 @@ object StockRepo {
                 val bkFirst = bkDao.getHistoryByDate(bkCode, sFirst.date)
                 if (bkLast != null && bkFirst != null) {
                     val bkChg = (bkFirst.closePrice - bkLast.closePrice) / bkLast.closePrice
-                    Log.e("股票超人", it.name + " 涨跌幅${sChg} ,板块涨跌幅${bkChg}")
+                    writeLog(it.code, it.name + " 涨跌幅${sChg} ,板块涨跌幅${bkChg}")
                     chgDeviation = sChg - bkChg
                 }
             }
@@ -2039,11 +2119,10 @@ object StockRepo {
             val activeRate =
                 (perTotalTurnOverRate / 100 * 0.2f + dd / 100 * 0.2f + kLineSlopeRate * 0.3f + perSampleZTRate * 0.1f + chgDeviation * 0.1f + totalAverageDiverge * 0.1f) * 1000 / range
 
-            Log.i(
-                "股票超人",
+            writeLog(
+                it.code,
                 "${it.name} ${histories.first().date}止${range}内平均换手率${perTotalTurnOverRate / 100} , 换手率变化率${dd / 100} ,涨跌幅${kLineSlopeRate}  , 均线偏差${totalAverageDiverge}, 平均涨停概率${perSampleZTRate}  ,  与板块偏差$chgDeviation ，活跃度$activeRate "
             )
-
             //放量异动
             val highTurnOverRate =
                 histories[0].turnoverRate >= perSampleTurnOverRate * abnormalRate
@@ -2081,6 +2160,16 @@ object StockRepo {
                 nextDayCry = first.chg < -5
             }
 
+            val ztReplay = if (zt) {
+                val ztReplayDao = Injector.appDatabase.ztReplayDao()
+                ztReplayDao.getZTReplay(date = histories[0].date, histories[0].code)
+            } else null
+
+            val ztTimeDigitization =
+                if (ztReplay != null) 15f - (ztReplay!!.time.replaceFirst(":", ".").replace(":", "")
+                    .toFloatOrNull() ?: 15f) else 0f
+
+            val nextDayHistory = historyDao.getHistoryAfter3(it.code, endTime, 1).firstOrNull()
 
             return@compute StockResult(
                 it,
@@ -2100,19 +2189,18 @@ object StockRepo {
                 follow = follows.filter { f -> f.code == it.code }.isNotEmpty(),
                 ztCountInRange = ztCount2,
                 lianbanCount = lianbanCount,
-                chg = histories[0].chg
+                ztReplay = ztReplay,
+                ztTimeDigitization = ztTimeDigitization,
+                nextDayHistory = nextDayHistory,
+                currentDayHistory = histories[0]
             )
 
         }
-
-
-
 
         Collections.sort(result, kotlin.Comparator
         { v0, v1 ->
             return@Comparator v1.signalCount - v0.signalCount
         })
-
 
         return@withContext StrategyResult(result, stocks.size)
     }
@@ -2709,8 +2797,15 @@ data class StockResult(
     var follow: Boolean = false,
     var ztCountInRange: Int = 0,
     val lianbanCount: Int = 0,
-    val chg: Float = 0f,
     val dt: Boolean = false,
+    var ztReplay: ZTReplayBean? = null,
+    var groupColor: Int = Color.BLACK,
+    var isGroupHeader: Boolean = false,
+    var expandReason: Boolean = false,
+    val ztTimeDigitization: Float = 0f,
+    var nextDayHistory:HistoryStock?=null,
+    var currentDayHistory:HistoryStock?=null
+
 )
 
 data class StrategyResult(

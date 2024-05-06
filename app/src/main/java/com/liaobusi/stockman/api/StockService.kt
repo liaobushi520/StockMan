@@ -1,11 +1,16 @@
 package com.liaobusi.stockman.api
 
+import com.liaobusi.stockman.db.FPResponse
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Body
+import retrofit2.http.Field
+import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Query
 import retrofit2.http.Streaming
 import retrofit2.http.Url
@@ -78,5 +83,12 @@ interface StockService {
     @GET("https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_F10_EH_HOLDERNUM&columns=A_MARK%2CB_MARK%2CH_MARK%2CSECUCODE%2CSECURITY_CODE%2CORG_CODE%2CEND_DATE%2CHOLDER_TOTAL_NUM%2CTOTAL_NUM_RATIO%2CHOLDER_A_NUM%2CHOLDER_ANUM_RATIO%2CAVG_FREE_SHARES%2CAVG_FREESHARES_RATIO%2CPRICE%2CAVG_HOLD_AMT%2CHOLD_FOCUS%2CHOLD_RATIO_TOTAL%2CFREEHOLD_RATIO_TOTAL%2CHOLDER_B_NUM%2CHOLDER_H_NUM%2CHOLDER_BNUM_RATIO%2CHOLDER_HNUM_RATIO&client=APP&source=SECURITIES&pageNumber=1&pageSize=200&sr=-1&st=END_DATE&v=05145907342118392")
     suspend fun getGDRS(@Query("filter") filter:String):GDRSResponse
 
+
+
+    @GET()
+    suspend fun getZTReplay2(@Url url: String):ResponseBody
+
+    @POST("https://app.jiuyangongshe.com/jystock-app/api/v1/action/field")
+    suspend fun getZTReplay(@Body data:FPRequest):FPResponse
 }
 

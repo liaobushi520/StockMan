@@ -279,7 +279,7 @@ class Strategy2Activity : AppCompatActivity() {
                 val list = StockRepo.strategy2(
                     startMarketTime = startMarketTime,
                     endMarketTime = endMarketTime,
-                    lowMarketValue = lowMarketValue * 100000000,
+                    lowMarketValue = lowMarketValue *   100000000,
                     highMarketValue = highMarketValue * 100000000,
                     range = timeRange,
                     endTime = endTime,

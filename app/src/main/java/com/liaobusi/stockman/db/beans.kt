@@ -2,8 +2,10 @@ package com.liaobusi.stockman.db
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import androidx.room.*
+import com.liaobusi.stockman.STOCK_GREEN
 
 @Entity(primaryKeys = ["date"])
 data class AnalysisBean(
@@ -163,13 +165,24 @@ data class HistoryStock(
     val averagePrice: Float,
 )
 
+val HistoryStock.color: Int
+    get() {
+        return if (chg > 0) {
+            Color.RED
+        } else if (chg < 0) {
+            STOCK_GREEN
+        } else {
+            Color.GRAY
+        }
+    }
+
 val HistoryStock.ZT: Boolean
     get() {
         if (this.ztPrice == -1f) {
             if (this.code.startsWith("300") || this.code.startsWith("688") || this.code.startsWith("301")) {
                 return this.chg > 19
             } else {
-                return this.chg > 9.6
+                return this.chg > 9.65
             }
         }
         return this.ztPrice > 0 && this.closePrice == this.ztPrice
@@ -219,11 +232,10 @@ val HistoryStock.longUpShadow: Boolean
 
 
 @Database(
-    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class],
-    version = 15,
+    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class],
+    version = 17,
     autoMigrations = [
-
-        AutoMigration(from = 14, to = 15)
+        AutoMigration(from = 16, to = 17)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -241,6 +253,8 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun analysisBeanDao(): AnalysisBeanDao
 
+    abstract fun ztReplayDao(): ZTReplayDao
+
 
 //    @DeleteTable.Entries(value = [DeleteTable(tableName = "BK"),DeleteTable(tableName = "HistoryBK")])
 //    class MyAutoMigration : AutoMigrationSpec
@@ -248,6 +262,84 @@ abstract class AppDatabase : RoomDatabase() {
 
 }
 
+@Entity(primaryKeys = ["date", "code"])
+data class ZTReplayBean(
+    val date: Int,
+    val code: String,
+    val reason: String,
+    val groupName: String,
+    val expound: String,
+    @ColumnInfo(defaultValue = "--:--:--") val time: String
+)
 
 
+data class FPResponse(
+    val data: List<Data2>,
+    val errCode: String,
+    val msg: String,
+    val serverTime: Int
+)
 
+data class Data2(
+    val action_field_id: String,
+    val count: Int,
+    val create_time: String,
+    val date: String,
+    val delete_time: Any,
+    val is_delete: String,
+    val list: List<ArticleWrap>?,
+    val name: String,
+    val reason: String,
+    val sort_no: Int,
+    val status: Int,
+    val update_time: Any
+)
+
+data class ArticleWrap(
+    val article: Article,
+    val code: String,
+    val name: String
+)
+
+data class Article(
+    val action_info: ActionInfo,
+    val article_id: String,
+    val comment_count: Int,
+    val create_time: String,
+    val forward_count: Int,
+    val is_like: Int,
+    val is_step: Int,
+    val like_count: Int,
+    val step_count: Int,
+    val title: String,
+    val user: User,
+    val user_id: String
+)
+
+data class ActionInfo(
+    val action_field_id: String,
+    val action_info_id: String,
+    val article_id: String,
+    val create_time: String,
+    val day: Int,
+    val delete_time: Any,
+    val edition: Int,
+    val expound: String,
+    val is_crawl: Int,
+    val is_delete: String,
+    val is_recommend: Int,
+    val num: String,
+    val price: Int,
+    val reason: Any,
+    val shares_range: Double,
+    val sort_no: Int,
+    val stock_id: String,
+    val time: String,
+    val update_time: Any
+)
+
+data class User(
+    val avatar: String,
+    val nickname: String,
+    val user_id: String
+)

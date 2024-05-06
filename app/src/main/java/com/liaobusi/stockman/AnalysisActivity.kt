@@ -189,7 +189,7 @@ class AnalysisActivity : AppCompatActivity() {
             binding.chart.xAxis.apply {
                 valueFormatter = object : ValueFormatter() {
                     override fun getFormattedValue(value: Float): String {
-                        if(value.toInt()>r.size){
+                        if(r.size<=0||value.toInt()>r.size){
                             return ""
                         }
                         return r[value.toInt()].date.toString()
