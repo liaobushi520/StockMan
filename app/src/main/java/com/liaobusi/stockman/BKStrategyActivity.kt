@@ -22,6 +22,7 @@ import com.liaobusi.stockman.databinding.ItemStockBinding
 import com.liaobusi.stockman.databinding.LayoutPopupWindowBinding
 import com.liaobusi.stockman.db.Follow
 import com.liaobusi.stockman.db.Hide
+import com.liaobusi.stockman.db.color
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.repo.BKResult
 import com.liaobusi.stockman.repo.StockRepo
@@ -307,6 +308,10 @@ class BKStrategyActivity : AppCompatActivity() {
                 output(list)
             }
 
+            binding.nextChgCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                output(list)
+            }
+
             var r = list
             r = mutableListOf<BKResult>().apply { addAll(r) }
 
@@ -338,7 +343,7 @@ class BKStrategyActivity : AppCompatActivity() {
 
             if (binding.zfCb.isChecked) {
                 Collections.sort(r, kotlin.Comparator { v0, v1 ->
-                    return@Comparator v1.chg.compareTo(v0.chg)
+                    return@Comparator v1.currentDayHistory!!.chg.compareTo(v0.currentDayHistory!!.chg)
                 })
             }
 
@@ -408,14 +413,15 @@ class BKStrategyActivity : AppCompatActivity() {
 
             binding.resultCount.text = "板块结果(${r.size}/${t})"
             binding.rv.layoutManager = LinearLayoutManager(this@BKStrategyActivity)
-            binding.rv.adapter = ResultAdapter(r, bkCodes.toString())
+            binding.rv.adapter = ResultAdapter(r, bkCodes.toString(),binding.nextChgCb.isChecked)
 
         }
     }
 
     inner class ResultAdapter(
         private val data: MutableList<BKResult>,
-        private val bkCodes: String
+        private val bkCodes: String,
+        private val showNextChg:Boolean=false
     ) : RecyclerView.Adapter<ResultAdapter.VH>() {
 
         inner class VH(private val itemBinding: ItemStockBinding) :
@@ -458,19 +464,31 @@ class BKStrategyActivity : AppCompatActivity() {
                         return@setOnTouchListener false
                     }
 
-                    if (result.chg > 0) {
-                        currentChg.setTextColor(Color.RED)
-                    } else if (result.chg < 0) {
-                        currentChg.setTextColor(STOCK_GREEN)
-                    } else {
-                        currentChg.setTextColor(Color.GRAY)
+                    if (result.currentDayHistory != null) {
+                        result.currentDayHistory!!.apply {
+                            currentChg.setTextColor(color)
+                            currentChg.text = chg.toString()
+                            if (isShowCurrentChg(binding.root.context)) {
+                                currentChg.visibility = View.VISIBLE
+                            } else {
+                                currentChg.visibility = View.GONE
+                            }
+                        }
                     }
-                    currentChg.text = result.chg.toString()
-                    if (isShowCurrentChg(binding.root.context)) {
-                        currentChg.visibility = View.VISIBLE
-                    } else {
-                        currentChg.visibility = View.GONE
+
+                    if (result.nextDayHistory != null) {
+                        result.nextDayHistory!!.apply {
+                            nextDayChg.setTextColor(color)
+                            nextDayChg.text = chg.toString()
+                            if (showNextChg) {
+                                nextDayChg.visibility = View.VISIBLE
+                            } else {
+                                nextDayChg.visibility = View.GONE
+                            }
+                        }
                     }
+
+
 
                     if (binding.ztModeCb.isChecked) {
                         if (binding.zgbCb.isChecked) {

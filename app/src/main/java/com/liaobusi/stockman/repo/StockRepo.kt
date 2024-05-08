@@ -139,7 +139,7 @@ object StockRepo {
         val list = mutableListOf<Int>()
         while (q > 0) {
             val v = content1.indexOf("action_field_id:", q)
-            if (v > 0 && (content1.get(v + "action_field_id:".length + 2) == 'n')) {
+            if (v > 0 && ((content1[v + "action_field_id:".length + 2] == 'n') || (content1[v + "action_field_id:".length + 3] == 'n'))) {
                 list.add(v)
             }
             q = if (v < 0) v else v + "action_field_id:".length
@@ -149,7 +149,7 @@ object StockRepo {
         list.forEachIndexed { index, pos ->
             val s = content1.substring(
                 pos,
-                if (index + 1 >= list.size) content1.length else list.get(index + 1)
+                if (index + 1 >= list.size) content1.length else list[index + 1]
             )
             strList.add(s)
         }
@@ -1766,13 +1766,13 @@ object StockRepo {
         val beforeBkResultSortByChg = mutableListOf<BKResult>().apply { addAll(tradeBkResult) }
         //涨幅排序
         Collections.sort(beforeBkResultSortByChg, kotlin.Comparator { v0, v1 ->
-            return@Comparator v1.chg.compareTo(v0.chg)
+            return@Comparator v1.currentDayHistory!!.chg.compareTo(v0.currentDayHistory!!.chg)
         })
 
         val bkResultSortByChg = mutableListOf<BKResult>().apply { addAll(tradeBkResult2) }
         //涨幅排序
         Collections.sort(bkResultSortByChg, kotlin.Comparator { v0, v1 ->
-            return@Comparator v1.chg.compareTo(v0.chg)
+            return@Comparator v1.currentDayHistory!!.chg.compareTo(v0.currentDayHistory!!.chg)
         })
 
 
@@ -1789,12 +1789,12 @@ object StockRepo {
                 ForegroundColorSpan(Color.BLUE),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             ).append("今日").append(
-                "${bk.chg}",
-                ForegroundColorSpan(if (bk.chg < 0) STOCK_GREEN else Color.RED),
+                "${bk.currentDayHistory!!.chg}",
+                ForegroundColorSpan(bk.currentDayHistory!!.color),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             ).append(",昨日").append(
-                "${beforeBkMap[bk.bk.code]?.chg}",
-                ForegroundColorSpan(if (beforeBkMap[bk.bk.code]!!.chg < 0) STOCK_GREEN else Color.RED),
+                "${beforeBkMap[bk.bk.code]?.currentDayHistory!!.chg}",
+                ForegroundColorSpan(bk.currentDayHistory!!.color),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             )
             analysisResultList.add(AnalysisResult(ssb) {
@@ -1817,12 +1817,12 @@ object StockRepo {
                 ForegroundColorSpan(Color.BLUE),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             ).append("昨日").append(
-                "${beforeBk.chg}",
-                ForegroundColorSpan(if (beforeBk.chg < 0) STOCK_GREEN else Color.RED),
+                "${beforeBk.currentDayHistory!!.chg}",
+                ForegroundColorSpan(beforeBk.currentDayHistory!!.color),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             ).append(",今日").append(
-                "${bkMap[beforeBk.bk.code]?.chg}",
-                ForegroundColorSpan(if (bkMap[beforeBk.bk.code]!!.chg < 0) STOCK_GREEN else Color.RED),
+                "${bkMap[beforeBk.bk.code]?.currentDayHistory!!.chg}",
+                ForegroundColorSpan(bkMap[beforeBk.bk.code]?.currentDayHistory!!.color),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             )
             analysisResultList.add(AnalysisResult(ssb) {
@@ -2166,7 +2166,7 @@ object StockRepo {
             } else null
 
             val ztTimeDigitization =
-                if (ztReplay != null) 15f - (ztReplay!!.time.replaceFirst(":", ".").replace(":", "")
+                if (ztReplay != null) 15f - (ztReplay.time.replaceFirst(":", ".").replace(":", "")
                     .toFloatOrNull() ?: 15f) else 0f
 
             val nextDayHistory = historyDao.getHistoryAfter3(it.code, endTime, 1).firstOrNull()
@@ -2363,6 +2363,8 @@ object StockRepo {
                     }
                 }
 
+                val nextDayHistory = historyDao.getHistoryAfter(it.code, endTime, 1).firstOrNull()
+
                 return@compute BKResult(
                     it,
                     overPreHigh = overPreHigh,
@@ -2375,9 +2377,10 @@ object StockRepo {
                     follow = follows.filter { f -> f.code == it.code }.isNotEmpty(),
                     hide = if (isShowHiddenStockAndBK) hides.filter { f -> f.code == it.code }
                         .isNotEmpty() else false,
-                    chg = histories[0].chg,
+                    currentDayHistory = histories[0],
                     ztCount = ztOne.first,
-                    highestLianBanCount = highestLianBanCount
+                    highestLianBanCount = highestLianBanCount,
+                    nextDayHistory = nextDayHistory
                 )
 
             }
@@ -2724,9 +2727,11 @@ data class BKResult(
     val touchLine: Boolean = false,
     var follow: Boolean = false,
     var hide: Boolean = false,
-    val chg: Float,
+
     val ztCount: Int,
-    val highestLianBanCount: Int
+    val highestLianBanCount: Int,
+    var nextDayHistory:HistoryBK?=null,
+    var currentDayHistory:HistoryBK?=null
 )
 
 val BKResult.signalCount: Int

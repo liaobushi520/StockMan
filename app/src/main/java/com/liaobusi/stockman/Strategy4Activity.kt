@@ -72,6 +72,7 @@ class Strategy4Activity : AppCompatActivity() {
                 lifecycleScope.launch {
                     StockRepo.refreshData()
                     launch(Dispatchers.Main) {
+                        delay(300)
                         binding.chooseStockBtn.callOnClick()
                     }
                 }
@@ -797,22 +798,30 @@ class Strategy4Activity : AppCompatActivity() {
             val ll = mutableListOf<StockResult>()
             if (binding.groupCb.isChecked) {
                 var i = 0
-                r.groupBy { it.ztReplay?.groupName ?: "" }.forEach { key, value ->
+                r.groupBy { it.ztReplay?.groupName ?: "" }.forEach { (_, value) ->
                     Collections.sort(value, kotlin.Comparator { v0, v1 ->
                         return@Comparator (v1.lianbanCount * 10 + v1.ztTimeDigitization).compareTo(
                             v0.lianbanCount * 10 + v0.ztTimeDigitization
                         )
                     })
-                    val color = colors.get(i % colors.size)
+                    val color = colors[i % colors.size]
                     value.forEach {
                         it.groupColor = color
                     }
+                    val fakeItem = value.first()
                     ll.add(
                         StockResult(
                             isGroupHeader = true,
                             groupColor = color,
-                            stock = value.first().stock,
-                            ztReplay = value.first().ztReplay
+                            stock = fakeItem.stock,
+                            ztReplay = fakeItem.ztReplay ?: ZTReplayBean(
+                                fakeItem.currentDayHistory!!.date,
+                                fakeItem.stock.code,
+                                "无",
+                                "未分组",
+                                "无",
+                                "--:--:--"
+                            )
                         )
                     )
                     ll.addAll(value)
@@ -951,7 +960,7 @@ class Strategy4Activity : AppCompatActivity() {
                         } else {
                             currentChg.visibility = View.GONE
                         }
-                    }else{
+                    } else {
                         currentChg.visibility = View.GONE
                     }
 
@@ -964,7 +973,7 @@ class Strategy4Activity : AppCompatActivity() {
                             nextDayChg.visibility = View.GONE
                         }
 
-                    }else{
+                    } else {
                         nextDayChg.visibility = View.GONE
                     }
 

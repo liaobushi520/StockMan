@@ -16,6 +16,8 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
+import com.liaobusi.stockman.api.FPRequest
+import com.liaobusi.stockman.api.StockService
 import com.liaobusi.stockman.databinding.ActivityHomeBinding
 import com.liaobusi.stockman.db.marketCode
 import com.liaobusi.stockman.db.openWeb
@@ -101,7 +103,7 @@ class HomeActivity : AppCompatActivity() {
         }
 
         binding.fpBtn.setOnClickListener {
-            val s = "https://www.jiuyangongshe.com/action/2024-04-30"
+            val s = "https://www.jiuyangongshe.com/action"
             val uri: Uri = Uri.parse(s)
             val intent = Intent(Intent.ACTION_VIEW, uri)
             startActivity(intent)
@@ -177,7 +179,7 @@ class HomeActivity : AppCompatActivity() {
             if (System.currentTimeMillis() - sp.getLong(
                     "fetch_bk_stocks_time",
                     0
-                ) > 1 * 24 * 60 * 60 * 1000
+                ) > 1 * 12 * 60 * 60 * 1000
             ) {
                 StockRepo.getBKStocks()
                 sp.edit().putLong("fetch_bk_stocks_time", System.currentTimeMillis()).apply()

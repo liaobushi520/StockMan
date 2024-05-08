@@ -121,6 +121,9 @@ interface HistoryBKDao {
     @Query("select * from historybk where code=:code AND date>=:date   order by date asc limit 1")
     fun getHistoryByDate(code: String, date: Int): HistoryBK
 
+    @Query("select * from historybk where code=:code AND date > :date order by date asc limit :limit")
+    fun getHistoryAfter(code: String, date: Int, limit: Int = 5): List<HistoryBK>
+
 
     @Query("select * from historybk where code=:code AND date=:date   order by date asc limit 1")
     fun getHistoryByDate2(code: String, date: Int): HistoryBK

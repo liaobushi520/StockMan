@@ -43,6 +43,18 @@ data class HistoryBK(
     val yesterdayClosePrice: Float,
 )
 
+val HistoryBK.color: Int
+    get() {
+        return if (chg > 0) {
+            Color.RED
+        } else if (chg < 0) {
+            STOCK_GREEN
+        } else {
+            Color.GRAY
+        }
+    }
+
+
 val HistoryBK.DY: Boolean
     get() {
         return this.chg >= 3
@@ -233,9 +245,9 @@ val HistoryStock.longUpShadow: Boolean
 
 @Database(
     entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class],
-    version = 17,
+    version = 16,
     autoMigrations = [
-        AutoMigration(from = 16, to = 17)
+        AutoMigration(from = 15, to = 16)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
