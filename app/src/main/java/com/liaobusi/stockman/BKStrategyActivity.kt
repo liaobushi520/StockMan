@@ -350,7 +350,8 @@ class BKStrategyActivity : AppCompatActivity() {
 
             if (binding.zfCb.isChecked) {
                 Collections.sort(r, kotlin.Comparator { v0, v1 ->
-                    return@Comparator (v1.currentDayHistory?.chg?:-1000f).compareTo((v0.currentDayHistory?.chg?:-1000f))
+                    return@Comparator (v1.currentDayHistory?.chg
+                        ?: -1000f).compareTo((v0.currentDayHistory?.chg ?: -1000f))
                 })
             }
 
@@ -431,6 +432,59 @@ class BKStrategyActivity : AppCompatActivity() {
         private val showNextChg: Boolean = false
     ) : RecyclerView.Adapter<ResultAdapter.VH>() {
 
+        override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+            super.onDetachedFromRecyclerView(recyclerView)
+            job?.cancel()
+        }
+
+        override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+            super.onAttachedToRecyclerView(recyclerView)
+            job = lifecycleScope.launch(Dispatchers.IO) {
+                while (true) {
+                    delay(3000)
+                    if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE) {
+                        continue
+                    }
+                    val lm = recyclerView.layoutManager as LinearLayoutManager
+                    val firstPos = lm.findFirstVisibleItemPosition()
+                    val lastPos = lm.findLastVisibleItemPosition()
+                    if (firstPos == RecyclerView.NO_POSITION || lastPos == RecyclerView.NO_POSITION) {
+                        continue
+                    }
+
+                    for (i in firstPos until lastPos + 1) {
+                        val result = data[i]
+                        if (result.currentDayHistory != null) {
+                            val s =
+                                Injector.appDatabase.bkDao().getBKByCode(result.bk.code)
+                            val cur = Injector.appDatabase.historyBKDao().getHistoryByDate3(
+                                result.bk.code,
+                                result.currentDayHistory!!.date
+                            )
+                            val next =
+                                if (result.nextDayHistory != null) Injector.appDatabase.historyBKDao().getHistoryByDate3(
+                                    result.bk.code,
+                                    result.nextDayHistory!!.date
+                                ) else null
+                            if (cur.chg != result.currentDayHistory!!.chg || next?.chg != result.nextDayHistory?.chg) {
+                                data[i] = result.copy(
+                                    bk = s!!,
+                                    currentDayHistory = cur,
+                                    nextDayHistory = next
+                                )
+                                launch(Dispatchers.Main) {
+                                    notifyItemChanged(i)
+                                }
+
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+
+
         inner class VH(private val itemBinding: ItemStockBinding) :
             RecyclerView.ViewHolder(itemBinding.root) {
 
@@ -485,7 +539,7 @@ class BKStrategyActivity : AppCompatActivity() {
                                     }
                                 }
                             }
-                            pw.showAsDropDown(it, (ev?.x ?: 0f).toInt()+50, -150)
+                            pw.showAsDropDown(it, (ev?.x ?: 0f).toInt() + 50, -150)
                             return@setOnLongClickListener true
                         }
                         return@apply

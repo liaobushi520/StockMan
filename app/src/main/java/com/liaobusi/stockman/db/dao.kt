@@ -238,6 +238,9 @@ interface HistoryStockDao {
     @Query("select * from historystock where code=:code AND date >= :start AND date <= :end order by date desc")
     fun getHistoryByDate2(code: String, start: Int, end: Int): List<HistoryStock>
 
+    @Query("select * from historystock where code=:code AND date =:date")
+    fun getHistoryByDate3(code: String, date: Int ): HistoryStock
+
     @Query("select * from historystock where closePrice=0.0")
     fun getErrorHistory(): List<HistoryStock>
 

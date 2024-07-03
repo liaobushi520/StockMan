@@ -2,7 +2,9 @@ package com.liaobusi.stockman
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.DiscretePathEffect
 import android.os.Build
 import android.os.Bundle
 import android.text.SpannableStringBuilder
@@ -13,6 +15,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
+import android.view.View.OnAttachStateChangeListener
 import android.view.ViewGroup
 import android.widget.PopupWindow
 import android.widget.Toast
@@ -909,11 +912,74 @@ class Strategy4Activity : AppCompatActivity() {
             return data.map { it.stock }
         }
 
+        override fun onViewDetachedFromWindow(holder: VH) {
+            super.onViewDetachedFromWindow(holder)
+
+
+        }
+
+
+
+        private var job: Job? = null
+
+        override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+            super.onDetachedFromRecyclerView(recyclerView)
+            job?.cancel()
+        }
+
+        override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+            super.onAttachedToRecyclerView(recyclerView)
+            job = lifecycleScope.launch(Dispatchers.IO) {
+                while (true) {
+                    delay(3000)
+                    if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE) {
+                        continue
+                    }
+                    val lm = recyclerView.layoutManager as LinearLayoutManager
+                    val firstPos = lm.findFirstVisibleItemPosition()
+                    val lastPos = lm.findLastVisibleItemPosition()
+                    if (firstPos == RecyclerView.NO_POSITION || lastPos == RecyclerView.NO_POSITION) {
+                        continue
+                    }
+
+                    for (i in firstPos until lastPos + 1) {
+                        val result = data[i]
+                        if (result.currentDayHistory != null&&!result.isGroupHeader) {
+                            val s =
+                                Injector.appDatabase.stockDao().getStockByCode(result.stock.code)
+                            val h = Injector.appDatabase.historyStockDao().getHistoryByDate3(
+                                result.stock.code,
+                                result.currentDayHistory!!.date
+                            )
+                            val n= if (result.nextDayHistory!=null)Injector.appDatabase.historyStockDao().getHistoryByDate3(
+                                result.stock.code,
+                                result.nextDayHistory!!.date
+                            )else null
+                            if (h.chg != result.currentDayHistory!!.chg||n?.chg!=result.nextDayHistory?.chg) {
+                                data[i] = result.copy(
+                                    stock = s,
+                                    currentDayHistory = h,
+                                    nextDayHistory = n
+                                )
+                                launch(Dispatchers.Main) {
+                                    notifyItemChanged(i)
+                                }
+
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+
 
         inner class VH(val binding: ItemStockBinding) : RecyclerView.ViewHolder(binding.root) {
 
+
             @RequiresApi(Build.VERSION_CODES.O)
             fun bind(result: StockResult, position: Int) {
+
                 if (result.isGroupHeader) {
                     binding.root.setOnClickListener(null)
                     binding.groupHeaderLL.visibility = View.VISIBLE
@@ -940,7 +1006,6 @@ class Strategy4Activity : AppCompatActivity() {
 
                 val stock = result.stock
                 binding.apply {
-
                     if (result.follow) {
                         this.root.setBackgroundColor(0x33333333)
                     } else {

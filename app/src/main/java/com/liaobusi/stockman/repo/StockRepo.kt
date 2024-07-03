@@ -883,8 +883,6 @@ object StockRepo {
                 Log.i("股票超人", "插入股票信息数据库")
 
                 val dao1 = Injector.appDatabase.historyStockDao()
-                val today =
-                    SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())).toInt()
                 val date = response.data.diff.first().date
                 val historyStocks = list.filter { it.price != 0f }.map {
                     return@map HistoryStock(
