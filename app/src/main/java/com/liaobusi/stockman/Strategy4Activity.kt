@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import android.text.SpannableStringBuilder
 import android.text.style.ForegroundColorSpan
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -17,12 +18,16 @@ import android.widget.PopupWindow
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.liaobusi.stockman.Strategy4Activity.Companion.openJXQSStrategy
 import com.liaobusi.stockman.databinding.ActivityStrategy4Binding
+import com.liaobusi.stockman.databinding.FragmentStockInfoBinding
 import com.liaobusi.stockman.databinding.ItemFollowBinding
 import com.liaobusi.stockman.databinding.ItemStockBinding
+import com.liaobusi.stockman.databinding.ItemStockInfoBkBinding
 import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
 import com.liaobusi.stockman.db.*
 import com.liaobusi.stockman.repo.*
@@ -798,7 +803,23 @@ class Strategy4Activity : AppCompatActivity() {
             val ll = mutableListOf<StockResult>()
             if (binding.groupCb.isChecked) {
                 var i = 0
-                r.groupBy { it.ztReplay?.groupName ?: "" }.forEach { (_, value) ->
+                val listPair =
+                    r.groupBy { it.ztReplay?.groupName ?: "" }.values.toMutableList().map {
+                        var h = 1
+                        it.forEach {
+                            if (it.lianbanCount > h) {
+                                h = it.lianbanCount
+                            }
+                        }
+                        Pair(h * 100 + it.size, it)
+                    }
+                Collections.sort(listPair, kotlin.Comparator { v0, v1 ->
+                    return@Comparator v1.first.compareTo(
+                        v0.first
+                    )
+                })
+                listPair.forEach { pair ->
+                    val value = pair.second
                     Collections.sort(value, kotlin.Comparator { v0, v1 ->
                         return@Comparator (v1.lianbanCount * 10 + v1.ztTimeDigitization).compareTo(
                             v0.lianbanCount * 10 + v0.ztTimeDigitization
@@ -827,6 +848,7 @@ class Strategy4Activity : AppCompatActivity() {
                     ll.addAll(value)
                     i++
                 }
+
                 r = ll
             } else {
                 r.forEach {
@@ -1052,6 +1074,17 @@ class Strategy4Activity : AppCompatActivity() {
                             pw.dismiss()
                         }
 
+                        b.relatedConceptBtn.setOnClickListener {
+                            pw.dismiss()
+                            StockInfoFragment(
+                                result.stock,
+                                this@Strategy4Activity.binding.endTimeTv.editableText.toString()
+                            ).show(
+                                this@Strategy4Activity.supportFragmentManager,
+                                "stock_info"
+                            )
+                        }
+
                         b.followBtn.setOnClickListener {
                             pw.dismiss()
                             lifecycleScope.launch(Dispatchers.IO) {
@@ -1088,14 +1121,18 @@ class Strategy4Activity : AppCompatActivity() {
                             }
 
                         }
-                        pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -300)
+
+                        val arr = IntArray(2)
+                        binding.root.getLocationInWindow(arr)
+                        pw.showAsDropDown(
+                            it,
+                            (ev?.x ?: 0f).toInt(),
+                            -500 - (binding.root.height - (ev!!.y - arr[1])).toInt()
+                        )
                         return@setOnLongClickListener true
                     }
 
-
                 }
-
-
             }
 
         }
@@ -1114,4 +1151,98 @@ class Strategy4Activity : AppCompatActivity() {
 
 
     }
+
 }
+
+
+class StockInfoFragment(private val stock: Stock, private val date: String) : DialogFragment() {
+
+
+    private lateinit var binding: FragmentStockInfoBinding
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        binding = FragmentStockInfoBinding.inflate(inflater)
+
+
+        val resultList = mutableListOf<String>()
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val list = stock.bk.split(",").map {
+                Pair(
+                    Injector.appDatabase.bkDao().getBKByCode(it),
+                    Injector.appDatabase.historyBKDao().getHistoryByDate2(it, date.toInt())
+                )
+            }.filter { it.first != null && !it.first!!.specialBK }
+            launch(Dispatchers.Main) {
+                list.forEach { pair ->
+                    val bk = pair.first
+                    val historyBK = pair.second
+                    val b = ItemStockInfoBkBinding.inflate(inflater).apply {
+                        bkCodeName.text = "${bk!!.code}-${bk.name}"
+                        if (historyBK != null) {
+                            chgTv.text = historyBK.chg.toString()
+                            val color = when {
+                                historyBK.chg < 0 -> STOCK_GREEN
+                                historyBK.chg > 0 -> Color.RED
+                                else -> Color.GRAY
+                            }
+                            chgTv.setTextColor(color)
+                        }
+
+                        bkCodeName.setOnClickListener {
+                            bk.openWeb(requireContext())
+                        }
+                        bkCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                            if (isChecked) {
+                                if (!resultList.contains(bk.code)) {
+                                    resultList.add(bk.code)
+                                }
+                            } else {
+                                resultList.remove(bk.code)
+                            }
+
+                        }
+                    }
+                    binding.bkLL.addView(b.root)
+
+                }
+            }
+
+        }
+
+
+
+
+        binding.cancelBtn.setOnClickListener {
+            dismiss()
+        }
+
+
+        binding.jumpBtn.setOnClickListener {
+            val sb = StringBuilder()
+            resultList.forEach {
+                sb.append(it).append(',')
+            }
+            openJXQSStrategy(
+                this.requireContext(),
+                sb.removeSuffix(",").toString(),
+                date
+            )
+        }
+
+
+        return binding.root
+    }
+
+
+}
+
+
+
+
+
+

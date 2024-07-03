@@ -79,7 +79,7 @@ data class BK(
 
 val BK.specialBK: Boolean
     get() {
-        return code == "BK1051" || code == "BK1050" || code == "BK0816" || code == "BK0815" || code == "BK1053" || code == "BK0867" || code == "BK0500" || code == "BK0610" || code == "BK0636"
+        return code=="BK0612" || code=="BK0528"||code=="BK0804"||code=="BK0742"||code=="BK0498"||code == "BK1051" || code == "BK1050" || code == "BK0816" ||code=="BK0707"|| code == "BK0815" || code == "BK1053" || code == "BK0867" || code == "BK0500" || code == "BK0610" || code == "BK0636"||code=="BK0596"
     }
 
 
@@ -244,10 +244,10 @@ val HistoryStock.longUpShadow: Boolean
 
 
 @Database(
-    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class],
-    version = 16,
+    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class],
+    version = 18,
     autoMigrations = [
-        AutoMigration(from = 15, to = 16)
+        AutoMigration(from = 17, to = 18)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -267,6 +267,8 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun ztReplayDao(): ZTReplayDao
 
+    abstract fun diyBkDao(): DIYBkDao
+
 
 //    @DeleteTable.Entries(value = [DeleteTable(tableName = "BK"),DeleteTable(tableName = "HistoryBK")])
 //    class MyAutoMigration : AutoMigrationSpec
@@ -282,6 +284,14 @@ data class ZTReplayBean(
     val groupName: String,
     val expound: String,
     @ColumnInfo(defaultValue = "--:--:--") val time: String
+)
+
+@Entity
+data class DIYBk(
+    @PrimaryKey val code: String,
+    val name: String,
+    val bkCodes: String,
+    @ColumnInfo(defaultValue = "") val dsp: String
 )
 
 

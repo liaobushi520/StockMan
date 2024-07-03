@@ -7,8 +7,10 @@ import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.liaobusi.stockman.databinding.ActivitySettingBinding
+import com.liaobusi.stockman.db.DIYBk
 import com.liaobusi.stockman.db.FPResponse
 import com.liaobusi.stockman.db.ZTReplayBean
 import com.liaobusi.stockman.repo.StockRepo
@@ -76,6 +78,8 @@ class SettingActivity : AppCompatActivity() {
         }
 
 
+        binding.fixedDateEt.setText(today().toString())
+        binding.fixedDate2Et.setText(today().toString())
 
         binding.fixDataBtn.setOnClickListener {
             val date = binding.fixedDateEt.editableText?.toString()?.toIntOrNull()
@@ -166,5 +170,22 @@ class SettingActivity : AppCompatActivity() {
             }
 
         }
+
+
+
+        binding.bksOkBtn.setOnClickListener {
+            val codes = binding.bksEt.editableText.toString()
+            val name = binding.bkNameEt.editableText.toString()
+            val code = sp.getInt("diy_bk_code", 10000)+1
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                Injector.appDatabase.diyBkDao().insert(DIYBk("BK$code", name, codes,""))
+                sp.edit().putInt("diy_bk_code",code).apply()
+            }
+
+
+        }
+
+
     }
 }

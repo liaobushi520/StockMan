@@ -8,10 +8,10 @@ interface StockDao {
     fun insertAll(stock: List<Stock>)
 
     @Query("select * from stock where code in ( select code from follow where type=1) order by chg DESC")
-    fun getFollowedStocks():List<Stock>
+    fun getFollowedStocks(): List<Stock>
 
     @Query("select * from stock where  chg>8.5 order by chg ASC")
-    fun getWillZTStocks():List<Stock>
+    fun getWillZTStocks(): List<Stock>
 
     @Query("select * from stock where toMarketTime < :endTime AND toMarketTime >:startTime AND circulationMarketValue <= :highMarketValue AND circulationMarketValue >= :lowMarketValue  order by circulationMarketValue desc")
     fun getStock(
@@ -42,14 +42,14 @@ interface BKDao {
     fun getAllBK(): List<BK>
 
     @Query("select * from bk where code in ( select code from follow where type=2) order by chg DESC")
-    fun getFollowedBKS():List<BK>
+    fun getFollowedBKS(): List<BK>
 
     @Query("select * from bk where code not in ( select code from hide where type=2) order by chg DESC")
-    fun getVisibleBKS():List<BK>
+    fun getVisibleBKS(): List<BK>
 
 
     @Query("select * from bk where code=:code")
-    fun getBKByCode(code: String): BK
+    fun getBKByCode(code: String): BK?
 
     @Query("select * from bk where type=0")
     fun getTradeBKs(): List<BK>
@@ -62,32 +62,33 @@ interface BKDao {
 
 
 @Dao
-interface GDRSDao{
+interface GDRSDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(list:List<GDRS>)
+    fun insert(list: List<GDRS>)
 
 
     @Query("select * from gdrs where code=:code order by endDate DESC")
-    fun getGDRSByCode(code: String):List<GDRS>
+    fun getGDRSByCode(code: String): List<GDRS>
 
 
     @Query("select * from gdrs")
-    fun getAll():List<GDRS>
+    fun getAll(): List<GDRS>
 
 }
+
 @Dao
-interface  AnalysisBeanDao{
+interface AnalysisBeanDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(analysisBean: AnalysisBean)
+
     @Query("select * from analysisbean where date>=:startDate order by date ASC ")
-    fun getAnalysisBeans(startDate:Int=0):List<AnalysisBean>
+    fun getAnalysisBeans(startDate: Int = 0): List<AnalysisBean>
 }
 
 @Dao
 interface BKStockDao {
     @Query("select * from stock where code in ( select stockCode  from bkstock where bkCode=:bkCode )")
     fun getStocksByBKCode(bkCode: String): List<Stock>
-
 
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -121,12 +122,20 @@ interface HistoryBKDao {
     @Query("select * from historybk where code=:code AND date>=:date   order by date asc limit 1")
     fun getHistoryByDate(code: String, date: Int): HistoryBK
 
+
+
     @Query("select * from historybk where code=:code AND date > :date order by date asc limit :limit")
     fun getHistoryAfter(code: String, date: Int, limit: Int = 5): List<HistoryBK>
 
+    @Query("select * from historybk where code=:code AND date < :date order by date desc limit :limit")
+    fun getHistoryBefore(code: String, date: Int, limit: Int = 5): List<HistoryBK>
+
 
     @Query("select * from historybk where code=:code AND date=:date   order by date asc limit 1")
-    fun getHistoryByDate2(code: String, date: Int): HistoryBK
+    fun getHistoryByDate2(code: String, date: Int): HistoryBK?
+
+    @Query("select * from historybk where code=:code AND date<=:date   order by date desc limit 1")
+    fun getHistoryByDate3(code: String, date: Int): HistoryBK
 
     @Query("select max(closePrice) from historybk where code=:code AND date <= :end AND date>= :start ")
     fun getHistoryHighestPrice(code: String, start: Int, end: Int): Float
@@ -135,15 +144,16 @@ interface HistoryBKDao {
 }
 
 @Dao
-interface FollowDao{
+interface FollowDao {
 
     @Query("select * from follow where type=1")
-    fun getFollowStocks():List<Follow>
+    fun getFollowStocks(): List<Follow>
 
     @Query("select * from follow where type=2")
-    fun getFollowBks():List<Follow>
+    fun getFollowBks(): List<Follow>
+
     @Query("select * from follow ")
-    fun getFollows():List<Follow>
+    fun getFollows(): List<Follow>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertFollow(follow: Follow)
@@ -154,21 +164,35 @@ interface FollowDao{
 }
 
 @Dao
-interface HideDao{
+interface HideDao {
 
     @Query("select * from hide where type=1")
-    fun getHideStocks():List<Hide>
+    fun getHideStocks(): List<Hide>
 
     @Query("select * from hide where type=2")
-    fun getHideBks():List<Hide>
+    fun getHideBks(): List<Hide>
+
     @Query("select * from hide ")
-    fun getHides():List<Follow>
+    fun getHides(): List<Follow>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertHide(hide: Hide)
 
     @Delete
     fun deleteHide(hide: Hide)
+
+}
+
+@Dao
+interface DIYBkDao {
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(bean: DIYBk)
+    @Query("select * from diybk")
+    fun getDIYBks():List<DIYBk>
+    @Delete
+    fun delete(item:DIYBk)
+
 
 }
 
@@ -228,12 +252,12 @@ interface HistoryStockDao {
 
 
 @Dao
-interface ZTReplayDao{
+interface ZTReplayDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertAll(list:List<ZTReplayBean>)
+    fun insertAll(list: List<ZTReplayBean>)
 
     @Query("select * from ztreplaybean where date=:date AND code=:code limit 1")
-    fun getZTReplay(date: Int,code: String):ZTReplayBean
+    fun getZTReplay(date: Int, code: String): ZTReplayBean
 
 }
 

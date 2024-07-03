@@ -26,6 +26,7 @@ import java.io.InputStreamReader
 import java.lang.Integer.min
 import java.lang.Math.max
 import java.text.SimpleDateFormat
+import java.time.DayOfWeek
 import java.util.*
 import kotlin.math.atan
 import kotlin.math.pow
@@ -1393,9 +1394,8 @@ object StockRepo {
             }
 
 
-            Log.e(
-                "股票超人", "${endDay.before(range)}${range}天内涨停${ztList.size}"
-            )
+            writeLog(it.code,"${endDay.before(range)}${range}天内涨停${ztList.size}")
+
             if (ztList.size < ztCount) {
                 return@stockList
             }
@@ -1404,7 +1404,7 @@ object StockRepo {
             ztList.subList(0, ztCount).forEach {
                 val i = historyList.indexOf(it)
                 if (i - s > adjustTimeAfterZT || i - s < minAdjustTimeAfterZT) {
-                    Log.e("股票超人", "调整时间${i - s}  i=${i} s=${s}")
+                    writeLog(it.code,"调整时间${i - s}  i=${i} s=${s}")
                     return@stockList
                 }
 
@@ -1412,7 +1412,7 @@ object StockRepo {
                 val d = max(it.closePrice, it.highest)
                 val h = historyList[s].closePrice - d
                 if (h > increaseHigh * d || h < increaseLow * d) {
-                    Log.e("股票超人", "区间涨幅${h} $increaseHigh $increaseLow")
+                    writeLog(it.code,"区间涨幅${h} $increaseHigh $increaseLow")
                     return@stockList
                 }
 
@@ -1716,65 +1716,23 @@ object StockRepo {
     suspend fun dpAnalysis(date: Int): List<AnalysisResult> {
         val endDay = SimpleDateFormat("yyyyMMdd").parse(date.toString())
 
-
-        val key = "5-5-0.0-${endDay.before(1)}-5"
-        val beforeBkResult = lrcCache.get(key) ?: strategy7(5, 5, 0.0, endDay.before(1), 5).apply {
+        val key = "5-5-0.0-${endDay}-5"
+        val bkResult = lrcCache.get(key) ?: strategy7(5, 5, 0.0, date, 5).apply {
             lrcCache.put(key, this)
         }
-
-        val tradeBkResult = mutableListOf<BKResult>()
-        val conceptBkResult = mutableListOf<BKResult>()
-        beforeBkResult.forEach {
-            if (it.bk.type == 0) {
-                tradeBkResult.add(it)
-            }
-            if (it.bk.type == 1) {
-                conceptBkResult.add(it)
-            }
-        }
-        val beforeBkMap = mutableMapOf<String, BKResult>().apply {
-            beforeBkResult.forEach {
-                this[it.bk.code] = it
-            }
-        }
-
-
-        val key1 = "5-5-0.0-${date}-5"
-        val bkResult = lrcCache.get(key1) ?: strategy7(5, 5, 0.0, date, 5).apply {
-            lrcCache.put(key1, this)
-        }
-
-
-        val tradeBkResult2 = mutableListOf<BKResult>()
-        val conceptBkResult2 = mutableListOf<BKResult>()
-        bkResult.forEach {
-            if (it.bk.type == 0) {
-                tradeBkResult2.add(it)
-            }
-            if (it.bk.type == 1) {
-                conceptBkResult2.add(it)
-            }
-        }
-
-        val bkMap = mutableMapOf<String, BKResult>().apply {
-            bkResult.forEach {
-                this[it.bk.code] = it
-            }
-        }
-
-
-        val beforeBkResultSortByChg = mutableListOf<BKResult>().apply { addAll(tradeBkResult) }
         //涨幅排序
-        Collections.sort(beforeBkResultSortByChg, kotlin.Comparator { v0, v1 ->
+        Collections.sort(bkResult, kotlin.Comparator { v0, v1 ->
             return@Comparator v1.currentDayHistory!!.chg.compareTo(v0.currentDayHistory!!.chg)
         })
 
-        val bkResultSortByChg = mutableListOf<BKResult>().apply { addAll(tradeBkResult2) }
-        //涨幅排序
-        Collections.sort(bkResultSortByChg, kotlin.Comparator { v0, v1 ->
-            return@Comparator v1.currentDayHistory!!.chg.compareTo(v0.currentDayHistory!!.chg)
+        val curBkResultSortByChg = mutableListOf<BKResult>().apply { addAll(bkResult) }
+
+        //前一日涨幅排序
+        Collections.sort(bkResult, kotlin.Comparator { v0, v1 ->
+            return@Comparator v1.preDayHistory!!.chg.compareTo(v0.preDayHistory!!.chg)
         })
 
+        val preBkResultSortByChg = mutableListOf<BKResult>().apply { addAll(bkResult) }
 
         val analysisResultList = mutableListOf<AnalysisResult>()
         analysisResultList.add(AnalysisResult("今日行业板块涨幅前5") {
@@ -1782,7 +1740,7 @@ object StockRepo {
             it.startActivity(i)
         })
         for (i in 0 until 5) {
-            val bk = bkResultSortByChg[i]
+            val bk = curBkResultSortByChg[i]
             val ssb = SpannableStringBuilder()
             ssb.append("行业板块").append(
                 bk.bk.name,
@@ -1793,8 +1751,8 @@ object StockRepo {
                 ForegroundColorSpan(bk.currentDayHistory!!.color),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             ).append(",昨日").append(
-                "${beforeBkMap[bk.bk.code]?.currentDayHistory!!.chg}",
-                ForegroundColorSpan(bk.currentDayHistory!!.color),
+                "${bk.preDayHistory!!.chg}",
+                ForegroundColorSpan(bk.preDayHistory.color),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             )
             analysisResultList.add(AnalysisResult(ssb) {
@@ -1802,34 +1760,37 @@ object StockRepo {
             })
         }
 
-
-
         analysisResultList.add(AnalysisResult("昨日行业板块涨幅前5") {
             val i = Intent(it, BKStrategyActivity::class.java)
             it.startActivity(i)
         })
 
         for (i in 0 until 5) {
-            val beforeBk = beforeBkResultSortByChg[i]
+            val bk = preBkResultSortByChg[i]
             val ssb = SpannableStringBuilder()
             ssb.append("行业板块").append(
-                beforeBk.bk.name,
+                bk.bk.name,
                 ForegroundColorSpan(Color.BLUE),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             ).append("昨日").append(
-                "${beforeBk.currentDayHistory!!.chg}",
-                ForegroundColorSpan(beforeBk.currentDayHistory!!.color),
+                "${bk.preDayHistory!!.chg}",
+                ForegroundColorSpan(bk.preDayHistory.color),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             ).append(",今日").append(
-                "${bkMap[beforeBk.bk.code]?.currentDayHistory!!.chg}",
-                ForegroundColorSpan(bkMap[beforeBk.bk.code]?.currentDayHistory!!.color),
+                "${bk.currentDayHistory!!.chg}",
+                ForegroundColorSpan(bk.currentDayHistory!!.color),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
             )
             analysisResultList.add(AnalysisResult(ssb) {
-                beforeBk.bk.openWeb(it)
+                bk.bk.openWeb(it)
             })
 
         }
+
+
+
+
+
 
         var ztCount = 0
         var dtCount = 0
@@ -2206,6 +2167,16 @@ object StockRepo {
     }
 
 
+    suspend fun getDIYBks() = withContext(Dispatchers.IO) {
+        val dao = Injector.appDatabase.diyBkDao()
+        val fake = Injector.appDatabase.bkDao().getBKByCode("000001")
+        return@withContext dao.getDIYBks().map {
+            val list = it.bkCodes.split(",")
+            return@map BKResult(fake!!, diyBk = it)
+        }
+
+    }
+
     /**
      * 板块强势
      */
@@ -2364,6 +2335,7 @@ object StockRepo {
                 }
 
                 val nextDayHistory = historyDao.getHistoryAfter(it.code, endTime, 1).firstOrNull()
+                val preDayHistory = historyDao.getHistoryBefore(it.code, endTime, 1).firstOrNull()
 
                 return@compute BKResult(
                     it,
@@ -2380,7 +2352,8 @@ object StockRepo {
                     currentDayHistory = histories[0],
                     ztCount = ztOne.first,
                     highestLianBanCount = highestLianBanCount,
-                    nextDayHistory = nextDayHistory
+                    nextDayHistory = nextDayHistory,
+                    preDayHistory = preDayHistory
                 )
 
             }
@@ -2723,15 +2696,17 @@ data class BKResult(
     //板块涨停率
     var perZTRate: Float = 0f,
 
-
     val touchLine: Boolean = false,
     var follow: Boolean = false,
     var hide: Boolean = false,
 
-    val ztCount: Int,
-    val highestLianBanCount: Int,
-    var nextDayHistory:HistoryBK?=null,
-    var currentDayHistory:HistoryBK?=null
+    val ztCount: Int = 0,
+    val highestLianBanCount: Int = 0,
+    val preDayHistory: HistoryBK? = null,
+    var nextDayHistory: HistoryBK? = null,
+    var currentDayHistory: HistoryBK? = null,
+
+    var diyBk: DIYBk? = null
 )
 
 val BKResult.signalCount: Int
@@ -2808,8 +2783,8 @@ data class StockResult(
     var isGroupHeader: Boolean = false,
     var expandReason: Boolean = false,
     val ztTimeDigitization: Float = 0f,
-    var nextDayHistory:HistoryStock?=null,
-    var currentDayHistory:HistoryStock?=null
+    var nextDayHistory: HistoryStock? = null,
+    var currentDayHistory: HistoryStock? = null
 
 )
 

@@ -2,6 +2,7 @@ package com.liaobusi.stockman
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.room.Room
 import com.liaobusi.stockman.api.getOkHttpClientBuilder
@@ -50,6 +51,8 @@ object Injector {
     lateinit var tradeBks: List<BK>
 
 
+    lateinit var sp: SharedPreferences
+
     fun inject(applicationContext: Context) {
         context = applicationContext
         appDatabase = Room.databaseBuilder(
@@ -66,6 +69,11 @@ object Injector {
             tradeBks = appDatabase.bkDao().getTradeBKs()
             conceptBks = appDatabase.bkDao().getConceptBKs().filter { !it.specialBK }
         }
+        sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
+
+        if (!sp.contains("diy_bk_code")) {
+            sp.edit().putInt("diy_bk_code", 100000).apply()
+        }
 
     }
 
@@ -81,16 +89,16 @@ object Injector {
         if (enable) {
             autoRefreshJob = GlobalScope.launch {
                 while (true) {
-                    val cal= Calendar.getInstance().apply {
-                        time=Date()
+                    val cal = Calendar.getInstance().apply {
+                        time = Date()
                     }
-                    val hour=cal.get(Calendar.HOUR_OF_DAY)
-                    if(hour in 9..15){
+                    val hour = cal.get(Calendar.HOUR_OF_DAY)
+                    if (hour in 9..15) {
                         StockRepo.getRealTimeBKs()
                         StockRepo.getRealTimeStocks()
                         delay(10000)
-                    }else{
-                        delay(1000*60*6)
+                    } else {
+                        delay(1000 * 60 * 6)
                     }
                 }
             }

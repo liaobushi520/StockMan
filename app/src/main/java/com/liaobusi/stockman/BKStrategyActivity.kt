@@ -3,6 +3,7 @@ package com.liaobusi.stockman
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -14,12 +15,18 @@ import android.widget.PopupWindow
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.liaobusi.stockman.databinding.ActivityBkstrategyBinding
+import com.liaobusi.stockman.databinding.FragmentDiyBkBinding
+import com.liaobusi.stockman.databinding.ItemDiyBkBinding
 import com.liaobusi.stockman.databinding.ItemStockBinding
+import com.liaobusi.stockman.databinding.LayoutPopupWindow2Binding
 import com.liaobusi.stockman.databinding.LayoutPopupWindowBinding
+import com.liaobusi.stockman.db.BK
+import com.liaobusi.stockman.db.DIYBk
 import com.liaobusi.stockman.db.Follow
 import com.liaobusi.stockman.db.Hide
 import com.liaobusi.stockman.db.color
@@ -41,7 +48,7 @@ import java.util.Date
 
 class BKStrategyActivity : AppCompatActivity() {
     private lateinit var binding: ActivityBkstrategyBinding
-
+    private var job: Job? = null
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.page_menu, menu)
@@ -200,7 +207,7 @@ class BKStrategyActivity : AppCompatActivity() {
             }
         }
 
-        var job: Job? = null
+
         binding.chooseStockBtn.setOnClickListener {
             job?.cancel()
             binding.root.requestFocus()
@@ -250,16 +257,16 @@ class BKStrategyActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            job = lifecycleScope.launch(Dispatchers.IO) {
-                val list = StockRepo.strategy7(
-                    range = timeRange,
-                    endTime = endTime,
-                    allowBelowCount = allowBelowCount,
-                    averageDay = averageDay,
-                    divergeRate = divergeRate / 100,
-                )
-                output(list)
-            }
+            val param = Strategy7Param(
+                range = timeRange,
+                endTime = endTime,
+                allowBelowCount = allowBelowCount,
+                averageDay = averageDay,
+                divergeRate = divergeRate / 100,
+            )
+
+            outputResult(param)
+
 
         }
     }
@@ -343,7 +350,7 @@ class BKStrategyActivity : AppCompatActivity() {
 
             if (binding.zfCb.isChecked) {
                 Collections.sort(r, kotlin.Comparator { v0, v1 ->
-                    return@Comparator v1.currentDayHistory!!.chg.compareTo(v0.currentDayHistory!!.chg)
+                    return@Comparator (v1.currentDayHistory?.chg?:-1000f).compareTo((v0.currentDayHistory?.chg?:-1000f))
                 })
             }
 
@@ -413,7 +420,7 @@ class BKStrategyActivity : AppCompatActivity() {
 
             binding.resultCount.text = "板块结果(${r.size}/${t})"
             binding.rv.layoutManager = LinearLayoutManager(this@BKStrategyActivity)
-            binding.rv.adapter = ResultAdapter(r, bkCodes.toString(),binding.nextChgCb.isChecked)
+            binding.rv.adapter = ResultAdapter(r, bkCodes.toString(), binding.nextChgCb.isChecked)
 
         }
     }
@@ -421,7 +428,7 @@ class BKStrategyActivity : AppCompatActivity() {
     inner class ResultAdapter(
         private val data: MutableList<BKResult>,
         private val bkCodes: String,
-        private val showNextChg:Boolean=false
+        private val showNextChg: Boolean = false
     ) : RecyclerView.Adapter<ResultAdapter.VH>() {
 
         inner class VH(private val itemBinding: ItemStockBinding) :
@@ -431,6 +438,58 @@ class BKStrategyActivity : AppCompatActivity() {
             fun bind(result: BKResult, position: Int) {
                 itemBinding.apply {
                     this.root.setBackgroundColor(0xffffffff.toInt())
+                    if (result.diyBk != null) {
+                        this.currentChg.visibility = View.GONE
+                        this.stockName.text = result.diyBk!!.name
+                        this.activeLabelTv.visibility = View.GONE
+                        this.labelTv.visibility = View.GONE
+                        this.root.setOnClickListener {
+                            Strategy4Activity.openJXQSStrategy(
+                                this.root.context,
+                                result.diyBk!!.bkCodes,
+                                binding.endTimeTv.text.toString()
+                            )
+                        }
+
+                        var ev: MotionEvent? = null
+                        root.setOnTouchListener { view, motionEvent ->
+                            if (motionEvent.action == MotionEvent.ACTION_DOWN) {
+                                ev = motionEvent
+                            }
+                            return@setOnTouchListener false
+                        }
+                        root.setOnLongClickListener {
+
+                            val b =
+                                LayoutPopupWindow2Binding.inflate(LayoutInflater.from(it.context))
+                            val pw = PopupWindow(
+                                b.root,
+                                LayoutParams.WRAP_CONTENT,
+                                LayoutParams.WRAP_CONTENT,
+                                true
+                            )
+
+
+                            b.deleteBtn.setOnClickListener {
+                                lifecycleScope.launch(Dispatchers.IO) {
+                                    Injector.appDatabase.diyBkDao().delete(result.diyBk!!)
+                                    launch(Dispatchers.Main) {
+                                        data.removeAt(position)
+                                        notifyItemRemoved(position)
+                                        Toast.makeText(
+                                            this@BKStrategyActivity,
+                                            "删除${result.diyBk!!.name}板块",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        pw.dismiss()
+                                    }
+                                }
+                            }
+                            pw.showAsDropDown(it, (ev?.x ?: 0f).toInt()+50, -150)
+                            return@setOnLongClickListener true
+                        }
+                        return@apply
+                    }
 
                     if (result.follow) {
                         this.root.setBackgroundColor(0x33333333)
@@ -597,6 +656,17 @@ class BKStrategyActivity : AppCompatActivity() {
                                 )
                             }
 
+                            addToBtn.setOnClickListener {
+
+                                pw.dismiss()
+
+                                DIYBKDialogFragment(result.bk).show(
+                                    this@BKStrategyActivity.supportFragmentManager,
+                                    "diy_bk"
+                                )
+
+                            }
+
                             followBtn.setOnClickListener {
                                 pw.dismiss()
                                 lifecycleScope.launch(Dispatchers.IO) {
@@ -651,7 +721,7 @@ class BKStrategyActivity : AppCompatActivity() {
                             }
                         }
 
-                        pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -1000)
+                        pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -1100)
                         return@setOnLongClickListener true
                     }
 
@@ -694,6 +764,7 @@ class BKStrategyActivity : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun outputResult(strictParam: Strategy7Param) {
+        job?.cancel()
         lifecycleScope.launch(Dispatchers.IO) {
             val list = StockRepo.strategy7(
                 endTime = strictParam.endTime,
@@ -702,8 +773,155 @@ class BKStrategyActivity : AppCompatActivity() {
                 averageDay = strictParam.averageDay,
                 divergeRate = strictParam.divergeRate,
             )
-            output(list)
+            val list2 = StockRepo.getDIYBks()
+            output(list2 + list)
         }
+    }
+
+    data class SelectableItem<T>(val data: T, var selected: Boolean = false)
+    class DIYBKDialogFragment(private val bk: BK) : DialogFragment() {
+
+        private lateinit var binding: FragmentDiyBkBinding
+
+
+        override fun onCreateView(
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
+        ): View? {
+            binding = FragmentDiyBkBinding.inflate(inflater)
+            binding.rv.layoutManager = LinearLayoutManager(binding.rv.context)
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                val list = Injector.appDatabase.diyBkDao().getDIYBks()
+                launch(Dispatchers.Main) {
+                    binding.rv.adapter = DIYBKAdapter(list.map {
+                        SelectableItem(it, it.bkCodes.contains(bk.code, true))
+                    }.toMutableList())
+                }
+
+            }
+
+            binding.cancelBtn.setOnClickListener {
+                dismiss()
+            }
+
+            binding.okBtn.setOnClickListener {
+                lifecycleScope.launch(Dispatchers.IO) {
+
+                    (binding.rv.adapter as DIYBKAdapter).save(bk)
+                    dismiss()
+
+
+                }
+
+            }
+
+            binding.bkCodeName.text = bk.code + "-" + bk.name
+
+            binding.createBkBtn.setOnClickListener {
+
+                val name = binding.diyBkName.editableText.toString()
+                val codes = bk.code
+                val code = Injector.sp.getInt("diy_bk_code", 10000) + 1
+                val dsp = bk.code + "(${bk.name})"
+                binding.diyBkName.setText("")
+                val item = DIYBk("BK$code", name, codes, dsp)
+
+                lifecycleScope.launch(Dispatchers.IO) {
+                    Injector.appDatabase.diyBkDao().insert(item)
+                    Injector.sp.edit().putInt("diy_bk_code", code).apply()
+                    launch(Dispatchers.Main) {
+                        (binding.rv.adapter as DIYBKAdapter).add(SelectableItem(item, true))
+                    }
+
+                }
+
+            }
+
+            return binding.root
+        }
+
+
+        inner class DIYBKAdapter(private val data: MutableList<SelectableItem<DIYBk>>) :
+            RecyclerView.Adapter<DIYBKAdapter.VH>() {
+
+            fun add(item: SelectableItem<DIYBk>) {
+                data.add(item)
+                notifyItemInserted(data.size - 1)
+            }
+
+
+            fun save(bk: BK) {
+                data.forEach {
+                    if (it.selected) {
+                        if (!it.data.bkCodes.contains(bk.code)) {
+                            val newBkCodes = it.data.bkCodes + ",${bk.code}"
+                            newBkCodes.removePrefix(",")
+                            val newDsp = it.data.dsp + ",${bk.code}(${bk.name})"
+                            newDsp.removePrefix(",")
+                            val newBean = it.data.copy(bkCodes = newBkCodes, dsp = newDsp)
+                            Injector.appDatabase.diyBkDao().insert(newBean)
+                        }
+                    } else {
+                        if (it.data.bkCodes.contains(bk.code)) {
+                            val newCodes = if (it.data.bkCodes.startsWith(bk.code)) {
+                                it.data.bkCodes.replaceFirst(bk.code, "").removePrefix(",")
+                                    .replace("," + bk.code, "").removePrefix(",")
+                            } else {
+                                it.data.bkCodes.replace("," + bk.code, "").removePrefix(",")
+                            }
+
+                            val newDsp = if (it.data.dsp.startsWith("${bk.code}(${bk.name})")) {
+                                it.data.bkCodes.replaceFirst("${bk.code}(${bk.name})", "")
+                                    .removePrefix(",")
+                            } else {
+                                it.data.bkCodes.replace(",${bk.code}(${bk.name})", "")
+                                    .replace(",${bk.code}", "").removePrefix(",")
+                            }
+                            val newBean = it.data.copy(bkCodes = newCodes, dsp = newDsp)
+                            Injector.appDatabase.diyBkDao().insert(newBean)
+                        }
+                    }
+                }
+            }
+
+            inner class VH(private val itemBinding: ItemDiyBkBinding) :
+                RecyclerView.ViewHolder(itemBinding.root) {
+                fun bind(item: SelectableItem<DIYBk>, position: Int) {
+                    itemBinding.apply {
+                        codeNameTv.text = item.data.code + "-" + item.data.name
+
+                        cb.isChecked = item.selected
+                        codes.text = item.data.dsp
+                        cb.setOnCheckedChangeListener { _, isChecked ->
+                            item.selected = isChecked
+                        }
+
+                    }
+                }
+            }
+
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+                return VH(
+                    ItemDiyBkBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false
+                    )
+                )
+            }
+
+            override fun getItemCount(): Int {
+                return data.size
+            }
+
+            override fun onBindViewHolder(holder: VH, position: Int) {
+                holder.bind(data[position], position)
+            }
+        }
+
+
     }
 
 
