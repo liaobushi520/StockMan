@@ -441,7 +441,7 @@ class BKStrategyActivity : AppCompatActivity() {
             super.onAttachedToRecyclerView(recyclerView)
             job = lifecycleScope.launch(Dispatchers.IO) {
                 while (true) {
-                    delay(3000)
+                    delay(1000)
                     if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE) {
                         continue
                     }

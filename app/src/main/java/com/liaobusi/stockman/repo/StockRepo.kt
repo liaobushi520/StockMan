@@ -2782,7 +2782,8 @@ data class StockResult(
     var expandReason: Boolean = false,
     val ztTimeDigitization: Float = 0f,
     var nextDayHistory: HistoryStock? = null,
-    var currentDayHistory: HistoryStock? = null
+    var currentDayHistory: HistoryStock? = null,
+    var changeRate:Float=0f
 
 )
 
@@ -2893,17 +2894,6 @@ fun StockResult.toFormatText(): String {
 }
 
 
-class UpdateWorker(appContext: Context, workerParams: WorkerParameters) :
-    CoroutineWorker(appContext, workerParams) {
-    override suspend fun doWork(): Result {
-        val d = Injector.appDatabase.stockDao()
-        val h = Injector.appDatabase.historyStockDao()
-        StockRepo.getRealTimeStocks()
-        StockRepo.getRealTimeBKs()
-        return Result.success()
-    }
-
-}
 
 
 

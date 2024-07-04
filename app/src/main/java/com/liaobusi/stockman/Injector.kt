@@ -1,8 +1,12 @@
 package com.liaobusi.stockman
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.app.Application
+import android.app.Application.ActivityLifecycleCallbacks
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Bundle
 import android.util.Log
 import androidx.room.Room
 import com.liaobusi.stockman.api.getOkHttpClientBuilder
@@ -53,6 +57,8 @@ object Injector {
 
     lateinit var sp: SharedPreferences
 
+    private var activityActive = false
+
     fun inject(applicationContext: Context) {
         context = applicationContext
         appDatabase = Room.databaseBuilder(
@@ -75,6 +81,43 @@ object Injector {
             sp.edit().putInt("diy_bk_code", 100000).apply()
         }
 
+        (applicationContext as Application).registerActivityLifecycleCallbacks(object :
+            ActivityLifecycleCallbacks {
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+
+            }
+
+            override fun onActivityStarted(activity: Activity) {
+
+            }
+
+            override fun onActivityResumed(activity: Activity) {
+               if(activity is Strategy4Activity|| activity is BKStrategyActivity){
+                   activityActive=true
+               }
+            }
+
+            override fun onActivityPaused(activity: Activity) {
+                if(activity is Strategy4Activity|| activity is BKStrategyActivity){
+                    activityActive=false
+                }
+            }
+
+            override fun onActivityStopped(activity: Activity) {
+
+            }
+
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
+
+            }
+
+            override fun onActivityDestroyed(activity: Activity) {
+
+            }
+
+        })
+
+
     }
 
     private var autoRefreshJob: Job? = null
@@ -94,9 +137,11 @@ object Injector {
                     }
                     val hour = cal.get(Calendar.HOUR_OF_DAY)
                     if (hour in 9..15) {
-                        StockRepo.getRealTimeBKs()
-                        StockRepo.getRealTimeStocks()
-                        delay(10000)
+                        if(activityActive){
+                            StockRepo.getRealTimeBKs()
+                            StockRepo.getRealTimeStocks()
+                        }
+                        delay(2000)
                     } else {
                         delay(1000 * 60 * 6)
                     }

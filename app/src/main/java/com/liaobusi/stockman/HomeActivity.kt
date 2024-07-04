@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -15,6 +16,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.lifecycleScope
 import com.liaobusi.stockman.api.FPRequest
 import com.liaobusi.stockman.api.StockService
@@ -160,7 +162,6 @@ class HomeActivity : AppCompatActivity() {
 
             }
         }
-
 
 
         lifecycleScope.launch(Dispatchers.IO) {

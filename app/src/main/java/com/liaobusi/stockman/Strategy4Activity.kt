@@ -1,5 +1,8 @@
 package com.liaobusi.stockman
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -39,6 +42,7 @@ import java.lang.StringBuilder
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.abs
 import kotlin.math.min
 
 val colors = listOf(
@@ -919,7 +923,6 @@ class Strategy4Activity : AppCompatActivity() {
         }
 
 
-
         private var job: Job? = null
 
         override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
@@ -931,7 +934,7 @@ class Strategy4Activity : AppCompatActivity() {
             super.onAttachedToRecyclerView(recyclerView)
             job = lifecycleScope.launch(Dispatchers.IO) {
                 while (true) {
-                    delay(3000)
+                    delay(1000)
                     if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE) {
                         continue
                     }
@@ -944,22 +947,29 @@ class Strategy4Activity : AppCompatActivity() {
 
                     for (i in firstPos until lastPos + 1) {
                         val result = data[i]
-                        if (result.currentDayHistory != null&&!result.isGroupHeader) {
+                        if (result.currentDayHistory != null && !result.isGroupHeader) {
                             val s =
                                 Injector.appDatabase.stockDao().getStockByCode(result.stock.code)
                             val h = Injector.appDatabase.historyStockDao().getHistoryByDate3(
                                 result.stock.code,
                                 result.currentDayHistory!!.date
                             )
-                            val n= if (result.nextDayHistory!=null)Injector.appDatabase.historyStockDao().getHistoryByDate3(
-                                result.stock.code,
-                                result.nextDayHistory!!.date
-                            )else null
-                            if (h.chg != result.currentDayHistory!!.chg||n?.chg!=result.nextDayHistory?.chg) {
+                            val n =
+                                if (result.nextDayHistory != null) Injector.appDatabase.historyStockDao()
+                                    .getHistoryByDate3(
+                                        result.stock.code,
+                                        result.nextDayHistory!!.date
+                                    ) else null
+                            if (h.chg != result.currentDayHistory!!.chg || n?.chg != result.nextDayHistory?.chg) {
+                                val changeRate =
+                                    if (h.chg != result.currentDayHistory!!.chg) (h.chg - result.currentDayHistory!!.chg)
+                                    else (if (n == null || result.nextDayHistory == null) 0f
+                                    else n.chg - result.nextDayHistory!!.chg)
                                 data[i] = result.copy(
                                     stock = s,
                                     currentDayHistory = h,
-                                    nextDayHistory = n
+                                    nextDayHistory = n,
+                                    changeRate = changeRate
                                 )
                                 launch(Dispatchers.Main) {
                                     notifyItemChanged(i)
@@ -982,6 +992,7 @@ class Strategy4Activity : AppCompatActivity() {
 
                 if (result.isGroupHeader) {
                     binding.root.setOnClickListener(null)
+                    binding.colorView.visibility=View.GONE
                     binding.groupHeaderLL.visibility = View.VISIBLE
                     binding.contentLL.visibility = View.GONE
                     binding.expoundTv.visibility = View.GONE
@@ -1010,6 +1021,36 @@ class Strategy4Activity : AppCompatActivity() {
                         this.root.setBackgroundColor(0x33333333)
                     } else {
                         this.root.setBackgroundColor(0xffffffff.toInt())
+                    }
+
+                    if (result.changeRate != 0f) {
+                        colorView.visibility=View.VISIBLE
+                        ValueAnimator.ofFloat(0f, min(abs(result.changeRate),0.9f), 0f).apply {
+                            duration = 2000
+                            addListener(object : AnimatorListenerAdapter() {
+                                override fun onAnimationStart(animation: Animator) {
+                                    super.onAnimationStart(animation)
+                                    colorView.alpha=1f
+                                    if (result.changeRate > 0) {
+                                        colorView.setBackgroundColor(Color.RED)
+                                    } else {
+                                        colorView.setBackgroundColor(STOCK_GREEN)
+                                    }
+                                }
+
+                                override fun onAnimationEnd(animation: Animator) {
+                                    super.onAnimationEnd(animation)
+                                    colorView.alpha=0f
+                                    colorView.setBackgroundColor(Color.TRANSPARENT)
+                                }
+                            })
+                            this.addUpdateListener {
+                                colorView.alpha = it.animatedValue as Float
+                            }
+                            start()
+                        }
+                    }else{
+                        colorView.visibility=View.GONE
                     }
 
                     if (result.ztReplay != null && result.expandReason) {
