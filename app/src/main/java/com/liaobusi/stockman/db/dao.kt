@@ -25,10 +25,16 @@ interface StockDao {
     fun getAllStock(): List<Stock>
 
     @Query("select * from stock where name not like '%ST%' and price>1 and toMarketTime <=:startTime")
+    fun getAllStockByMarketTimeNoST(startTime: Int): List<Stock>
+
+    @Query("select * from stock where toMarketTime <=:startTime")
     fun getAllStockByMarketTime(startTime: Int): List<Stock>
 
     @Query("select * from stock where  code=:code")
     fun getStockByCode(code: String): Stock
+
+    @Query("select * from stock where name  like '%ST%' ")
+    fun getSTStock(): List<Stock>
 
 }
 

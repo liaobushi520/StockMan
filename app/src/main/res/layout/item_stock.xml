@@ -73,6 +73,7 @@
 
 
         <LinearLayout
+            android:id="@+id/ll"
             android:layout_width="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
@@ -110,12 +111,20 @@
 
         <TextView
             android:id="@+id/labelTv"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
+            android:maxLines="2"
             android:textSize="16sp"
             android:textColor="#ff0000"
             android:visibility="invisible"
             android:layout_marginEnd="10dp"
+            android:layout_marginStart="2dp"
             app:layout_goneMarginEnd="15dp"
+            android:autoSizeMaxTextSize="16sp"
+            android:autoSizeMinTextSize="10sp"
+            android:autoSizeTextType="none"
+            android:gravity="end|center_horizontal"
+            app:layout_constraintStart_toEndOf="@+id/ll"
+            app:layout_constraintHorizontal_bias="1"
             app:layout_constraintEnd_toStartOf="@+id/activeLabelTv"
             app:layout_constraintTop_toTopOf="@+id/stockName"
             app:layout_constraintBottom_toBottomOf="@+id/stockName"

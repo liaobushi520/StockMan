@@ -1392,7 +1392,7 @@ object StockRepo {
             }
 
 
-            writeLog(it.code,"${endDay.before(range)}${range}天内涨停${ztList.size}")
+            writeLog(it.code, "${endDay.before(range)}${range}天内涨停${ztList.size}")
 
             if (ztList.size < ztCount) {
                 return@stockList
@@ -1402,7 +1402,7 @@ object StockRepo {
             ztList.subList(0, ztCount).forEach {
                 val i = historyList.indexOf(it)
                 if (i - s > adjustTimeAfterZT || i - s < minAdjustTimeAfterZT) {
-                    writeLog(it.code,"调整时间${i - s}  i=${i} s=${s}")
+                    writeLog(it.code, "调整时间${i - s}  i=${i} s=${s}")
                     return@stockList
                 }
 
@@ -1410,7 +1410,7 @@ object StockRepo {
                 val d = max(it.closePrice, it.highest)
                 val h = historyList[s].closePrice - d
                 if (h > increaseHigh * d || h < increaseLow * d) {
-                    writeLog(it.code,"区间涨幅${h} $increaseHigh $increaseLow")
+                    writeLog(it.code, "区间涨幅${h} $increaseHigh $increaseLow")
                     return@stockList
                 }
 
@@ -1786,10 +1786,6 @@ object StockRepo {
         }
 
 
-
-
-
-
         var ztCount = 0
         var dtCount = 0
         var stZtCount = 0
@@ -2067,16 +2063,27 @@ object StockRepo {
 
             val kLineSlopeRate = kLineSlopeRate3(histories.subList(0, range - 1))
 
-            var dd = 0f
-            if (perTotalTurnOverRate >= perSampleTurnOverRate) {
-                dd = perTotalTurnOverRate / perSampleTurnOverRate
+            val dd = if (perTotalTurnOverRate >= perSampleTurnOverRate) {
+                perTotalTurnOverRate / perSampleTurnOverRate
             } else {
-                dd = -perSampleTurnOverRate / perTotalTurnOverRate
+                -perSampleTurnOverRate / perTotalTurnOverRate
             }
 
 
-            val activeRate =
+            var activeRate =
                 (perTotalTurnOverRate / 100 * 0.2f + dd / 100 * 0.2f + kLineSlopeRate * 0.3f + perSampleZTRate * 0.1f + chgDeviation * 0.1f + totalAverageDiverge * 0.1f) * 1000 / range
+
+            if (isActiveRateWithPopularity(Injector.context)){
+                val popularityData = Injector.popularityRanking[it.code]
+                if (popularityData != null) {
+                    activeRate =
+                        activeRate * 0.8 + 50 * (Injector.popularityRanking.size - popularityData.POPULARITY_RANK + 1f) / Injector.popularityRanking.size * 0.2f
+                } else {
+                    activeRate *= 0.8
+                }
+            }
+
+
 
             writeLog(
                 it.code,
@@ -2400,8 +2407,21 @@ object StockRepo {
         return total / count
     }
 
+    suspend fun fetchPopularityRanking() = withContext(Dispatchers.IO) {
+        Log.i("股票超人","从网络获取股票热度排名")
+        val r = Injector.apiService.getPopularityRanking()
+        if (r.success) {
+            return@withContext r.result.data.sortedBy { it.POPULARITY_RANK }.apply {
+                Log.i("股票超人","成功网络获取股票热度排名，size=${this.size}")
+            }
+        }
+        return@withContext listOf()
+    }
+
 
     private fun kLineSlopeRate3(histories: List<HistoryStock>): Float {
+
+        if (histories.isEmpty()) return 0f
         val r =
             (histories[0].closePrice - histories.last().closePrice) / histories.last().closePrice
         return r
@@ -2783,7 +2803,7 @@ data class StockResult(
     val ztTimeDigitization: Float = 0f,
     var nextDayHistory: HistoryStock? = null,
     var currentDayHistory: HistoryStock? = null,
-    var changeRate:Float=0f
+    var changeRate: Float = 0f
 
 )
 
@@ -2878,7 +2898,7 @@ fun StockResult.toFormatText(): String {
     }
 
     if (touchLine) {
-        sb.append("触线  ")
+        sb.append("触线 ")
     }
 
 //    if (activeRate > 2) {
@@ -2890,7 +2910,7 @@ fun StockResult.toFormatText(): String {
         sb.append("$hyAfterZT ")
     }
 
-    return sb.toString()
+    return sb.trim().toString()
 }
 
 

@@ -103,3 +103,36 @@ data class StockTrendData(
 data class FPRequest(val date:String,val pc:Int=0)
 
 
+data class PopularityRankingResponse(
+    val code: Int,
+    val message: String,
+    val result: ResultX,
+    val success: Boolean,
+    val url: String,
+    val version: Any
+)
+
+data class ResultX(
+    val config: List<Any>,
+    val count: Int,
+    val currentpage: Int,
+    val data: List<PopularityData>,
+    val nextpage: Boolean
+)
+
+data class PopularityData(
+    val CHANGE_RATE: Double,
+    val DEAL_AMOUNT: Double,
+    val HIGH_PRICE: Double,
+    val LOW_PRICE: Double,
+    val MAX_TRADE_DATE: String,
+    val NEW_PRICE: Double,
+    val POPULARITY_RANK: Int,
+    val PRE_CLOSE_PRICE: Double,
+    val SECUCODE: String,
+    val SECURITY_CODE: String,
+    val SECURITY_NAME_ABBR: String,
+    val TURNOVERRATE: Double,
+    val VOLUME: Int,
+    val VOLUME_RATIO: Double
+)

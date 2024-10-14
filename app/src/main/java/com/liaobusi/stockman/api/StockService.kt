@@ -34,7 +34,7 @@ interface StockService {
 //    m:0 t:7,m:1 t:3 B股
 //    b:MK0021,b:MK0022,b:MK0023,b:MK0024 ETF
 
-    @GET("http://20.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&np=1&fid=f3&fields=${FILED}&fs=m:1+t:2,m:0+t:6,m:0+t:13,m:0+t:80,m:1+t:23")
+    @GET("http://20.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&np=1&fid=f3&fields=${FILED}&fs=m:1+t:2,m:0+t:6,m:0+t:13,m:0+t:80,m:1+t:23,t:81+s:2048")
     suspend fun getRealTimeStocks():EMResponse
 //    @Streaming
 //    @GET("http://72.push2.eastmoney.com/api/qt/stock/details/sse?fields1=${FILED}&fields2=f51,f52,f53,f54,f55&mpi=1000&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&pos=-11&wbp2u=8678395952121844|0|1|0|web")
@@ -90,5 +90,9 @@ interface StockService {
 
     @POST("https://app.jiuyangongshe.com/jystock-app/api/v1/action/field")
     suspend fun getZTReplay(@Body data:FPRequest):FPResponse
+
+
+    @GET("https://data.eastmoney.com/dataapi/xuangu/list?st=CHANGE_RATE&sr=-1&ps=300&p=1&sty=SECUCODE%2CSECURITY_CODE%2CSECURITY_NAME_ABBR%2CNEW_PRICE%2CCHANGE_RATE%2CHIGH_PRICE%2CLOW_PRICE%2CPRE_CLOSE_PRICE%2CVOLUME%2CDEAL_AMOUNT%2CTURNOVERRATE%2CPOPULARITY_RANK&filter=(POPULARITY_RANK%3E0)(POPULARITY_RANK%3C%3D1000)&source=SELECT_SECURITIES&client=WEB")
+    suspend fun getPopularityRanking():PopularityRankingResponse
 }
 

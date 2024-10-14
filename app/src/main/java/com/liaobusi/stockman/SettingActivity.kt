@@ -49,6 +49,12 @@ fun isShowNextChg(context: Context): Boolean {
     return sp.getBoolean("show_next_chg", false)
 }
 
+fun isActiveRateWithPopularity(context: Context): Boolean {
+    val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
+    return sp.getBoolean("active_rate_with_popularity", false)
+}
+
+
 
 class SettingActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingBinding
@@ -76,6 +82,7 @@ class SettingActivity : AppCompatActivity() {
         binding.hideSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
             sp.edit().putBoolean("show_hidden_stock_bk", isChecked).apply()
         }
+
 
 
         binding.fixedDateEt.setText(today().toString())
@@ -120,6 +127,10 @@ class SettingActivity : AppCompatActivity() {
             sp.edit().putBoolean("show_next_chg", isChecked).apply()
         }
 
+        binding.activeRateWithPopularity.isChecked = sp.getBoolean("active_rate_with_popularity", false)
+        binding.activeRateWithPopularity.setOnCheckedChangeListener { buttonView, isChecked ->
+            sp.edit().putBoolean("active_rate_with_popularity", isChecked).apply()
+        }
 
 
 

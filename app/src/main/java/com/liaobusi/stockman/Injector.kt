@@ -9,15 +9,19 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import androidx.room.Room
+import com.liaobusi.stockman.api.PopularityData
+import com.liaobusi.stockman.api.StockService
 import com.liaobusi.stockman.api.getOkHttpClientBuilder
 import com.liaobusi.stockman.db.AppDatabase
 import com.liaobusi.stockman.db.BK
 import com.liaobusi.stockman.db.Stock
 import com.liaobusi.stockman.db.specialBK
 import com.liaobusi.stockman.repo.StockRepo
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 
@@ -50,14 +54,17 @@ object Injector {
     lateinit var appDatabase: AppDatabase
     lateinit var context: Context
     lateinit var retrofit: Retrofit
+    lateinit var apiService: StockService
 
     lateinit var conceptBks: List<BK>
     lateinit var tradeBks: List<BK>
 
+    var popularityRanking = mapOf<String, PopularityData>()
+
 
     lateinit var sp: SharedPreferences
 
-    private var activityActive = false
+    var activityActive = false
 
     fun inject(applicationContext: Context) {
         context = applicationContext
@@ -70,6 +77,7 @@ object Injector {
             .addConverterFactory(GsonConverterFactory.create())
             .client(getOkHttpClientBuilder().build())
             .build()
+        apiService = retrofit.create(StockService::class.java)
 
         GlobalScope.launch {
             tradeBks = appDatabase.bkDao().getTradeBKs()
@@ -84,6 +92,14 @@ object Injector {
         (applicationContext as Application).registerActivityLifecycleCallbacks(object :
             ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+                if (activity is HomeActivity) {
+                    GlobalScope.launch(Dispatchers.IO) {
+                        StockRepo.getRealTimeStocks()
+                        StockRepo.getRealTimeBKs()
+                    }
+                    autoRefreshPopularityRanking()
+                    startAutoRefresh()
+                }
 
             }
 
@@ -92,14 +108,15 @@ object Injector {
             }
 
             override fun onActivityResumed(activity: Activity) {
-               if(activity is Strategy4Activity|| activity is BKStrategyActivity){
-                   activityActive=true
-               }
+                if (activity is Strategy4Activity || activity is BKStrategyActivity) {
+
+                    activityActive = true
+                }
             }
 
             override fun onActivityPaused(activity: Activity) {
-                if(activity is Strategy4Activity|| activity is BKStrategyActivity){
-                    activityActive=false
+                if (activity is Strategy4Activity || activity is BKStrategyActivity) {
+                    activityActive = false
                 }
             }
 
@@ -121,6 +138,7 @@ object Injector {
     }
 
     private var autoRefreshJob: Job? = null
+    private var autoRefreshPopularityRankingJob: Job? = null
 
     fun startAutoRefresh() {
         val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
@@ -137,7 +155,7 @@ object Injector {
                     }
                     val hour = cal.get(Calendar.HOUR_OF_DAY)
                     if (hour in 9..15) {
-                        if(activityActive){
+                        if (activityActive) {
                             StockRepo.getRealTimeBKs()
                             StockRepo.getRealTimeStocks()
                         }
@@ -148,6 +166,22 @@ object Injector {
                 }
             }
         }
+    }
+
+    fun autoRefreshPopularityRanking() {
+        autoRefreshPopularityRankingJob?.cancel()
+        autoRefreshPopularityRankingJob = GlobalScope.launch {
+            while (true) {
+                val map = mutableMapOf<String, PopularityData>()
+                StockRepo.fetchPopularityRanking().forEach {
+                    map[it.SECURITY_CODE] = it
+                }
+                if (!isActive) return@launch
+                popularityRanking = map
+                delay(1000 * 60 * 10)
+            }
+        }
+
     }
 
 

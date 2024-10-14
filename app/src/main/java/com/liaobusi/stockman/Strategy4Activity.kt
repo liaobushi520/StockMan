@@ -100,6 +100,10 @@ class Strategy4Activity : AppCompatActivity() {
         binding = ActivityStrategy4Binding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
 
+        binding.rv.layoutManager = LinearLayoutManager(this@Strategy4Activity)
+        binding.rv.adapter = ResultAdapter()
+
+
         supportActionBar?.title = "均线强势"
 
 
@@ -208,8 +212,6 @@ class Strategy4Activity : AppCompatActivity() {
             updateUI(param)
             outputResult(param)
         }
-
-
         binding.line30Btn.setOnClickListener {
             binding.root.requestFocus()
             val endTime =
@@ -238,8 +240,6 @@ class Strategy4Activity : AppCompatActivity() {
             updateUI(param)
             outputResult(param)
         }
-
-
         binding.line60Btn.setOnClickListener {
             binding.root.requestFocus()
             val endTime =
@@ -331,6 +331,9 @@ class Strategy4Activity : AppCompatActivity() {
             if (binding.onlyActiveRateCb.isChecked) {
                 binding.divergeRateTv.setText("0.0")
                 binding.allowBelowCountTv.setText(timeRange.toString())
+            }else{
+                binding.divergeRateTv.setText("0.0")
+                binding.allowBelowCountTv.setText("0")
             }
 
             val allowBelowCount =
@@ -396,6 +399,11 @@ class Strategy4Activity : AppCompatActivity() {
                 output(list)
             }
 
+        }
+
+
+        binding.onlyActiveRateCb.setOnCheckedChangeListener { buttonView, isChecked ->
+            binding.chooseStockBtn.callOnClick()
         }
 
         if (Injector.getSnapshot().isNotEmpty()) {
@@ -669,13 +677,95 @@ class Strategy4Activity : AppCompatActivity() {
                 output(strategyResult)
             }
 
+            binding.starCb.setOnCheckedChangeListener { compoundButton, b ->
+                output(strategyResult)
+            }
+
+            binding.stCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                output(strategyResult)
+            }
+
+
+            //活跃度
             binding.activityLevelCb.setOnCheckedChangeListener { compoundButton, b ->
                 if (b) {
                     binding.ztPromotionCb.isChecked = false
                     binding.zfSortCb.isChecked = false
+                    binding.popularitySortCb.isChecked = false
                 }
                 output(strategyResult)
             }
+
+            //人气
+            binding.popularitySortCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.ztPromotionCb.isChecked = false
+                    binding.activityLevelCb.isChecked = false
+                    binding.zfSortCb.isChecked = false
+                }
+                output(strategyResult)
+            }
+
+            //涨幅
+            binding.zfSortCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.ztPromotionCb.isChecked = false
+                    binding.activityLevelCb.isChecked = false
+                    binding.popularitySortCb.isChecked = false
+                }
+                output(strategyResult)
+            }
+
+
+            //仅涨停
+            binding.onlyZTCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.onlyDTCb.isChecked = false
+                }
+                output(strategyResult)
+            }
+
+            //仅跌停
+            binding.onlyDTCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.onlyZTCb.isChecked = false
+                }
+                output(strategyResult)
+            }
+
+
+            binding.zhongjunCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.ztPromotionCb.isChecked = false
+                    binding.activityLevelCb.isChecked = true
+                    binding.groupCb.isChecked = false
+                }
+                output(strategyResult)
+
+            }
+
+            binding.ztPromotionCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.activityLevelCb.isChecked = false
+                    binding.zhongjunCb.isChecked = false
+                    binding.zfSortCb.isChecked = false
+                    binding.groupCb.isChecked = false
+                }
+                output(strategyResult)
+            }
+
+            binding.groupCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.ztPromotionCb.isChecked = false
+                    binding.zfSortCb.isChecked = false
+                    binding.popularitySortCb.isChecked = false
+                    binding.activityLevelCb.isChecked = false
+                }
+                output(strategyResult)
+            }
+
+
+
 
             binding.cowBackCb.setOnCheckedChangeListener { compoundButton, b ->
                 output(strategyResult)
@@ -690,61 +780,11 @@ class Strategy4Activity : AppCompatActivity() {
             }
 
 
-            binding.onlyZTCb.setOnCheckedChangeListener { buttonView, isChecked ->
-                if (isChecked) {
-                    binding.onlyDTCb.isChecked = false
-                }
-                output(strategyResult)
-            }
-
-            binding.onlyDTCb.setOnCheckedChangeListener { buttonView, isChecked ->
-                if (isChecked) {
-                    binding.onlyZTCb.isChecked = false
-                }
-                output(strategyResult)
-            }
 
 
 
-            binding.ztPromotionCb.setOnCheckedChangeListener { buttonView, isChecked ->
-                if (isChecked) {
-                    binding.activityLevelCb.isChecked = false
-                    binding.zhongjunCb.isChecked = false
-                    binding.onlyActiveRateCb.isChecked = true
-                    binding.zfSortCb.isChecked = false
-                } else {
-                    binding.groupCb.isChecked = false
-                }
-                output(strategyResult)
-            }
-
-            binding.stCb.setOnCheckedChangeListener { buttonView, isChecked ->
-                output(strategyResult)
-            }
-
-            binding.zfSortCb.setOnCheckedChangeListener { buttonView, isChecked ->
-                if (isChecked) {
-                    binding.activityLevelCb.isChecked = false
-                }
-                output(strategyResult)
-            }
-            binding.groupCb.setOnCheckedChangeListener { buttonView, isChecked ->
-                if (isChecked) {
-                    binding.ztPromotionCb.isChecked = true
-                }
-                output(strategyResult)
-            }
 
 
-            binding.zhongjunCb.setOnCheckedChangeListener { buttonView, isChecked ->
-                if (isChecked) {
-                    binding.ztPromotionCb.isChecked = false
-                    binding.activityLevelCb.isChecked = true
-                    binding.onlyActiveRateCb.isChecked = false
-                }
-                output(strategyResult)
-
-            }
 
             var r = list
             r = mutableListOf<StockResult>().apply { addAll(r) }
@@ -752,11 +792,15 @@ class Strategy4Activity : AppCompatActivity() {
 
             //-----------股票市场过滤------------
             if (!binding.changyebanCb.isChecked) {
-                r = r.filter { return@filter !it.stock.code.startsWith("300") }.toMutableList()
+                r = r.filter { return@filter !it.stock.isChiNext() }.toMutableList()
             }
 
             if (!binding.bjsCb.isChecked) {
-                r = r.filter { return@filter !it.stock.code.startsWith("831") }.toMutableList()
+                r = r.filter { return@filter !it.stock.isBJStockExchange() }.toMutableList()
+            }
+
+            if (!binding.starCb.isChecked) {
+                r = r.filter { return@filter !it.stock.isSTARMarket() }.toMutableList()
             }
 
             if (!binding.stCb.isChecked) {
@@ -794,6 +838,11 @@ class Strategy4Activity : AppCompatActivity() {
                 })
             }
 
+            if (binding.popularitySortCb.isChecked) {
+                r = r.filter { Injector.popularityRanking.containsKey(it.stock.code) }
+                    .sortedBy { Injector.popularityRanking[it.stock.code]!!.POPULARITY_RANK }
+            }
+
             if (binding.gdrsCb.isChecked) {
                 val c = binding.gdrsCountTv.text.toString().toIntOrNull() ?: 5
                 r = StockRepo.filterStockByGDRS(r, c)
@@ -804,11 +853,13 @@ class Strategy4Activity : AppCompatActivity() {
             }
 
             if (binding.zhongjunCb.isChecked) {
-                r = r.filter { it.stock.circulationMarketValue > 8000000000 }
+                r = r.filter { it.stock.circulationMarketValue >= 8000000000 }
             }
 
             val ll = mutableListOf<StockResult>()
+            var groupHeaderCount = 0
             if (binding.groupCb.isChecked) {
+                r = r.filter { it.zt }
                 var i = 0
                 val listPair =
                     r.groupBy { it.ztReplay?.groupName ?: "" }.values.toMutableList().map {
@@ -852,6 +903,7 @@ class Strategy4Activity : AppCompatActivity() {
                             )
                         )
                     )
+                    groupHeaderCount++
                     ll.addAll(value)
                     i++
                 }
@@ -878,38 +930,48 @@ class Strategy4Activity : AppCompatActivity() {
 
             val strategyResult2 = StrategyResult(r, strategyResult.total)
             val s = if (strategyResult2.total > 0 && r.isNotEmpty()) {
-                "拟合度${DecimalFormat("#.0").format(r.size * 100f / strategyResult2.total)}%"
+                "拟合度${DecimalFormat("#.0").format((r.size - groupHeaderCount) * 100f / strategyResult2.total)}%"
             } else ""
 
             val resultText =
-                SpannableStringBuilder().append("结果(${r.count { it.nextDayZT }}/${r.size}) ${s} ")
+                SpannableStringBuilder().append("结果(${r.count { it.nextDayZT && !it.isGroupHeader }}/${r.size - groupHeaderCount}) ${s} ")
                     .append("涨跌停")
                     .append(
-                        "" + r.count { it.zt },
+                        "" + r.count { it.zt && !it.isGroupHeader },
                         ForegroundColorSpan(Color.RED),
                         SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
                     )
                     .append(":")
                     .append(
-                        "" + r.count { it.dt },
+                        "" + r.count { it.dt && !it.isGroupHeader },
                         ForegroundColorSpan(STOCK_GREEN),
                         SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
                     )
             binding.resultCount.text = resultText
-            binding.rv.layoutManager = LinearLayoutManager(this@Strategy4Activity)
-            binding.rv.adapter = ResultAdapter(
+
+
+
+            (binding.rv.adapter as ResultAdapter).setData(
                 strategyResult2.stockResults.toMutableList(),
-                binding.ztPromotionCb.isChecked
+                binding.ztPromotionCb.isChecked || binding.groupCb.isChecked
             )
         }
     }
 
 
     inner class ResultAdapter(
-        private val data: MutableList<StockResult>,
-        private val ztPromotion: Boolean = false
+
     ) :
         RecyclerView.Adapter<ResultAdapter.VH>() {
+
+        private val data = mutableListOf<StockResult>()
+        private var ztPromotion: Boolean = false
+        fun setData(data: MutableList<StockResult>, ztPromotion: Boolean = false) {
+            this.data.clear()
+            this.data.addAll(data)
+            this.ztPromotion = ztPromotion
+            notifyDataSetChanged()
+        }
 
 
         fun getStockList(): List<Stock> {
@@ -934,8 +996,8 @@ class Strategy4Activity : AppCompatActivity() {
             super.onAttachedToRecyclerView(recyclerView)
             job = lifecycleScope.launch(Dispatchers.IO) {
                 while (true) {
-                    delay(1000)
-                    if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE) {
+                    delay(1200)
+                    if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE || !Injector.activityActive) {
                         continue
                     }
                     val lm = recyclerView.layoutManager as LinearLayoutManager
@@ -945,39 +1007,45 @@ class Strategy4Activity : AppCompatActivity() {
                         continue
                     }
 
-                    for (i in firstPos until lastPos + 1) {
-                        val result = data[i]
-                        if (result.currentDayHistory != null && !result.isGroupHeader) {
-                            val s =
-                                Injector.appDatabase.stockDao().getStockByCode(result.stock.code)
-                            val h = Injector.appDatabase.historyStockDao().getHistoryByDate3(
-                                result.stock.code,
-                                result.currentDayHistory!!.date
-                            )
-                            val n =
-                                if (result.nextDayHistory != null) Injector.appDatabase.historyStockDao()
-                                    .getHistoryByDate3(
-                                        result.stock.code,
-                                        result.nextDayHistory!!.date
-                                    ) else null
-                            if (h.chg != result.currentDayHistory!!.chg || n?.chg != result.nextDayHistory?.chg) {
-                                val changeRate =
-                                    if (h.chg != result.currentDayHistory!!.chg) (h.chg - result.currentDayHistory!!.chg)
-                                    else (if (n == null || result.nextDayHistory == null) 0f
-                                    else n.chg - result.nextDayHistory!!.chg)
-                                data[i] = result.copy(
-                                    stock = s,
-                                    currentDayHistory = h,
-                                    nextDayHistory = n,
-                                    changeRate = changeRate
-                                )
-                                launch(Dispatchers.Main) {
-                                    notifyItemChanged(i)
-                                }
 
+                    if (data.size>0){
+                        for (i in firstPos until lastPos + 1) {
+
+                            val result = data[i]
+                            if (result.currentDayHistory != null && !result.isGroupHeader) {
+                                val s =
+                                    Injector.appDatabase.stockDao().getStockByCode(result.stock.code)
+                                val h = Injector.appDatabase.historyStockDao().getHistoryByDate3(
+                                    result.stock.code,
+                                    result.currentDayHistory!!.date
+                                )
+                                val n =
+                                    if (result.nextDayHistory != null) Injector.appDatabase.historyStockDao()
+                                        .getHistoryByDate3(
+                                            result.stock.code,
+                                            result.nextDayHistory!!.date
+                                        ) else null
+                                if (h.chg != result.currentDayHistory!!.chg || n?.chg != result.nextDayHistory?.chg) {
+                                    val changeRate =
+                                        if (h.chg != result.currentDayHistory!!.chg) (h.chg - result.currentDayHistory!!.chg)
+                                        else (if (n == null || result.nextDayHistory == null) 0f
+                                        else n.chg - result.nextDayHistory!!.chg)
+                                    data[i] = result.copy(
+                                        stock = s,
+                                        currentDayHistory = h,
+                                        nextDayHistory = n,
+                                        changeRate = changeRate
+                                    )
+                                    launch(Dispatchers.Main) {
+                                        notifyItemChanged(i)
+                                    }
+
+                                }
                             }
                         }
                     }
+
+
 
                 }
             }
@@ -986,13 +1054,14 @@ class Strategy4Activity : AppCompatActivity() {
 
         inner class VH(val binding: ItemStockBinding) : RecyclerView.ViewHolder(binding.root) {
 
+            var anim: ValueAnimator? = null
 
             @RequiresApi(Build.VERSION_CODES.O)
             fun bind(result: StockResult, position: Int) {
 
                 if (result.isGroupHeader) {
                     binding.root.setOnClickListener(null)
-                    binding.colorView.visibility=View.GONE
+                    binding.colorView.visibility = View.GONE
                     binding.groupHeaderLL.visibility = View.VISIBLE
                     binding.contentLL.visibility = View.GONE
                     binding.expoundTv.visibility = View.GONE
@@ -1024,33 +1093,42 @@ class Strategy4Activity : AppCompatActivity() {
                     }
 
                     if (result.changeRate != 0f) {
-                        colorView.visibility=View.VISIBLE
-                        ValueAnimator.ofFloat(0f, min(abs(result.changeRate),0.9f), 0f).apply {
-                            duration = 2000
-                            addListener(object : AnimatorListenerAdapter() {
-                                override fun onAnimationStart(animation: Animator) {
-                                    super.onAnimationStart(animation)
-                                    colorView.alpha=1f
-                                    if (result.changeRate > 0) {
-                                        colorView.setBackgroundColor(Color.RED)
-                                    } else {
-                                        colorView.setBackgroundColor(STOCK_GREEN)
-                                    }
-                                }
-
-                                override fun onAnimationEnd(animation: Animator) {
-                                    super.onAnimationEnd(animation)
-                                    colorView.alpha=0f
-                                    colorView.setBackgroundColor(Color.TRANSPARENT)
-                                }
-                            })
-                            this.addUpdateListener {
-                                colorView.alpha = it.animatedValue as Float
-                            }
-                            start()
+                        colorView.visibility = View.VISIBLE
+                        if (colorView.tag != result.stock.code) {
+                            anim?.cancel()
                         }
-                    }else{
-                        colorView.visibility=View.GONE
+
+                        anim =
+                            ValueAnimator.ofFloat(0f, min(abs(result.changeRate), 0.9f), 0f).apply {
+                                duration = 1700
+                                startDelay = (1700 * (1 - (anim?.animatedFraction ?: 1f))).toLong()
+
+                                addListener(object : AnimatorListenerAdapter() {
+                                    override fun onAnimationStart(animation: Animator) {
+                                        super.onAnimationStart(animation)
+                                        colorView.alpha = 1f
+                                        if (result.changeRate > 0) {
+                                            colorView.setBackgroundColor(Color.RED)
+                                        } else {
+                                            colorView.setBackgroundColor(STOCK_GREEN)
+                                        }
+                                    }
+
+                                    override fun onAnimationEnd(animation: Animator) {
+                                        super.onAnimationEnd(animation)
+                                        colorView.alpha = 0f
+                                        colorView.setBackgroundColor(Color.TRANSPARENT)
+                                        result.changeRate = 0f
+                                    }
+                                })
+                                this.addUpdateListener {
+                                    colorView.alpha = it.animatedValue as Float
+                                }
+                                start()
+                            }
+                        colorView.tag = stock.code
+                    } else {
+                        colorView.visibility = View.GONE
                     }
 
                     if (result.ztReplay != null && result.expandReason) {

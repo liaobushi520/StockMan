@@ -1,24 +1,33 @@
 package com.liaobusi.stockman
 
 import android.content.BroadcastReceiver
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.liaobusi.stockman.api.FPRequest
+import com.liaobusi.stockman.api.PopularityData
 import com.liaobusi.stockman.api.StockService
 import com.liaobusi.stockman.databinding.ActivityHomeBinding
 import com.liaobusi.stockman.db.marketCode
@@ -27,6 +36,14 @@ import com.liaobusi.stockman.db.specialBK
 import com.liaobusi.stockman.repo.StockRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.text.SimpleDateFormat
@@ -164,6 +181,9 @@ class HomeActivity : AppCompatActivity() {
         }
 
 
+
+
+
         lifecycleScope.launch(Dispatchers.IO) {
 
             val d = Injector.appDatabase.stockDao()
@@ -173,8 +193,7 @@ class HomeActivity : AppCompatActivity() {
 
 
             // StockRepo.getRealTimeStockData("0.300059")
-            StockRepo.getRealTimeStocks()
-            StockRepo.getRealTimeBKs()
+
 
             val sp = getSharedPreferences("app", Context.MODE_PRIVATE)
             if (System.currentTimeMillis() - sp.getLong(
@@ -270,14 +289,30 @@ class HomeActivity : AppCompatActivity() {
 
 
 
-
         }
 
 
-        Injector.startAutoRefresh()
+
+
+
+
+
+
+
 
 
     }
+
+
+
+
+
+
+
+
+
 }
+
+
 
 

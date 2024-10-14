@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
+import android.util.Log
 import androidx.room.*
 import com.liaobusi.stockman.STOCK_GREEN
 
@@ -142,17 +143,32 @@ fun Stock.isST(): Boolean {
 }
 
 fun Stock.openWeb(context: Context) {
-    val s = "dfcft://stock?market=${this.marketCode()}&code=${this.code}"
+    val s = "dfcf18://stock?market=${this.marketCode()}&code=${this.code}"
     val uri: Uri = Uri.parse(s)
     val intent = Intent(Intent.ACTION_VIEW, uri)
     context.startActivity(intent)
 }
 
+//创业板
+fun Stock.isChiNext():Boolean{
+      return this.code.startsWith("300")||this.code.startsWith("301")
+}
+//科创板
+fun Stock.isSTARMarket():Boolean{
+    return this.code.startsWith("688")
+}
+//北交所
+fun Stock.isBJStockExchange():Boolean{
+    return this.code.startsWith("82")||this.code.startsWith("83")||this.code.startsWith("87")||this.code.startsWith("88")||this.code.startsWith("43")||this.code.startsWith("92")
+}
+
+
+
 fun Stock.marketCode(): Int {
     return if (this.code.startsWith("000") || this.code.startsWith("300") || this.code.startsWith("301") || this.code.startsWith(
             "002"
         ) || this.code.startsWith("001") || this.code.startsWith("003")
-    ) 0 else 1
+    ) 0 else if (this.isBJStockExchange()) 0 else 1
 }
 
 @Entity(primaryKeys = ["code", "date"])
@@ -191,6 +207,7 @@ val HistoryStock.color: Int
 val HistoryStock.ZT: Boolean
     get() {
         if (this.ztPrice == -1f) {
+            this.yesterdayClosePrice
             if (this.code.startsWith("300") || this.code.startsWith("688") || this.code.startsWith("301")) {
                 return this.chg > 19
             } else {
