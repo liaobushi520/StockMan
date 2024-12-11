@@ -10,6 +10,7 @@ import android.graphics.Color
 import android.graphics.DiscretePathEffect
 import android.os.Build
 import android.os.Bundle
+import android.text.BoringLayout
 import android.text.SpannableStringBuilder
 import android.text.style.ForegroundColorSpan
 import android.util.Log
@@ -331,7 +332,7 @@ class Strategy4Activity : AppCompatActivity() {
             if (binding.onlyActiveRateCb.isChecked) {
                 binding.divergeRateTv.setText("0.0")
                 binding.allowBelowCountTv.setText(timeRange.toString())
-            }else{
+            } else {
                 binding.divergeRateTv.setText("0.0")
                 binding.allowBelowCountTv.setText("0")
             }
@@ -379,7 +380,9 @@ class Strategy4Activity : AppCompatActivity() {
             }
             val bkList = checkBKInput() ?: return@setOnClickListener
             job = lifecycleScope.launch(Dispatchers.IO) {
-                StockRepo.fetchZTReplay(date = endTime)
+                StockRepo.fetchZTReplay2(date = endTime)
+                StockRepo.fetchDragonTigerRank(endTime)
+
                 val list = StockRepo.strategy4(
                     startMarketTime = startMarketTime,
                     endMarketTime = endMarketTime,
@@ -668,6 +671,9 @@ class Strategy4Activity : AppCompatActivity() {
 
         lifecycleScope.launch(Dispatchers.Main) {
 
+            binding.mainBoardCb.setOnCheckedChangeListener { compoundButton, b ->
+                output(strategyResult)
+            }
 
             binding.changyebanCb.setOnCheckedChangeListener { compoundButton, b ->
                 output(strategyResult)
@@ -689,19 +695,60 @@ class Strategy4Activity : AppCompatActivity() {
             //活跃度
             binding.activityLevelCb.setOnCheckedChangeListener { compoundButton, b ->
                 if (b) {
-                    binding.ztPromotionCb.isChecked = false
                     binding.zfSortCb.isChecked = false
+                    binding.popularitySortCb.isChecked = false
+                    binding.thsPopularitySortCb.isChecked = false
+                    binding.dzhPopularitySortCb.isChecked=false
+                    binding.tgbPopularitySortCb.isChecked=false
+                }
+                output(strategyResult)
+            }
+
+            //东热
+            binding.popularitySortCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.activityLevelCb.isChecked = false
+                    binding.zfSortCb.isChecked = false
+                    binding.thsPopularitySortCb.isChecked = false
+                    binding.tgbPopularitySortCb.isChecked = false
+                    binding.dzhPopularitySortCb.isChecked = false
+                }
+                output(strategyResult)
+            }
+
+
+            //大智慧热度
+            binding.dzhPopularitySortCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.activityLevelCb.isChecked = false
+                    binding.zfSortCb.isChecked = false
+                    binding.thsPopularitySortCb.isChecked = false
+                    binding.tgbPopularitySortCb.isChecked = false
                     binding.popularitySortCb.isChecked = false
                 }
                 output(strategyResult)
             }
 
-            //人气
-            binding.popularitySortCb.setOnCheckedChangeListener { buttonView, isChecked ->
+            //淘股吧热
+            binding.tgbPopularitySortCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 if (isChecked) {
-                    binding.ztPromotionCb.isChecked = false
                     binding.activityLevelCb.isChecked = false
                     binding.zfSortCb.isChecked = false
+                    binding.thsPopularitySortCb.isChecked = false
+                    binding.popularitySortCb.isChecked = false
+                    binding.dzhPopularitySortCb.isChecked = false
+                }
+                output(strategyResult)
+            }
+
+            //同花顺人气
+            binding.thsPopularitySortCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.activityLevelCb.isChecked = false
+                    binding.zfSortCb.isChecked = false
+                    binding.popularitySortCb.isChecked = false
+                    binding.tgbPopularitySortCb.isChecked = false
+                    binding.dzhPopularitySortCb.isChecked = false
                 }
                 output(strategyResult)
             }
@@ -709,9 +756,11 @@ class Strategy4Activity : AppCompatActivity() {
             //涨幅
             binding.zfSortCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 if (isChecked) {
-                    binding.ztPromotionCb.isChecked = false
                     binding.activityLevelCb.isChecked = false
                     binding.popularitySortCb.isChecked = false
+                    binding.thsPopularitySortCb.isChecked = false
+                    binding.tgbPopularitySortCb.isChecked=false
+                    binding.dzhPopularitySortCb.isChecked=false
                 }
                 output(strategyResult)
             }
@@ -733,22 +782,29 @@ class Strategy4Activity : AppCompatActivity() {
                 output(strategyResult)
             }
 
+            //龙虎榜
+            binding.dragonTigerCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                output(strategyResult)
+            }
+
 
             binding.zhongjunCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 if (isChecked) {
-                    binding.ztPromotionCb.isChecked = false
-                    binding.activityLevelCb.isChecked = true
-                    binding.groupCb.isChecked = false
+                    binding.xiaopiaoCb.isChecked = false
                 }
                 output(strategyResult)
 
             }
 
+            binding.xiaopiaoCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.zhongjunCb.isChecked = false
+                }
+                output(strategyResult)
+            }
+
             binding.ztPromotionCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 if (isChecked) {
-                    binding.activityLevelCb.isChecked = false
-                    binding.zhongjunCb.isChecked = false
-                    binding.zfSortCb.isChecked = false
                     binding.groupCb.isChecked = false
                 }
                 output(strategyResult)
@@ -757,15 +813,9 @@ class Strategy4Activity : AppCompatActivity() {
             binding.groupCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 if (isChecked) {
                     binding.ztPromotionCb.isChecked = false
-                    binding.zfSortCb.isChecked = false
-                    binding.popularitySortCb.isChecked = false
-                    binding.activityLevelCb.isChecked = false
                 }
                 output(strategyResult)
             }
-
-
-
 
             binding.cowBackCb.setOnCheckedChangeListener { compoundButton, b ->
                 output(strategyResult)
@@ -780,17 +830,17 @@ class Strategy4Activity : AppCompatActivity() {
             }
 
 
-
-
-
-
-
-
             var r = list
             r = mutableListOf<StockResult>().apply { addAll(r) }
 
 
             //-----------股票市场过滤------------
+
+            if (!binding.mainBoardCb.isChecked) {
+                r = r.filter { return@filter !it.stock.isMainBoard() }.toMutableList()
+            }
+
+
             if (!binding.changyebanCb.isChecked) {
                 r = r.filter { return@filter !it.stock.isChiNext() }.toMutableList()
             }
@@ -808,6 +858,8 @@ class Strategy4Activity : AppCompatActivity() {
                     return@filter !it.stock.isST()
                 }
             }
+
+
             //-----------股票市场过滤------------
 
             if (binding.onlyZTCb.isChecked) {
@@ -818,29 +870,19 @@ class Strategy4Activity : AppCompatActivity() {
                 r = r.filter { return@filter it.dt }
             }
 
+            if (binding.dragonTigerCb.isChecked) {
+                r = r.filter { return@filter it.dargonTigerRank != null }
+            }
+
+
+
+
             if (binding.cowBackCb.isChecked) {
                 r = r.filter { return@filter it.cowBack }
             }
 
             if (binding.noZTInRangeCb.isChecked) {
                 r = r.filter { return@filter it.ztCountInRange == 0 }
-            }
-
-            if (binding.activityLevelCb.isChecked) {
-                Collections.sort(r, kotlin.Comparator { v0, v1 ->
-                    return@Comparator v1.activeRate.compareTo(v0.activeRate)
-                })
-            }
-
-            if (binding.zfSortCb.isChecked) {
-                Collections.sort(r, kotlin.Comparator { v0, v1 ->
-                    return@Comparator v1.currentDayHistory!!.chg.compareTo(v0.currentDayHistory!!.chg)
-                })
-            }
-
-            if (binding.popularitySortCb.isChecked) {
-                r = r.filter { Injector.popularityRanking.containsKey(it.stock.code) }
-                    .sortedBy { Injector.popularityRanking[it.stock.code]!!.POPULARITY_RANK }
             }
 
             if (binding.gdrsCb.isChecked) {
@@ -855,6 +897,106 @@ class Strategy4Activity : AppCompatActivity() {
             if (binding.zhongjunCb.isChecked) {
                 r = r.filter { it.stock.circulationMarketValue >= 8000000000 }
             }
+
+            if (binding.xiaopiaoCb.isChecked) {
+                r = r.filter { it.stock.circulationMarketValue < 8000000000 }
+            }
+
+
+            if (binding.activityLevelCb.isChecked) {
+                if (binding.ztPromotionCb.isChecked) {
+                    val newList = mutableListOf<StockResult>()
+                    r.groupBy { it.lianbanCount }.toList().sortedByDescending { it.first }.forEach {
+                        newList.addAll(it.second.sortedByDescending { it.activeRate })
+                    }
+                    r = newList
+                } else {
+                    Collections.sort(r, kotlin.Comparator { v0, v1 ->
+                        return@Comparator v1.activeRate.compareTo(v0.activeRate)
+                    })
+                }
+            }
+
+            if (binding.zfSortCb.isChecked) {
+
+                if (binding.ztPromotionCb.isChecked) {
+                    val newList = mutableListOf<StockResult>()
+                    r.groupBy { it.lianbanCount }.toList().sortedByDescending { it.first }
+                        .forEach {
+                            newList.addAll(it.second.sortedByDescending { it.stock.chg?:-1000f})
+                        }
+                    r = newList
+                } else {
+                    Collections.sort(r, kotlin.Comparator { v0, v1 ->
+                        return@Comparator v1.currentDayHistory!!.chg.compareTo(v0.currentDayHistory!!.chg)
+                    })
+                }
+
+
+
+
+            }
+
+            if (binding.popularitySortCb.isChecked) {
+                if (binding.ztPromotionCb.isChecked) {
+                    val newList = mutableListOf<StockResult>()
+                    r.filter { it.popularity != null && it.popularity!!.rank > 0 }
+                        .groupBy { it.lianbanCount }.toList().sortedByDescending { it.first }
+                        .forEach {
+                            newList.addAll(it.second.sortedBy { it.popularity?.rank ?: 1000 })
+                        }
+                    r = newList
+                } else {
+                    r = r.filter { it.popularity != null && it.popularity!!.rank > 0 }
+                        .sortedBy { it.popularity?.rank ?: 1000 }
+                }
+            }
+
+            if (binding.thsPopularitySortCb.isChecked) {
+                if (binding.ztPromotionCb.isChecked) {
+                    val newList = mutableListOf<StockResult>()
+                    r.filter { it.popularity != null && it.popularity!!.thsRank > 0 }
+                        .groupBy { it.lianbanCount }.toList().sortedByDescending { it.first }
+                        .forEach {
+                            newList.addAll(it.second.sortedBy { it.popularity?.thsRank ?: 1000 })
+                        }
+                    r = newList
+                } else {
+                    r = r.filter { it.popularity != null && it.popularity!!.thsRank > 0 }
+                        .sortedBy { it.popularity?.thsRank ?: 1000 }
+                }
+            }
+
+            if (binding.tgbPopularitySortCb.isChecked) {
+                if (binding.ztPromotionCb.isChecked) {
+                    val newList = mutableListOf<StockResult>()
+                    r.filter { it.popularity != null && it.popularity!!.tgbRank > 0 }
+                        .groupBy { it.lianbanCount }.toList().sortedByDescending { it.first }
+                        .forEach {
+                            newList.addAll(it.second.sortedBy { it.popularity?.tgbRank ?: 1000 })
+                        }
+                    r = newList
+                } else {
+                    r = r.filter { it.popularity != null && it.popularity!!.tgbRank > 0 }
+                        .sortedBy { it.popularity?.tgbRank ?: 1000 }
+                }
+            }
+
+            if (binding.dzhPopularitySortCb.isChecked) {
+                if (binding.ztPromotionCb.isChecked) {
+                    val newList = mutableListOf<StockResult>()
+                    r.filter { it.popularity != null && it.popularity!!.dzhRank > 0 }
+                        .groupBy { it.lianbanCount }.toList().sortedByDescending { it.first }
+                        .forEach {
+                            newList.addAll(it.second.sortedBy { it.popularity?.dzhRank ?: 1000 })
+                        }
+                    r = newList
+                } else {
+                    r = r.filter { it.popularity != null && it.popularity!!.dzhRank > 0 }
+                        .sortedBy { it.popularity?.dzhRank ?: 1000 }
+                }
+            }
+
 
             val ll = mutableListOf<StockResult>()
             var groupHeaderCount = 0
@@ -876,11 +1018,32 @@ class Strategy4Activity : AppCompatActivity() {
                         v0.first
                     )
                 })
+
+
                 listPair.forEach { pair ->
                     val value = pair.second
+
+
                     Collections.sort(value, kotlin.Comparator { v0, v1 ->
-                        return@Comparator (v1.lianbanCount * 10 + v1.ztTimeDigitization).compareTo(
-                            v0.lianbanCount * 10 + v0.ztTimeDigitization
+                        val x1 =
+                            if (binding.tgbPopularitySortCb.isChecked) (100f - (v1.popularity?.tgbRank ?: 100))
+                            else if (binding.popularitySortCb.isChecked) (300f - (v1.popularity?.rank ?: 300))
+                            else if (binding.dzhPopularitySortCb.isChecked) (100f - (v1.popularity?.dzhRank ?: 100))
+                            else if (binding.thsPopularitySortCb.isChecked) (100f - (v1.popularity?.thsRank ?: 100))
+                            else if (binding.activityLevelCb.isChecked) v1.activeRate
+                            else if (binding.zfSortCb.isChecked) v1.stock.chg
+                            else v1.ztTimeDigitization
+
+                        val x0 =
+                            if (binding.tgbPopularitySortCb.isChecked) (100f - (v0.popularity?.tgbRank ?: 100))
+                            else if (binding.popularitySortCb.isChecked) (300f - (v0.popularity?.rank ?: 300))
+                            else if (binding.dzhPopularitySortCb.isChecked) (100f - (v0.popularity?.dzhRank ?: 100))
+                            else if (binding.thsPopularitySortCb.isChecked) (100f - (v0.popularity?.thsRank ?: 100))
+                            else if (binding.activityLevelCb.isChecked) v0.activeRate
+                            else if (binding.zfSortCb.isChecked) v0.stock.chg
+                            else v0.ztTimeDigitization
+                        return@Comparator (v1.lianbanCount * 1000 + x1).compareTo(
+                            v0.lianbanCount * 1000 + x0
                         )
                     })
                     val color = colors[i % colors.size]
@@ -949,11 +1112,9 @@ class Strategy4Activity : AppCompatActivity() {
                     )
             binding.resultCount.text = resultText
 
-
-
             (binding.rv.adapter as ResultAdapter).setData(
                 strategyResult2.stockResults.toMutableList(),
-                binding.ztPromotionCb.isChecked || binding.groupCb.isChecked
+                if (binding.popularitySortCb.isChecked) 1 else if (binding.thsPopularitySortCb.isChecked) 2 else if (binding.tgbPopularitySortCb.isChecked) 3 else if (binding.dzhPopularitySortCb.isChecked) 4 else 0
             )
         }
     }
@@ -965,11 +1126,14 @@ class Strategy4Activity : AppCompatActivity() {
         RecyclerView.Adapter<ResultAdapter.VH>() {
 
         private val data = mutableListOf<StockResult>()
-        private var ztPromotion: Boolean = false
-        fun setData(data: MutableList<StockResult>, ztPromotion: Boolean = false) {
+
+        private var popularitySort: Int = 0
+
+
+        fun setData(data: MutableList<StockResult>, popularitySort: Int = 0) {
             this.data.clear()
             this.data.addAll(data)
-            this.ztPromotion = ztPromotion
+            this.popularitySort = popularitySort
             notifyDataSetChanged()
         }
 
@@ -1008,13 +1172,14 @@ class Strategy4Activity : AppCompatActivity() {
                     }
 
 
-                    if (data.size>0){
+                    if (data.size > 0) {
                         for (i in firstPos until lastPos + 1) {
 
                             val result = data[i]
                             if (result.currentDayHistory != null && !result.isGroupHeader) {
                                 val s =
-                                    Injector.appDatabase.stockDao().getStockByCode(result.stock.code)
+                                    Injector.appDatabase.stockDao()
+                                        .getStockByCode(result.stock.code)
                                 val h = Injector.appDatabase.historyStockDao().getHistoryByDate3(
                                     result.stock.code,
                                     result.currentDayHistory!!.date
@@ -1046,7 +1211,6 @@ class Strategy4Activity : AppCompatActivity() {
                     }
 
 
-
                 }
             }
         }
@@ -1061,10 +1225,13 @@ class Strategy4Activity : AppCompatActivity() {
 
                 if (result.isGroupHeader) {
                     binding.root.setOnClickListener(null)
+                    binding.root.setBackgroundColor(0xffffffff.toInt())
                     binding.colorView.visibility = View.GONE
                     binding.groupHeaderLL.visibility = View.VISIBLE
                     binding.contentLL.visibility = View.GONE
                     binding.expoundTv.visibility = View.GONE
+                    binding.dragonFlagIv.visibility = View.GONE
+                    binding.stockName.setOnClickListener(null)
                     binding.groupHeaderTv.setTextColor(result.groupColor)
                     binding.groupHeaderTv2.setTextColor(result.groupColor)
                     if (result.ztReplay != null && result.ztReplay!!.groupName.isNotEmpty()) {
@@ -1083,6 +1250,9 @@ class Strategy4Activity : AppCompatActivity() {
                 }
                 binding.groupHeaderLL.visibility = View.GONE
                 binding.contentLL.visibility = View.VISIBLE
+                binding.stockName.setOnClickListener(null)
+                binding.stockName.isClickable = false
+
 
                 val stock = result.stock
                 binding.apply {
@@ -1139,7 +1309,14 @@ class Strategy4Activity : AppCompatActivity() {
                         this.expoundTv.visibility = View.GONE
                     }
 
-                    if (ztPromotion || isShowLianBanFlag(binding.root.context)) {
+                    if (result.expandPOPReason && result.popularity != null) {
+                        this.popReasonTv.visibility = View.VISIBLE
+                        this.popReasonTv.text = "${result.popularity?.explain}"
+                    } else {
+                        this.popReasonTv.visibility = View.GONE
+                    }
+
+                    if (isShowLianBanFlag(binding.root.context)) {
                         if (result.lianbanCount > 0) {
                             binding.lianbanCountFlagTv.setBackgroundColor(
                                 Color.valueOf(
@@ -1157,6 +1334,24 @@ class Strategy4Activity : AppCompatActivity() {
                     } else {
                         binding.lianbanCountFlagTv.visibility = View.GONE
                     }
+
+                    this.stockName.text = stock.name
+                    this.stockName.setTextColor(result.groupColor)
+
+
+                    if (result.dargonTigerRank != null) {
+                        this.dragonFlagIv.visibility = View.VISIBLE
+                        this.stockName.setOnClickListener {
+                            result.stock.openDragonTigerRank(this@Strategy4Activity)
+                        }
+                    } else {
+                        this.dragonFlagIv.visibility = View.GONE
+                    }
+
+                    this.dragonFlagIv.setOnClickListener {
+                        result.stock.openDragonTigerRank(this@Strategy4Activity)
+                    }
+
 
                     if (result.currentDayHistory != null) {
                         currentChg.setTextColor(result.currentDayHistory!!.color)
@@ -1184,10 +1379,6 @@ class Strategy4Activity : AppCompatActivity() {
                     }
 
 
-
-                    this.stockName.text = stock.name
-                    this.stockName.setTextColor(result.groupColor)
-
                     val formatText = result.toFormatText()
                     if (formatText.isNotEmpty()) {
                         this.labelTv.visibility = View.VISIBLE
@@ -1196,12 +1387,24 @@ class Strategy4Activity : AppCompatActivity() {
                         this.labelTv.visibility = View.INVISIBLE
                     }
 
-                    if (result.activeRate > 2) {
-                        this.activeLabelTv.visibility = View.VISIBLE
-                        this.activeLabelTv.text = result.activeRate.toInt().toString()
+                    if (popularitySort != 0) {
+                        if (result.popularity != null) {
+                            this.activeLabelTv.visibility = View.VISIBLE
+                            this.activeLabelTv.text =
+                                if (popularitySort == 1) result.popularity?.rank.toString() else if (popularitySort == 2) result.popularity?.thsRank.toString() else if (popularitySort == 4) result.popularity?.dzhRank.toString() else result.popularity?.tgbRank.toString()
+                        } else {
+                            this.activeLabelTv.visibility = View.INVISIBLE
+                        }
                     } else {
-                        this.activeLabelTv.visibility = View.INVISIBLE
+                        if (result.activeRate > 2) {
+                            this.activeLabelTv.visibility = View.VISIBLE
+                            this.activeLabelTv.text = result.activeRate.toInt().toString()
+                        } else {
+                            this.activeLabelTv.visibility = View.INVISIBLE
+                        }
                     }
+
+
 
 
                     this.nextDayIv.visibility =
@@ -1234,13 +1437,24 @@ class Strategy4Activity : AppCompatActivity() {
                         }
 
                         if (result.expandReason) {
-                            b.expandReasonBtn.text = "折叠原因"
+                            b.expandReasonBtn.text = "折叠涨停原因"
                         }
 
                         if (!result.zt) {
                             b.expandReasonBtn.visibility = View.GONE
                         } else {
                             b.expandReasonBtn.visibility = View.VISIBLE
+                        }
+
+
+                        if (result.popularity == null) {
+                            b.expandPOPReasonBtn.visibility = View.GONE
+                        } else {
+                            b.expandPOPReasonBtn.visibility = View.VISIBLE
+                        }
+
+                        if (result.expandPOPReason) {
+                            b.expandPOPReasonBtn.text = "折叠热度原因"
                         }
 
 
@@ -1258,6 +1472,13 @@ class Strategy4Activity : AppCompatActivity() {
                             pw.dismiss()
                         }
 
+                        b.expandPOPReasonBtn.setOnClickListener {
+                            val p = data.indexOf(result)
+                            result.expandPOPReason = !result.expandPOPReason
+                            notifyItemChanged(p)
+                            pw.dismiss()
+                        }
+
                         b.relatedConceptBtn.setOnClickListener {
                             pw.dismiss()
                             StockInfoFragment(
@@ -1267,6 +1488,10 @@ class Strategy4Activity : AppCompatActivity() {
                                 this@Strategy4Activity.supportFragmentManager,
                                 "stock_info"
                             )
+                        }
+                        b.dragonTigerRankBtn.setOnClickListener {
+                            pw.dismiss()
+                            result.stock.openDragonTigerRank(this@Strategy4Activity)
                         }
 
                         b.followBtn.setOnClickListener {
@@ -1361,6 +1586,7 @@ class StockInfoFragment(private val stock: Stock, private val date: String) : Di
                     Injector.appDatabase.historyBKDao().getHistoryByDate2(it, date.toInt())
                 )
             }.filter { it.first != null && !it.first!!.specialBK }
+                .sortedByDescending { it.second!!.chg }
             launch(Dispatchers.Main) {
                 list.forEach { pair ->
                     val bk = pair.first

@@ -279,13 +279,6 @@ class BKStrategyActivity : AppCompatActivity() {
 //                output(list)
 //            }
 
-            binding.activeRateCb.setOnCheckedChangeListener { compoundButton, b ->
-                if (b) {
-                    binding.zfCb.isChecked = false
-                    binding.zgbCb.isChecked = false
-                }
-                output(list)
-            }
 
             binding.conceptCb.setOnCheckedChangeListener { compoundButton, b ->
                 output(list)
@@ -299,6 +292,7 @@ class BKStrategyActivity : AppCompatActivity() {
                 if (b) {
                     binding.activeRateCb.isChecked = false
                     binding.zgbCb.isChecked = false
+                    binding.ztsCb.isChecked = false
                 }
                 output(list)
             }
@@ -307,13 +301,37 @@ class BKStrategyActivity : AppCompatActivity() {
                 output(list)
             }
 
+
+            binding.activeRateCb.setOnCheckedChangeListener { compoundButton, b ->
+                if (b) {
+                    binding.zfCb.isChecked = false
+                    binding.zgbCb.isChecked = false
+                    binding.ztsCb.isChecked = false
+                }
+                output(list)
+            }
+
+
             binding.zgbCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 if (isChecked) {
                     binding.activeRateCb.isChecked = false
                     binding.zfCb.isChecked = false
+                    binding.ztsCb.isChecked = false
                 }
                 output(list)
             }
+
+            binding.ztsCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                if (isChecked) {
+                    binding.activeRateCb.isChecked = false
+                    binding.zfCb.isChecked = false
+                    binding.zgbCb.isChecked = false
+                }
+                output(list)
+            }
+
+
+
 
             binding.nextChgCb.setOnCheckedChangeListener { buttonView, isChecked ->
                 output(list)
@@ -329,17 +347,24 @@ class BKStrategyActivity : AppCompatActivity() {
 //            }
 
 
-            if (binding.ztModeCb.isChecked) {
-                r = r.filter { it.ztCount > 0 }
-                if (binding.zgbCb.isChecked) {
-                    Collections.sort(r, kotlin.Comparator { v0, v1 ->
-                        return@Comparator v1.highestLianBanCount.compareTo(v0.highestLianBanCount)
-                    })
-                } else {
-                    Collections.sort(r, kotlin.Comparator { v0, v1 ->
-                        return@Comparator v1.ztCount.compareTo(v0.ztCount)
-                    })
-                }
+            if (!binding.conceptCb.isChecked) {
+                r = r.filter { it.bk.type != 1 }
+            }
+
+            if (!binding.tradeCb.isChecked) {
+                r = r.filter { it.bk.type != 0 }
+            }
+
+            if (binding.zgbCb.isChecked) {
+                Collections.sort(r, kotlin.Comparator { v0, v1 ->
+                    return@Comparator v1.highestLianBanCount.compareTo(v0.highestLianBanCount)
+                })
+            }
+
+            if (binding.ztsCb.isChecked) {
+                Collections.sort(r, kotlin.Comparator { v0, v1 ->
+                    return@Comparator v1.ztCount.compareTo(v0.ztCount)
+                })
             }
 
             if (binding.activeRateCb.isChecked) {
@@ -354,16 +379,6 @@ class BKStrategyActivity : AppCompatActivity() {
                         ?: -1000f).compareTo((v0.currentDayHistory?.chg ?: -1000f))
                 })
             }
-
-
-            if (!binding.conceptCb.isChecked) {
-                r = r.filter { it.bk.type != 1 }
-            }
-
-            if (!binding.tradeCb.isChecked) {
-                r = r.filter { it.bk.type != 0 }
-            }
-
 
             val bkCodes = StringBuilder()
             binding.active20Cb.setOnCheckedChangeListener { compoundButton, b ->
@@ -462,10 +477,11 @@ class BKStrategyActivity : AppCompatActivity() {
                                 result.currentDayHistory!!.date
                             )
                             val next =
-                                if (result.nextDayHistory != null) Injector.appDatabase.historyBKDao().getHistoryByDate3(
-                                    result.bk.code,
-                                    result.nextDayHistory!!.date
-                                ) else null
+                                if (result.nextDayHistory != null) Injector.appDatabase.historyBKDao()
+                                    .getHistoryByDate3(
+                                        result.bk.code,
+                                        result.nextDayHistory!!.date
+                                    ) else null
                             if (cur.chg != result.currentDayHistory!!.chg || next?.chg != result.nextDayHistory?.chg) {
                                 data[i] = result.copy(
                                     bk = s!!,
@@ -602,43 +618,37 @@ class BKStrategyActivity : AppCompatActivity() {
                     }
 
 
-
+                    lianbanCountFlagTv.visibility = View.GONE
                     if (binding.ztModeCb.isChecked) {
-                        if (binding.zgbCb.isChecked) {
-                            if (result.highestLianBanCount > 0) {
-                                lianbanCountFlagTv.setBackgroundColor(
-                                    Color.valueOf(
-                                        1f,
-                                        0f,
-                                        0f,
-                                        result.highestLianBanCount / 15f
-                                    ).toArgb()
-                                )
-                                lianbanCountFlagTv.visibility = View.VISIBLE
-                                lianbanCountFlagTv.text = result.highestLianBanCount.toString()
-                            } else {
-                                lianbanCountFlagTv.visibility = View.GONE
-                            }
-                        } else {
-                            if (result.ztCount > 0) {
-                                lianbanCountFlagTv.setBackgroundColor(
-                                    Color.valueOf(
-                                        1f,
-                                        0f,
-                                        0f,
-                                        result.ztCount / 15f
-                                    ).toArgb()
-                                )
-                                lianbanCountFlagTv.visibility = View.VISIBLE
-                                lianbanCountFlagTv.text = result.ztCount.toString()
-                            } else {
-                                lianbanCountFlagTv.visibility = View.GONE
-                            }
+                        if (result.ztCount > 0) {
+                            lianbanCountFlagTv.setBackgroundColor(
+                                Color.valueOf(
+                                    1f,
+                                    0f,
+                                    0f,
+                                    result.ztCount / 15f
+                                ).toArgb()
+                            )
+                            lianbanCountFlagTv.visibility = View.VISIBLE
+                            lianbanCountFlagTv.text = result.ztCount.toString()
                         }
-
                     } else {
-                        lianbanCountFlagTv.visibility = View.GONE
+                        if (result.highestLianBanCount > 0) {
+                            lianbanCountFlagTv.setBackgroundColor(
+                                Color.valueOf(
+                                    1f,
+                                    0f,
+                                    0f,
+                                    result.highestLianBanCount / 15f
+                                ).toArgb()
+                            )
+                            lianbanCountFlagTv.visibility = View.VISIBLE
+                            lianbanCountFlagTv.text = result.highestLianBanCount.toString()
+                        }
                     }
+
+
+
 
                     root.setOnLongClickListener {
 

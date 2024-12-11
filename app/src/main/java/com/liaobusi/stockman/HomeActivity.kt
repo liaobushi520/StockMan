@@ -30,6 +30,7 @@ import com.liaobusi.stockman.api.FPRequest
 import com.liaobusi.stockman.api.PopularityData
 import com.liaobusi.stockman.api.StockService
 import com.liaobusi.stockman.databinding.ActivityHomeBinding
+import com.liaobusi.stockman.db.DragonTigerRank
 import com.liaobusi.stockman.db.marketCode
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.db.specialBK
@@ -288,27 +289,10 @@ class HomeActivity : AppCompatActivity() {
             //   StockRepo.getHistoryStocks( 20230926,20230926)
 
 
-
         }
 
 
-
-
-
-
-
-
-
-
-
     }
-
-
-
-
-
-
-
 
 
 }

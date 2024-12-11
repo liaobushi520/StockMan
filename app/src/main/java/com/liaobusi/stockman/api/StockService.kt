@@ -1,6 +1,9 @@
 package com.liaobusi.stockman.api
 
+import com.google.gson.annotations.SerializedName
+import com.liaobusi.stockman.db.AllTabListResponse
 import com.liaobusi.stockman.db.FPResponse
+import com.liaobusi.stockman.db.THSFPResponse
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
@@ -66,11 +69,13 @@ interface StockService {
     @GET("https://43.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&wbp2u=|0|0|0|web&fid=f3&fs=m:90+t:2+f:!50,m:90+t:3+f:!50&fields=f1,f2,f3,f4,f5,f6,f7,f8,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f24,f25,f22,f33,f11,f62,f152,f124,f107,f104,f105,f297")
     suspend fun getRealTimeBK():EMResponse
 
-    @GET("https://43.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&wbp2u=|0|0|0|web&fid=f3&fs=m:90+t:2+f:!50&fields=f1,f2,f3,f4,f5,f6,f7,f8,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f24,f25,f22,f33,f11,f62,f152,f124,f107,f104,f105,f106,f297")
+    @GET("https://43.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&wbp2u=|0|0|0|web&fid=f3&fs=m:90+t:2+f:!50&fields=f2,f3,f7,f8,f12,f14,f15,f16,f17,f18,f20,f21,f297")
     suspend fun getRealTimeTradeBK():EMResponse
 
 
-    @GET("https://43.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&wbp2u=|0|0|0|web&fid=f3&fs=m:90+t:3+f:!50&fields=f1,f2,f3,f4,f5,f6,f7,f8,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f24,f25,f22,f33,f11,f62,f152,f124,f107,f104,f105,f106,f297")
+
+
+    @GET("https://43.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&wbp2u=|0|0|0|web&fid=f3&fs=m:90+t:3+f:!50&fields=f2,f3,f7,f8,f12,f14,f15,f16,f17,f18,f20,f21,f297")
     suspend fun getRealTimeConceptBK():EMResponse
 
     //https://push2.eastmoney.com/api/qt/clist/get?np=1&fltt=1&invt=2&fs=b:BK0482&fields=f14,f12,f13,f1,f2,f4,f3,f152,f128,f140,f141,f62,f184,f66,f69,f72,f75,f78,f81,f84,f87,f109,f160,f164,f165,f166,f167,f168,f169,f170,f171,f172,f173,f174,f175,f176,f177,f178,f179,f180,f181,f182,f183&fid=f62&pn=1&pz=8&po=1&ut=fa5fd1943c7b386f172d6893dbfba10b&wbp2u=|0|0|0|web&_=1670382926497
@@ -91,8 +96,35 @@ interface StockService {
     @POST("https://app.jiuyangongshe.com/jystock-app/api/v1/action/field")
     suspend fun getZTReplay(@Body data:FPRequest):FPResponse
 
+    @GET("https://ozone.10jqka.com.cn/open/api/draw_lots/v1/rank/all_tab_data")
+    suspend fun getAllTabList(@Query("date") date:Int):AllTabListResponse
 
-    @GET("https://data.eastmoney.com/dataapi/xuangu/list?st=CHANGE_RATE&sr=-1&ps=300&p=1&sty=SECUCODE%2CSECURITY_CODE%2CSECURITY_NAME_ABBR%2CNEW_PRICE%2CCHANGE_RATE%2CHIGH_PRICE%2CLOW_PRICE%2CPRE_CLOSE_PRICE%2CVOLUME%2CDEAL_AMOUNT%2CTURNOVERRATE%2CPOPULARITY_RANK&filter=(POPULARITY_RANK%3E0)(POPULARITY_RANK%3C%3D1000)&source=SELECT_SECURITIES&client=WEB")
+
+    @POST("https://dataq.10jqka.com.cn/fetch-data-server/fetch/v1/specific_data")
+    suspend fun getSpecificData(@Body data:SpecificDataBean):SpecificDataResponse
+
+
+    @GET("https://data.10jqka.com.cn/dataapi/limit_up/block_top?filter=HS%2CGEM2STAR")
+    suspend fun getZTReplay2(@Query("date") date:Int): THSFPResponse
+
+
+    @GET("https://data.eastmoney.com/dataapi/xuangu/list?st=POPULARITY_RANK&sr=1&ps=300&p=1&sty=SECUCODE%2CSECURITY_CODE%2CSECURITY_NAME_ABBR%2CPOPULARITY_RANK&filter=(POPULARITY_RANK%3E0)(POPULARITY_RANK%3C%3D1000)&source=SELECT_SECURITIES&client=WEB")
     suspend fun getPopularityRanking():PopularityRankingResponse
+
+    @GET("https://dq.10jqka.com.cn/fuyao/hot_list_data/out/hot_list/v1/stock?stock_type=a&type=hour&list_type=normal")
+    suspend fun getTHSHotRanking():THSHotRankingResponse
+
+
+    @GET("https://imsearch.dzh.com.cn/stock/top?size=300&type=0&time=h")
+    suspend fun getDZHHotRanking():DZHRankResponse
+
+    @GET
+    suspend fun getDragonTigerRank(@Url url: String):DragonTigerRankResponse
+    @GET("https://www.taoguba.com.cn/new/nrnt/getNoticeStock?type=D")
+    suspend fun getTGBRanking():TGBResponse
+
+
+
+
 }
 

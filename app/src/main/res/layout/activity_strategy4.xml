@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:focusable="true"
     android:focusableInTouchMode="true"
-    tools:context=".Strategy2Activity">
+    >
 
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
@@ -40,6 +40,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="16dp"
+                        android:paddingVertical="@dimen/et_padding_height"
                         android:layout_weight="1"
                         android:inputType="number"
                         android:text="19900101" />
@@ -53,7 +54,7 @@
                         android:id="@+id/endMarketTime"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
+                        android:paddingVertical="@dimen/et_padding_height"
                         android:layout_weight="1"
                         android:inputType="number"
                         android:text="20210101" />
@@ -76,8 +77,9 @@
                         android:id="@+id/lowMarketValue"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
+
                         android:layout_weight="1"
+                        android:paddingVertical="@dimen/et_padding_height"
                         android:inputType="number"
                         android:text="1" />
 
@@ -90,9 +92,10 @@
                         android:id="@+id/highMarketValue"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
+
                         android:layout_weight="1"
                         android:inputType="number"
+                        android:paddingVertical="@dimen/et_padding_height"
                         android:text="1000000" />
 
 
@@ -118,6 +121,7 @@
                         android:layout_height="wrap_content"
                         android:inputType="number"
                         android:paddingEnd="10dp"
+                        android:paddingVertical="@dimen/et_padding_height"
                         android:text="5" />
 
                     <TextView
@@ -137,6 +141,7 @@
                         android:layout_height="wrap_content"
                         android:inputType="number"
                         android:paddingEnd="10dp"
+                        android:paddingVertical="@dimen/et_padding_height"
                         android:text="5" />
 
                     <TextView
@@ -166,6 +171,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:paddingEnd="10dp"
+                        android:paddingVertical="@dimen/et_padding_height"
                         android:text="0" />
 
                     <TextView
@@ -184,6 +190,7 @@
                         android:layout_height="wrap_content"
                         android:inputType="number"
                         android:paddingEnd="10dp"
+                        android:paddingVertical="@dimen/et_padding_height"
                         android:text="5" />
 
                     <TextView
@@ -211,6 +218,7 @@
                         android:layout_height="wrap_content"
                         android:inputType="number"
                         android:paddingEnd="10dp"
+                        android:paddingVertical="@dimen/et_padding_height"
                         android:text="5" />
 
                     <TextView
@@ -228,6 +236,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:paddingEnd="10dp"
+                        android:paddingVertical="@dimen/et_padding_height"
                         android:text="2" />
 
                     <TextView
@@ -256,30 +265,35 @@
                         android:layout_height="wrap_content"
                         android:inputType="date"
                         android:maxLength="10"
+                        android:paddingVertical="@dimen/et_padding_height"
                         android:text="20220803" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="连板晋级模式" />
+                        android:text="股东人数连续" />
 
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/ztPromotionCb"
+                    <EditText
+                        android:id="@+id/gdrsCountTv"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:maxLength="3"
+                        android:paddingVertical="@dimen/et_padding_height"
+                        android:text="5" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="中军模式" />
+                        android:text="期下降" />
 
                     <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/zhongjunCb"
+                        android:id="@+id/gdrsCb"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-
+                        android:layout_height="wrap_content"
+                        xmlns:app="http://schemas.android.com/apk/res-auto"
+                        android:checked="false" />
 
                 </LinearLayout>
 
@@ -326,11 +340,54 @@
 
                 </LinearLayout>
 
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="牛回头" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/cowBackCb"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="区间无涨停" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/noZTInRangeCb"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="主板" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/mainBoardCb"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -363,7 +420,7 @@
                         android:id="@+id/starCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:checked="true" />
+                        android:checked="false" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -386,25 +443,13 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="牛回头" />
+                        android:text="连板模式" />
 
                     <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/cowBackCb"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="区间无涨停" />
-
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/noZTInRangeCb"
+                        android:id="@+id/ztPromotionCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
 
@@ -419,78 +464,17 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
 
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="股东人数连续" />
-
-                    <EditText
-                        android:id="@+id/gdrsCountTv"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:inputType="number"
-                        android:maxLength="3"
-                        android:text="5" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="期下降" />
-
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/gdrsCb"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="  仅活跃比较" />
+                        android:text="活跃比较" />
 
                     <androidx.appcompat.widget.AppCompatCheckBox
                         android:id="@+id/onlyActiveRateCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true" />
-
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="仅涨停" />
-
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/onlyZTCb"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="仅跌停" />
-
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/onlyDTCb"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false" />
 
 
                     <TextView
@@ -503,6 +487,19 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+
+
+
+
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -518,7 +515,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="人气" />
+                        android:text="东热" />
 
                     <androidx.appcompat.widget.AppCompatCheckBox
                         android:id="@+id/popularitySortCb"
@@ -527,6 +524,102 @@
                         android:checked="false" />
 
 
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="同热" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/thsPopularitySortCb"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="淘热" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/tgbPopularitySortCb"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="大热" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/dzhPopularitySortCb"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false" />
+
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="涨停" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/onlyZTCb"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="跌停" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/onlyDTCb"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false" />
+
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="中军" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/zhongjunCb"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="小票" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/xiaopiaoCb"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=" 龙虎榜" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/dragonTigerCb"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false" />
 
 
                 </LinearLayout>

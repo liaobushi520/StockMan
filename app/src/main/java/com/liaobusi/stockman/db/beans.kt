@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.util.Log
 import androidx.room.*
+import com.liaobusi.stockman.Injector
 import com.liaobusi.stockman.STOCK_GREEN
 
 @Entity(primaryKeys = ["date"])
@@ -80,7 +81,7 @@ data class BK(
 
 val BK.specialBK: Boolean
     get() {
-        return code=="BK0612" || code=="BK0528"||code=="BK0804"||code=="BK0742"||code=="BK0498"||code == "BK1051" || code == "BK1050" || code == "BK0816" ||code=="BK0707"|| code == "BK0815" || code == "BK1053" || code == "BK0867" || code == "BK0500" || code == "BK0610" || code == "BK0636"||code=="BK0596"
+        return code == "BK0612" || code == "BK0528" || code == "BK0804" || code == "BK0742" || code == "BK0498" || code == "BK1051" || code == "BK1050" || code == "BK0816" || code == "BK0707" || code == "BK0815" || code == "BK1053" || code == "BK0867" || code == "BK0500" || code == "BK0610" || code == "BK0636" || code == "BK0596"
     }
 
 
@@ -138,9 +139,7 @@ data class Stock(
 
     )
 
-fun Stock.isST(): Boolean {
-    return name.startsWith("ST") || name.startsWith("*")
-}
+
 
 fun Stock.openWeb(context: Context) {
     val s = "dfcf18://stock?market=${this.marketCode()}&code=${this.code}"
@@ -149,18 +148,43 @@ fun Stock.openWeb(context: Context) {
     context.startActivity(intent)
 }
 
+fun Stock.openDragonTigerRank(context: Context) {
+    val s ="amihexin://backwash_userid=ApUBS&backwash_source=wxhy&backwash_hxapp=gsc&url=https%253A%252F%252Fdata.10jqka.com.cn%252Fmobile%252Ftransaction%252Findex.html%253FreOpen%253DstockDetail%2526stockCode%253D${this.code}&live_app=app_0&backwash_id=open"
+    val uri: Uri = Uri.parse(s)
+    val intent = Intent(Intent.ACTION_VIEW, uri)
+    context.startActivity(intent)
+}
+
+//主板
+fun Stock.isMainBoard(): Boolean {
+    return this.code.startsWith("600" +
+            "") || this.code.startsWith("601")|| this.code.startsWith("603")|| this.code.startsWith("605")|| this.code.startsWith("000")|| this.code.startsWith("002")|| this.code.startsWith("001")|| this.code.startsWith("003")
+}
+
 //创业板
-fun Stock.isChiNext():Boolean{
-      return this.code.startsWith("300")||this.code.startsWith("301")
+fun Stock.isChiNext(): Boolean {
+    return this.code.startsWith("300") || this.code.startsWith("301")
 }
+
 //科创板
-fun Stock.isSTARMarket():Boolean{
-    return this.code.startsWith("688")
+fun Stock.isSTARMarket(): Boolean {
+    return this.code.startsWith("688")||this.code.startsWith("689")
 }
+
 //北交所
-fun Stock.isBJStockExchange():Boolean{
-    return this.code.startsWith("82")||this.code.startsWith("83")||this.code.startsWith("87")||this.code.startsWith("88")||this.code.startsWith("43")||this.code.startsWith("92")
+fun Stock.isBJStockExchange(): Boolean {
+    return this.code.startsWith("82") || this.code.startsWith("83") || this.code.startsWith("87") || this.code.startsWith(
+        "88"
+    ) || this.code.startsWith("43") || this.code.startsWith("92")
 }
+
+fun Stock.isST(): Boolean {
+    return name.startsWith("ST") || name.startsWith("*")
+}
+
+
+
+
 
 
 
@@ -261,10 +285,10 @@ val HistoryStock.longUpShadow: Boolean
 
 
 @Database(
-    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class],
-    version = 18,
+    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class, PopularityRank::class,DragonTigerRank::class],
+    version = 24,
     autoMigrations = [
-        AutoMigration(from = 17, to = 18)
+        AutoMigration(from = 23, to = 24)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -285,6 +309,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun ztReplayDao(): ZTReplayDao
 
     abstract fun diyBkDao(): DIYBkDao
+
+    abstract fun popularityRankDao(): PopularityRankDao
+
+    abstract fun dragonTigerDao():DragonTigerDao
 
 
 //    @DeleteTable.Entries(value = [DeleteTable(tableName = "BK"),DeleteTable(tableName = "HistoryBK")])
@@ -381,4 +409,79 @@ data class User(
     val avatar: String,
     val nickname: String,
     val user_id: String
+)
+
+@Entity(primaryKeys = ["date", "code"])
+data class PopularityRank(val code: String, val date: Int, val rank: Int,@ColumnInfo(defaultValue = "-1") val thsRank:Int,@ColumnInfo(defaultValue = "-1") val tgbRank:Int,@ColumnInfo(defaultValue = "无") val explain:String,@ColumnInfo(defaultValue = "-1") val dzhRank:Int)
+
+@Entity(primaryKeys = ["date", "code"])
+data class DragonTigerRank(val code: String, val date: Int,   val explanation:String)
+
+
+
+
+data class THSFPResponse(
+    val data: List<THSFPData>,
+    val status_code: Int,
+    val status_msg: String
+)
+
+data class THSFPData(
+    val change: Double,
+    val code: String,
+    val continuous_plate_num: Int,
+    val days: Int,
+    val high: String,
+    val high_num: Int,
+    val limit_up_num: Int,
+    val name: String,
+    val stock_list: List<THSFPStock>
+)
+
+data class THSFPStock(
+    val change_rate: Double,
+    val change_tag: String,
+    val code: String,
+    val concept: String,
+    val continue_num: Int,
+    val first_limit_up_time: String,
+    val high: String,
+    val high_days: Int,
+    val is_new: Int,
+    val is_st: Int,
+    val last_limit_up_time: String,
+    val latest: Double,
+    val market_id: Int,
+    val market_type: String,
+    val name: String,
+    val reason_info: String,
+    val reason_type: String
+)
+
+
+data class AllTabListResponse(
+    val data: AllTabListData,
+    val status_code: Int,
+    val status_msg: String,
+    val trace_id: String
+)
+
+data class AllTabListData(
+    val tab_list: List<Tab>
+)
+
+data class Tab(
+    val date: String,
+    val tab_data: List<TabData>,
+    val tab_name: String
+)
+
+data class TabData(
+    val abnormal_reason: String?,
+    val concept: String,
+    val market: String,
+    val reason: String,
+    val stock_code: String,
+    val stock_name: String,
+    val ths_code: String
 )

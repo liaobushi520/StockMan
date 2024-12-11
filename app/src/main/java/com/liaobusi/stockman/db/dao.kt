@@ -37,6 +37,48 @@ interface StockDao {
     fun getSTStock(): List<Stock>
 
 }
+@Dao
+interface PopularityRankDao{
+
+    @Query("select * from popularityrank where date=:date order by rank DESC ")
+    fun getRanksByDate(date: Int):List<PopularityRank>
+
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(list:List<PopularityRank>)
+
+    @Delete
+    fun delete(list:List<PopularityRank>)
+
+
+    @Transaction
+    fun insertTransaction(date: Int,newList:List<PopularityRank>) {
+        val list = getRanksByDate(date)
+        delete(list)
+        insert(newList)
+    }
+
+
+}
+@Dao
+interface DragonTigerDao{
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(list:List<DragonTigerRank>)
+
+    @Delete
+    fun delete(list:List<DragonTigerRank>)
+    @Query("select * from dragontigerrank where date=:date")
+    fun getDragonTigerByDate(date: Int):List<DragonTigerRank>
+
+
+    @Transaction
+    fun insertTransaction(date: Int,newList:List<DragonTigerRank>) {
+        val list = getDragonTigerByDate(date)
+        delete(list)
+        insert(newList)
+    }
+
+}
 
 
 @Dao

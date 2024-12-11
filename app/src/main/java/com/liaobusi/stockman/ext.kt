@@ -58,6 +58,7 @@ suspend fun <T, R> handle(input: List<T>, f: suspend (s: T) -> R?): List<R> {
 
 fun Date.before(before: Int): Int {
     val sdf = SimpleDateFormat("yyyyMMdd");
+
     val c = Calendar.getInstance()
     c.time = this
     c.add(Calendar.DATE, -before);
@@ -97,7 +98,7 @@ fun View.multiClick(count: Int, callback: () -> Unit) {
 }
 
 
-public fun String.removeSurroundingWhenExist(prefix: CharSequence, suffix: CharSequence): String {
+ fun String.removeSurroundingWhenExist(prefix: CharSequence, suffix: CharSequence): String {
     return if (startsWith(prefix)) {
         if (endsWith(suffix)) {
             substring(prefix.length, length - suffix.length)

@@ -23,10 +23,20 @@
         android:layout_height="wrap_content"
         android:paddingHorizontal="20dp"
         android:paddingVertical="10dp"
-        android:text="展开原因"
+        android:text="展开涨停原因"
         android:textColor="#fff"
         android:textSize="18sp" />
 
+    <TextView
+        android:visibility="gone"
+        android:id="@+id/expandPOPReasonBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="10dp"
+        android:text="展开热度解释"
+        android:textColor="#fff"
+        android:textSize="18sp" />
 
 
     <TextView
@@ -38,6 +48,17 @@
         android:text="概念板块"
         android:textColor="#fff"
         android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/dragonTigerRankBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="10dp"
+        android:text="龙虎榜"
+        android:textColor="#fff"
+        android:textSize="18sp" />
+
 
 
 
