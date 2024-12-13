@@ -1231,6 +1231,7 @@ class Strategy4Activity : AppCompatActivity() {
                     binding.contentLL.visibility = View.GONE
                     binding.expoundTv.visibility = View.GONE
                     binding.dragonFlagIv.visibility = View.GONE
+                    binding.popReasonTv.visibility=View.GONE
                     binding.stockName.setOnClickListener(null)
                     binding.groupHeaderTv.setTextColor(result.groupColor)
                     binding.groupHeaderTv2.setTextColor(result.groupColor)

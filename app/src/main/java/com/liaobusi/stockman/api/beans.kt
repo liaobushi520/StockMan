@@ -188,8 +188,8 @@ data class THSData(
 )
 
 data class THSStock(
-    val analyse: String,
-    val analyse_title: String,
+    val analyse: String?,
+    val analyse_title: String?,
     val code: String,
     val hot_rank_chg: Int,
     val market: Int,
@@ -204,7 +204,7 @@ data class THSStock(
 data class Tag(
     val concept_tag: List<String>,
     val live_tag: LiveTag,
-    val popularity_tag: String
+    val popularity_tag: String?
 )
 
 data class LiveTag(

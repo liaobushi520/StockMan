@@ -233,21 +233,13 @@ object Injector {
                 val newList = list.map {
                     val tgb = map2[it.SECURITY_CODE]
                     val explainSb = StringBuilder()
-                    if (tgb != null) {
-                        explainSb.append("[淘股吧]\n")
-                        tgb.gnList.forEach {
-                            explainSb.append("${it.gnName}|")
-                        }
-                        if (explainSb.endsWith("|")) {
-                            explainSb.deleteCharAt(explainSb.length - 1)
-                        }
-                        explainSb.append("\n${tgb.remark}")
-                        explainSb.append("\n\n")
-                    }
+
+                    explainSb.append("[东方财富] ${it.POPULARITY_RANK}\n\n")
+
 
                     val ths = map[it.SECURITY_CODE]
                     if (ths != null) {
-                        explainSb.append("[同花顺]\n")
+                        explainSb.append("[同花顺] ${ths.order}\n")
                         ths.tag.concept_tag.forEach {
                             explainSb.append("${it}|")
                         }
@@ -255,18 +247,51 @@ object Injector {
                             explainSb.deleteCharAt(explainSb.length - 1)
                         }
 
-                        explainSb.append("   ${ths.tag.popularity_tag} ")
+                        if (ths.tag.popularity_tag!=null){
+                            explainSb.append("   ${ths.tag.popularity_tag} ")
+                        }
+
+
                         if (ths.topic != null)
                             explainSb.append("\n${ths.topic.title} ")
-                        explainSb.append("\n")
+
+                        if (ths.analyse_title!=null){
+                            explainSb.append("\n<${ths.analyse_title}>")
+                        }
+                        if (ths.analyse!=null){
+                            explainSb.append("\n${ths.analyse}")
+                        }
+
+                        explainSb.append("\n\n")
+
+
                     }
+
+                    val dzh=dzhMap[it.SECURITY_CODE]
+                    if (dzh!=null){
+                        explainSb.append("[大智慧] ${dzh}\n\n")
+                    }
+
+                    if (tgb != null) {
+                        explainSb.append("[淘股吧] ${tgb.ranking}\n")
+                        tgb.gnList.forEach {
+                            explainSb.append("${it.gnName}|")
+                        }
+                        if (explainSb.endsWith("|")) {
+                            explainSb.deleteCharAt(explainSb.length - 1)
+                        }
+                        explainSb.append("\n${tgb.remark}")
+                    }
+
+
+
                     PopularityRank(
                         it.SECURITY_CODE,
                         today(),
                         it.POPULARITY_RANK,
                         map[it.SECURITY_CODE]?.order ?: -1,
                         map2[it.SECURITY_CODE]?.ranking ?: -1,
-                        explainSb.toString(), dzhMap[it.SECURITY_CODE] ?: -1
+                        explainSb.trim().toString(), dzhMap[it.SECURITY_CODE] ?: -1
                     )
                 }
                 if (newList.isNotEmpty()) {

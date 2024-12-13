@@ -486,7 +486,7 @@
                         android:id="@+id/activityLevelCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:checked="true" />
+                        android:checked="false" />
 
                 </LinearLayout>
 
@@ -521,7 +521,7 @@
                         android:id="@+id/popularitySortCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:checked="false" />
+                        android:checked="true" />
 
 
                     <TextView
