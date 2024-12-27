@@ -82,12 +82,16 @@ class Strategy4Activity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.refresh -> {
-                lifecycleScope.launch {
+                lifecycleScope.launch(Dispatchers.IO) {
                     StockRepo.refreshData()
                     launch(Dispatchers.Main) {
-                        delay(300)
                         binding.chooseStockBtn.callOnClick()
                     }
+                    val endTime = binding.endTimeTv.editableText.toString().toIntOrNull() ?: today()
+                    StockRepo.fetchZTReplay2(date = endTime)
+                    StockRepo.fetchDragonTigerRank(endTime)
+                    Injector.refreshPopularityRanking()
+
                 }
                 return true
             }
@@ -137,7 +141,7 @@ class Strategy4Activity : AppCompatActivity() {
 
             val bkList = checkBKInput() ?: return@setOnClickListener
             val param = Strategy4Param(
-                startMarketTime = 19910101,
+                startMarketTime = 19900101,
                 endMarketTime = if (fromBKStrategyActivity) today() else today(),
                 lowMarketValue = if (fromBKStrategyActivity) 0.0 else 100000000.0,
                 highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
@@ -167,7 +171,7 @@ class Strategy4Activity : AppCompatActivity() {
             val bkList = checkBKInput() ?: return@setOnClickListener
 
             val param = Strategy4Param(
-                startMarketTime = 19910101,
+                startMarketTime = 19900101,
                 endMarketTime = if (fromBKStrategyActivity) today() else today(),
                 lowMarketValue = if (fromBKStrategyActivity) 0.0 else 100000000.0,
                 highMarketValue = if (fromBKStrategyActivity) 100000000000000.0 else 100000000000000.0,
@@ -380,9 +384,6 @@ class Strategy4Activity : AppCompatActivity() {
             }
             val bkList = checkBKInput() ?: return@setOnClickListener
             job = lifecycleScope.launch(Dispatchers.IO) {
-                StockRepo.fetchZTReplay2(date = endTime)
-                StockRepo.fetchDragonTigerRank(endTime)
-
                 val list = StockRepo.strategy4(
                     startMarketTime = startMarketTime,
                     endMarketTime = endMarketTime,
@@ -698,8 +699,8 @@ class Strategy4Activity : AppCompatActivity() {
                     binding.zfSortCb.isChecked = false
                     binding.popularitySortCb.isChecked = false
                     binding.thsPopularitySortCb.isChecked = false
-                    binding.dzhPopularitySortCb.isChecked=false
-                    binding.tgbPopularitySortCb.isChecked=false
+                    binding.dzhPopularitySortCb.isChecked = false
+                    binding.tgbPopularitySortCb.isChecked = false
                 }
                 output(strategyResult)
             }
@@ -759,8 +760,8 @@ class Strategy4Activity : AppCompatActivity() {
                     binding.activityLevelCb.isChecked = false
                     binding.popularitySortCb.isChecked = false
                     binding.thsPopularitySortCb.isChecked = false
-                    binding.tgbPopularitySortCb.isChecked=false
-                    binding.dzhPopularitySortCb.isChecked=false
+                    binding.tgbPopularitySortCb.isChecked = false
+                    binding.dzhPopularitySortCb.isChecked = false
                 }
                 output(strategyResult)
             }
@@ -923,7 +924,7 @@ class Strategy4Activity : AppCompatActivity() {
                     val newList = mutableListOf<StockResult>()
                     r.groupBy { it.lianbanCount }.toList().sortedByDescending { it.first }
                         .forEach {
-                            newList.addAll(it.second.sortedByDescending { it.stock.chg?:-1000f})
+                            newList.addAll(it.second.sortedByDescending { it.stock.chg ?: -1000f })
                         }
                     r = newList
                 } else {
@@ -931,8 +932,6 @@ class Strategy4Activity : AppCompatActivity() {
                         return@Comparator v1.currentDayHistory!!.chg.compareTo(v0.currentDayHistory!!.chg)
                     })
                 }
-
-
 
 
             }
@@ -1026,19 +1025,27 @@ class Strategy4Activity : AppCompatActivity() {
 
                     Collections.sort(value, kotlin.Comparator { v0, v1 ->
                         val x1 =
-                            if (binding.tgbPopularitySortCb.isChecked) (100f - (v1.popularity?.tgbRank ?: 100))
-                            else if (binding.popularitySortCb.isChecked) (300f - (v1.popularity?.rank ?: 300))
-                            else if (binding.dzhPopularitySortCb.isChecked) (100f - (v1.popularity?.dzhRank ?: 100))
-                            else if (binding.thsPopularitySortCb.isChecked) (100f - (v1.popularity?.thsRank ?: 100))
+                            if (binding.tgbPopularitySortCb.isChecked) (100f - (v1.popularity?.tgbRank
+                                ?: 100))
+                            else if (binding.popularitySortCb.isChecked) (300f - (v1.popularity?.rank
+                                ?: 300))
+                            else if (binding.dzhPopularitySortCb.isChecked) (100f - (v1.popularity?.dzhRank
+                                ?: 100))
+                            else if (binding.thsPopularitySortCb.isChecked) (100f - (v1.popularity?.thsRank
+                                ?: 100))
                             else if (binding.activityLevelCb.isChecked) v1.activeRate
                             else if (binding.zfSortCb.isChecked) v1.stock.chg
                             else v1.ztTimeDigitization
 
                         val x0 =
-                            if (binding.tgbPopularitySortCb.isChecked) (100f - (v0.popularity?.tgbRank ?: 100))
-                            else if (binding.popularitySortCb.isChecked) (300f - (v0.popularity?.rank ?: 300))
-                            else if (binding.dzhPopularitySortCb.isChecked) (100f - (v0.popularity?.dzhRank ?: 100))
-                            else if (binding.thsPopularitySortCb.isChecked) (100f - (v0.popularity?.thsRank ?: 100))
+                            if (binding.tgbPopularitySortCb.isChecked) (100f - (v0.popularity?.tgbRank
+                                ?: 100))
+                            else if (binding.popularitySortCb.isChecked) (300f - (v0.popularity?.rank
+                                ?: 300))
+                            else if (binding.dzhPopularitySortCb.isChecked) (100f - (v0.popularity?.dzhRank
+                                ?: 100))
+                            else if (binding.thsPopularitySortCb.isChecked) (100f - (v0.popularity?.thsRank
+                                ?: 100))
                             else if (binding.activityLevelCb.isChecked) v0.activeRate
                             else if (binding.zfSortCb.isChecked) v0.stock.chg
                             else v0.ztTimeDigitization
@@ -1231,7 +1238,7 @@ class Strategy4Activity : AppCompatActivity() {
                     binding.contentLL.visibility = View.GONE
                     binding.expoundTv.visibility = View.GONE
                     binding.dragonFlagIv.visibility = View.GONE
-                    binding.popReasonTv.visibility=View.GONE
+                    binding.popReasonTv.visibility = View.GONE
                     binding.stockName.setOnClickListener(null)
                     binding.groupHeaderTv.setTextColor(result.groupColor)
                     binding.groupHeaderTv2.setTextColor(result.groupColor)

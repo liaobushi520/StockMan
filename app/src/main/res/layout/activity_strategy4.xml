@@ -48,7 +48,7 @@
                     <TextView
                         android:layout_width="10dp"
                         android:layout_height="2dp"
-                        android:background="#000000" />
+                        android:background="#66000000" />
 
                     <EditText
                         android:id="@+id/endMarketTime"
@@ -77,7 +77,6 @@
                         android:id="@+id/lowMarketValue"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-
                         android:layout_weight="1"
                         android:paddingVertical="@dimen/et_padding_height"
                         android:inputType="number"
@@ -86,7 +85,7 @@
                     <TextView
                         android:layout_width="10dp"
                         android:layout_height="2dp"
-                        android:background="#000000" />
+                        android:background="#66000000" />
 
                     <EditText
                         android:id="@+id/highMarketValue"
@@ -264,7 +263,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:inputType="date"
-                        android:maxLength="10"
+                        android:maxLength="8"
                         android:paddingVertical="@dimen/et_padding_height"
                         android:text="20220803" />
 
@@ -292,6 +291,7 @@
                         android:id="@+id/gdrsCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         xmlns:app="http://schemas.android.com/apk/res-auto"
                         android:checked="false" />
 
@@ -325,6 +325,7 @@
 
                     <androidx.appcompat.widget.AppCompatCheckBox
                         android:id="@+id/followBkCb"
+                        android:buttonTint="#ffbd2c2c"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="false" />
@@ -334,7 +335,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
-                        android:background="#300100"
+                        android:background="#ffbd2c2c"
                         android:text="保存当前快照"
                         android:textColor="#fff" />
 
@@ -354,6 +355,8 @@
 
                     <androidx.appcompat.widget.AppCompatCheckBox
                         android:id="@+id/cowBackCb"
+                        android:padding="0dp"
+                        android:buttonTint="#ffbd2c2c"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
 
@@ -364,6 +367,7 @@
 
                     <androidx.appcompat.widget.AppCompatCheckBox
                         android:id="@+id/noZTInRangeCb"
+                        android:buttonTint="#ffbd2c2c"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
 
@@ -386,6 +390,7 @@
                         android:id="@+id/mainBoardCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="true" />
 
 
@@ -398,6 +403,7 @@
                         android:id="@+id/changyebanCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="true" />
 
                     <TextView
@@ -409,6 +415,7 @@
                         android:id="@+id/bjsCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="false" />
 
                     <TextView
@@ -420,6 +427,7 @@
                         android:id="@+id/starCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="false" />
 
                     <TextView
@@ -431,6 +439,7 @@
                         android:id="@+id/stCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="false" />
 
 
@@ -451,6 +460,7 @@
                     <androidx.appcompat.widget.AppCompatCheckBox
                         android:id="@+id/ztPromotionCb"
                         android:layout_width="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:layout_height="wrap_content" />
 
 
@@ -462,6 +472,7 @@
                     <androidx.appcompat.widget.AppCompatCheckBox
                         android:id="@+id/groupCb"
                         android:layout_width="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:layout_height="wrap_content" />
 
 
@@ -474,6 +485,7 @@
                         android:id="@+id/onlyActiveRateCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="true" />
 
 
@@ -486,6 +498,7 @@
                         android:id="@+id/activityLevelCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="false" />
 
                 </LinearLayout>
@@ -510,6 +523,7 @@
                         android:id="@+id/zfSortCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="false" />
 
                     <TextView
@@ -521,6 +535,7 @@
                         android:id="@+id/popularitySortCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="true" />
 
 
@@ -533,6 +548,7 @@
                         android:id="@+id/thsPopularitySortCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="false" />
 
                     <TextView
@@ -544,6 +560,7 @@
                         android:id="@+id/tgbPopularitySortCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="false" />
 
                     <TextView
@@ -555,6 +572,7 @@
                         android:id="@+id/dzhPopularitySortCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="false" />
 
 
@@ -575,6 +593,7 @@
                         android:id="@+id/onlyZTCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="false" />
 
                     <TextView
@@ -586,6 +605,7 @@
                         android:id="@+id/onlyDTCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="false" />
 
 
@@ -597,6 +617,7 @@
                     <androidx.appcompat.widget.AppCompatCheckBox
                         android:id="@+id/zhongjunCb"
                         android:layout_width="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:layout_height="wrap_content" />
 
                     <TextView
@@ -607,6 +628,7 @@
                     <androidx.appcompat.widget.AppCompatCheckBox
                         android:id="@+id/xiaopiaoCb"
                         android:layout_width="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:layout_height="wrap_content" />
 
 
@@ -619,6 +641,7 @@
                         android:id="@+id/dragonTigerCb"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:buttonTint="#ffbd2c2c"
                         android:checked="false" />
 
 
@@ -667,7 +690,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
-                        android:background="#300100"
+                        android:background="#ffbd2c2c"
                         android:text="开始"
                         android:textColor="#fff" />
 
@@ -685,7 +708,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:layout_weight="1"
-                        android:background="#3f51b5"
+                        android:background="#f44336"
                         android:text="前一天"
                         android:textColor="#fff" />
 
@@ -696,7 +719,7 @@
                         android:layout_marginStart="10dp"
                         android:layout_marginTop="10dp"
                         android:layout_weight="1"
-                        android:background="#3f51b5"
+                        android:background="#ffbd2c2c"
                         android:text="选    股"
                         android:textColor="#fff" />
 
@@ -707,7 +730,7 @@
                         android:layout_marginStart="10dp"
                         android:layout_marginTop="10dp"
                         android:layout_weight="1"
-                        android:background="#3f51b5"
+                        android:background="#f44336"
                         android:text="后一天"
                         android:textColor="#fff" />
                 </LinearLayout>
@@ -724,7 +747,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:layout_weight="1"
-                        android:background="#3f51b5"
+                        android:background="#4a148c"
                         android:text="5日线"
                         android:textColor="#fff" />
 
@@ -752,7 +775,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:layout_weight="1"
-                        android:background="#004081"
+                        android:background="#0d47a1"
                         android:text="20日线"
                         android:textColor="#fff" />
 
@@ -781,7 +804,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:layout_weight="1"
-                        android:background="#004081"
+                        android:background="#006064"
                         android:text="60日线"
                         android:textColor="#fff" />
                 </LinearLayout>

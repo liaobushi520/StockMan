@@ -193,6 +193,12 @@ class HomeActivity : AppCompatActivity() {
             val bkDao = Injector.appDatabase.bkDao()
 
 
+
+
+
+
+
+
             // StockRepo.getRealTimeStockData("0.300059")
 
 

@@ -118,6 +118,9 @@ interface StockService {
     @GET("https://imsearch.dzh.com.cn/stock/top?size=300&type=0&time=h")
     suspend fun getDZHHotRanking():DZHRankResponse
 
+    @GET("https://api3.cls.cn/v1/hot_stock?app=cailianpress&os=android&sv=850&sign=e4d8f886f269874b1578fec645b258fa")
+    suspend fun getCLSHotRanking():CLSRankResponse
+
     @GET
     suspend fun getDragonTigerRank(@Url url: String):DragonTigerRankResponse
     @GET("https://www.taoguba.com.cn/new/nrnt/getNoticeStock?type=D")

@@ -112,6 +112,5 @@ fun View.multiClick(count: Int, callback: () -> Unit) {
             this
         }
     }
-    return this
-}
+ }
 

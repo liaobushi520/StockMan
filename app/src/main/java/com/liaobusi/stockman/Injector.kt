@@ -78,7 +78,7 @@ object Injector {
 
     var activityActive = true
 
-    val scope= MainScope()
+    val scope = MainScope()
 
     fun inject(applicationContext: Context) {
         context = applicationContext
@@ -93,7 +93,7 @@ object Injector {
             .build()
         apiService = retrofit.create(StockService::class.java)
 
-       scope.launch(Dispatchers.IO) {
+        scope.launch(Dispatchers.IO) {
             tradeBks = appDatabase.bkDao().getTradeBKs()
             conceptBks = appDatabase.bkDao().getConceptBKs().filter { !it.specialBK }
         }
@@ -199,109 +199,123 @@ object Injector {
     }
 
 
+    suspend fun refreshPopularityRanking() {
+        val list = StockRepo.fetchPopularityRanking()
+
+        val thsList = StockRepo.fetchTHSPopularityRanking()
+
+        val tgbList = StockRepo.fetchTGBPopularityRanking()
+
+        val dzhList = StockRepo.fetchDZHPopularityRanking()
+
+        val clsList = StockRepo.fetchCLSPopularityRanking()
+
+        val dzhMap = mutableMapOf<String, Int>()
+        dzhList.forEachIndexed { index, item ->
+            val key = item.keys.first().removeRange(0, 2)
+            dzhMap[key] = index + 1
+        }
+
+        val clsMap = mutableMapOf<String, Int>()
+        clsList.forEachIndexed { index, item ->
+            val key = item.stock.StockID.removeRange(0, 2)
+            clsMap[key] = index + 1
+        }
+
+
+        val map = mutableMapOf<String, THSStock>()
+        thsList.forEach {
+            map[it.code] = it
+        }
+
+        val map2 = mutableMapOf<String, TGBStock>()
+        tgbList.forEach {
+            map2[it.fullCode.removeRange(0, 2)] = it
+        }
+
+
+        val newList = list.map {
+            val tgb = map2[it.SECURITY_CODE]
+            val explainSb = StringBuilder()
+
+            explainSb.append("[东方财富] ${it.POPULARITY_RANK}\n\n")
+
+
+            val ths = map[it.SECURITY_CODE]
+            if (ths != null) {
+                explainSb.append("[同花顺] ${ths.order}\n")
+                ths.tag.concept_tag.forEach {
+                    explainSb.append("${it}|")
+                }
+                if (explainSb.endsWith("|")) {
+                    explainSb.deleteCharAt(explainSb.length - 1)
+                }
+
+                if (ths.tag.popularity_tag != null) {
+                    explainSb.append("   ${ths.tag.popularity_tag} ")
+                }
+
+
+                if (ths.topic != null)
+                    explainSb.append("\n${ths.topic.title} ")
+
+                if (ths.analyse_title != null) {
+                    explainSb.append("\n<${ths.analyse_title}>")
+                }
+                if (ths.analyse != null) {
+                    explainSb.append("\n${ths.analyse}")
+                }
+
+                explainSb.append("\n\n")
+
+
+            }
+
+            val dzh = dzhMap[it.SECURITY_CODE]
+            if (dzh != null) {
+                explainSb.append("[大智慧] ${dzh}\n\n")
+            }
+
+            val cls = clsMap[it.SECURITY_CODE]
+            if (cls != null) {
+                explainSb.append("[财联社] ${cls}\n\n")
+            }
+
+            if (tgb != null) {
+                explainSb.append("[淘股吧] ${tgb.ranking}\n")
+                tgb.gnList.forEach {
+                    explainSb.append("${it.gnName}|")
+                }
+                if (explainSb.endsWith("|")) {
+                    explainSb.deleteCharAt(explainSb.length - 1)
+                }
+                explainSb.append("\n${tgb.remark}")
+            }
+
+
+
+            PopularityRank(
+                it.SECURITY_CODE,
+                today(),
+                it.POPULARITY_RANK,
+                map[it.SECURITY_CODE]?.order ?: -1,
+                map2[it.SECURITY_CODE]?.ranking ?: -1,
+                explainSb.trim().toString(),
+                dzhMap[it.SECURITY_CODE] ?: -1,
+                clsMap[it.SECURITY_CODE] ?: -1
+            )
+        }
+        if (newList.isNotEmpty()) {
+            appDatabase.popularityRankDao().insertTransaction(today(), newList)
+        }
+    }
+
     fun autoRefreshPopularityRanking() {
         autoRefreshPopularityRankingJob?.cancel()
         autoRefreshPopularityRankingJob = scope.launch(Dispatchers.IO) {
             while (true) {
-
-                val list = StockRepo.fetchPopularityRanking()
-
-                val thsList = StockRepo.fetchTHSPopularityRanking()
-
-                val tgbList = StockRepo.fetchTGBPopularityRanking()
-
-                val dzhList = StockRepo.fetchDZHPopularityRanking()
-
-                val dzhMap = mutableMapOf<String, Int>()
-                dzhList.forEachIndexed { index, item ->
-                    val key = item.keys.first().removeRange(0, 2)
-                    dzhMap[key] = index + 1
-                }
-
-
-                val map = mutableMapOf<String, THSStock>()
-                thsList.forEach {
-                    map[it.code] = it
-                }
-
-                val map2 = mutableMapOf<String, TGBStock>()
-                tgbList.forEach {
-                    map2[it.fullCode.removeRange(0, 2)] = it
-                }
-
-
-                val newList = list.map {
-                    val tgb = map2[it.SECURITY_CODE]
-                    val explainSb = StringBuilder()
-
-                    explainSb.append("[东方财富] ${it.POPULARITY_RANK}\n\n")
-
-
-                    val ths = map[it.SECURITY_CODE]
-                    if (ths != null) {
-                        explainSb.append("[同花顺] ${ths.order}\n")
-                        ths.tag.concept_tag.forEach {
-                            explainSb.append("${it}|")
-                        }
-                        if (explainSb.endsWith("|")) {
-                            explainSb.deleteCharAt(explainSb.length - 1)
-                        }
-
-                        if (ths.tag.popularity_tag!=null){
-                            explainSb.append("   ${ths.tag.popularity_tag} ")
-                        }
-
-
-                        if (ths.topic != null)
-                            explainSb.append("\n${ths.topic.title} ")
-
-                        if (ths.analyse_title!=null){
-                            explainSb.append("\n<${ths.analyse_title}>")
-                        }
-                        if (ths.analyse!=null){
-                            explainSb.append("\n${ths.analyse}")
-                        }
-
-                        explainSb.append("\n\n")
-
-
-                    }
-
-                    val dzh=dzhMap[it.SECURITY_CODE]
-                    if (dzh!=null){
-                        explainSb.append("[大智慧] ${dzh}\n\n")
-                    }
-
-                    if (tgb != null) {
-                        explainSb.append("[淘股吧] ${tgb.ranking}\n")
-                        tgb.gnList.forEach {
-                            explainSb.append("${it.gnName}|")
-                        }
-                        if (explainSb.endsWith("|")) {
-                            explainSb.deleteCharAt(explainSb.length - 1)
-                        }
-                        explainSb.append("\n${tgb.remark}")
-                    }
-
-
-
-                    PopularityRank(
-                        it.SECURITY_CODE,
-                        today(),
-                        it.POPULARITY_RANK,
-                        map[it.SECURITY_CODE]?.order ?: -1,
-                        map2[it.SECURITY_CODE]?.ranking ?: -1,
-                        explainSb.trim().toString(), dzhMap[it.SECURITY_CODE] ?: -1
-                    )
-                }
-                if (newList.isNotEmpty()) {
-                    appDatabase.popularityRankDao().insertTransaction(today(), newList)
-                }
-
-
-
+                refreshPopularityRanking()
                 if (!isActive) return@launch
-
                 delay(1000 * 60 * 10)
             }
         }
@@ -329,7 +343,6 @@ object Injector {
     val stockLianBanCountMap = mutableMapOf<String, Int>()
 
 
-
     fun startTracking() {
         val cal = Calendar.getInstance().apply {
             time = Date()
@@ -338,13 +351,20 @@ object Injector {
         if (hour in 9..14) {
             scope.launch(Dispatchers.IO) {
                 val list =
-                   appDatabase.popularityRankDao().getRanksByDate(today()).map { it.code }
-                list.map { StockTracker(it) }.forEach {
-                    launch {
-                        it.startTrack()
-                    }
+                    appDatabase.popularityRankDao().getRanksByDate(today()).map { it.code }
 
+                list.split(50).forEach {
+                    launch(Dispatchers.Default) {
+                        tracking(it)
+                    }
                 }
+
+
+//                list.map { StockTracker(it) }.forEach {
+//                    launch {
+//                        it.startTrack()
+//                    }
+//                }
             }
 
         }
@@ -354,10 +374,119 @@ object Injector {
 }
 
 data class StockRecord(val stock: Stock, val time: Long = System.currentTimeMillis())
+
+
+
+
+suspend fun tracking(codes: List<String>) {
+    val trackerMap = mutableMapOf<String, Tracker>()
+    codes.forEach {
+        trackerMap[it] = Tracker()
+    }
+    while (true) {
+        val dao = Injector.appDatabase.stockDao()
+        val stockList = dao.getStockByCodes(codes)
+        stockList.forEach {
+            trackerMap[it.code]?.update(it)
+        }
+        delay(1000)
+    }
+}
+
+class  Tracker{
+    private val cache = mutableListOf<StockRecord>()
+    fun update(s: Stock) {
+        val sb = StringBuilder()
+        val last = if (cache.size >= 3) cache[cache.size - 2] else cache.lastOrNull()
+        if (last != null) {
+            val zf = (s.price - last.stock.price) / last.stock.price
+            if (zf >= 0.01) {
+                sb.append("${(System.currentTimeMillis() - last.time) / 1000}秒内涨幅${zf * 100}%")
+            }
+
+            if (last.stock.ztPrice == last.stock.price && s.price < s.ztPrice) {
+                sb.append("[炸板]")
+            }
+
+            if (last.stock.dtPrice == last.stock.price && s.price > s.dtPrice) {
+                sb.append("[翘板]")
+            }
+        }
+
+        val mid = if (cache.size >= 28) cache[cache.size / 2] else null
+        if (mid != null) {
+            val zf = (s.price - mid.stock.price) / mid.stock.price
+            if (zf >= 0.03) {
+                sb.append("${(System.currentTimeMillis() - mid.time) / 1000}秒内涨幅${zf * 100}%")
+            }
+        }
+
+        val first = cache.firstOrNull()
+        if (first != null) {
+            val zf = (s.price - first.stock.price) / first.stock.price
+            if (zf >= 0.06) {
+                sb.append("${(System.currentTimeMillis() - first.time) / 1000}秒内涨幅${zf * 100}%")
+            }
+
+
+        }
+
+        if (sb.isNotEmpty()) {
+            sendNotification(s, "${s.code}${s.name}异动,涨跌幅${s.chg}%", sb.toString())
+        }
+
+        cache.add(StockRecord(s))
+        if (cache.size >= 30) {
+            cache.removeAt(0)
+        }
+    }
+
+
+    private fun sendNotification(stock: Stock, title: String, content: String) {
+        val channel = NotificationChannel(
+            "股票超人",
+            "异动",
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        channel.description = "Channel description"
+        val notificationManager: NotificationManager = Injector.context.getSystemService(
+            NotificationManager::class.java
+        )
+        notificationManager.createNotificationChannel(channel)
+        val s = "dfcf18://stock?market=${stock.marketCode()}&code=${stock.code}"
+        val uri: Uri = Uri.parse(s)
+        val intent = Intent(Intent.ACTION_VIEW, uri)
+
+        val builder: NotificationCompat.Builder =
+            NotificationCompat.Builder(Injector.context, "股票超人")
+                .setSmallIcon(R.mipmap.ic_launcher) // 设置通知小图标
+                .setContentTitle(title) // 设置通知标题
+                .setContentText(content) // 设置通知内容
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT) // 设置通知优先级
+                .setVibrate(longArrayOf(1000, 1000, 1000, 1000, 1000)) // 设置震动模式
+                .setLights(Color.RED, 1000, 1000) // 设置呼吸灯效果
+                .setContentIntent(
+                    PendingIntent.getActivity(
+                        Injector.context,
+                        100,
+                        intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                )
+
+
+        notificationManager.notify(stock.code.toInt(), builder.build())
+
+
+    }
+}
+
+
 class StockTracker(val code: String) {
 
 
     private val cache = mutableListOf<StockRecord>()
+
 
     suspend fun startTrack() {
 
@@ -389,10 +518,18 @@ class StockTracker(val code: String) {
                 if (zf >= 0.06) {
                     sb.append("${(System.currentTimeMillis() - first.time) / 1000}秒内涨幅${zf * 100}%")
                 }
+
+                if (first.stock.ztPrice == first.stock.price && s.price < s.ztPrice) {
+                    sb.append("[炸板]")
+                }
+
+                if (first.stock.dtPrice == first.stock.price && s.price > s.dtPrice) {
+                    sb.append("[翘板]")
+                }
             }
 
             if (sb.isNotEmpty()) {
-                sendNotification(s, "${s.code}${s.name}异动,涨幅${s.chg}%", sb.toString())
+                sendNotification(s, "${s.code}${s.name}异动,涨跌幅${s.chg}%", sb.toString())
             }
 
             cache.add(StockRecord(s))

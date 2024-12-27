@@ -133,56 +133,62 @@ object StockRepo {
 
 
     suspend fun fetchZTReplay2(date: Int) = withContext(Dispatchers.IO) {
-        val api = Injector.retrofit.create(StockService::class.java)
-        Log.i("股票超人", "从同花顺获取${date}涨停复盘数据")
-        val ztReplayBeanList = mutableListOf<ZTReplayBean>()
-        val rsp = api.getZTReplay2(date)
-        val map = mutableMapOf<String, THSFPStock>()
-        if (rsp.status_code == 0) {
-            rsp.data.forEach { thsfpData ->
-                thsfpData.stock_list.forEach {
-                    map[it.code] = it
-                }
-            }
-        }
 
-        val list = mutableListOf<ZTReplayBean>()
-        val codes = mutableListOf<String>()
-        val listResponse = api.getAllTabList(date)
-        if (listResponse.status_code == 0) {
-            listResponse.data.tab_list.forEach {
-                val tabName = it.tab_name
-                it.tab_data.forEach {
-                    val code = it.stock_code
-                    val fp = map[code]
-                    if (fp != null) {
-                        val expound = "【" + fp.reason_type + "】\n" + fp.reason_info
-                        val time = timestampToDate(fp.first_limit_up_time.toLong() * 1000)
-                        ztReplayBeanList.add(ZTReplayBean(date, code,  it.abnormal_reason?:"", tabName, expound, time))
-                    } else {
-                        list.add(ZTReplayBean(date, code, it.abnormal_reason?:"", tabName, "", "--:--:--"))
-                        codes.add("${it.market}:${it.stock_code}")
+        try {
+            val api = Injector.retrofit.create(StockService::class.java)
+            Log.i("股票超人", "从同花顺获取${date}涨停复盘数据")
+            val ztReplayBeanList = mutableListOf<ZTReplayBean>()
+            val rsp = api.getZTReplay2(date)
+            val map = mutableMapOf<String, THSFPStock>()
+            if (rsp.status_code == 0) {
+                rsp.data.forEach { thsfpData ->
+                    thsfpData.stock_list.forEach {
+                        map[it.code] = it
                     }
                 }
             }
-        }
 
-        if (codes.isNotEmpty()) {
-            val specificRsp = api.getSpecificData(getDefaultSpecificDataBean(codes))
-            if (specificRsp.status_code == 0) {
-                val m = mutableMapOf<String, String>()
-                specificRsp.data.data.forEach {
-                    val reason = it.values.first { it.idx == 3 }
-                    val code = it.code.replaceBefore(':', "").removePrefix(":")
-                    m[code] = reason.value
+            val list = mutableListOf<ZTReplayBean>()
+            val codes = mutableListOf<String>()
+            val listResponse = api.getAllTabList(date)
+            if (listResponse.status_code == 0) {
+                listResponse.data.tab_list.forEach {
+                    val tabName = it.tab_name
+                    it.tab_data.forEach {
+                        val code = it.stock_code
+                        val fp = map[code]
+                        if (fp != null) {
+                            val expound = "【" + fp.reason_type + "】\n" + fp.reason_info
+                            val time = timestampToDate(fp.first_limit_up_time.toLong() * 1000)
+                            ztReplayBeanList.add(ZTReplayBean(date, code,  it.abnormal_reason?:"", tabName, expound, time))
+                        } else {
+                            list.add(ZTReplayBean(date, code, it.abnormal_reason?:"", tabName, "", "--:--:--"))
+                            codes.add("${it.market}:${it.stock_code}")
+                        }
+                    }
                 }
-                val newList = list.map { it.copy(expound = m[it.code] ?: "无") }
-                ztReplayBeanList.addAll(newList)
             }
+
+            if (codes.isNotEmpty()) {
+                val specificRsp = api.getSpecificData(getDefaultSpecificDataBean(codes))
+                if (specificRsp.status_code == 0) {
+                    val m = mutableMapOf<String, String>()
+                    specificRsp.data.data.forEach {
+                        val reason = it.values.first { it.idx == 3 }
+                        val code = it.code.replaceBefore(':', "").removePrefix(":")
+                        m[code] = reason.value
+                    }
+                    val newList = list.map { it.copy(expound = m[it.code] ?: "无") }
+                    ztReplayBeanList.addAll(newList)
+                }
+            }
+
+            Injector.appDatabase.ztReplayDao().insertAll(ztReplayBeanList)
+            Log.i("股票超人", "成功网络获取${date}涨停复盘数据，size=${ztReplayBeanList.size}")
+        }catch (e:Throwable){
+            e.printStackTrace()
         }
 
-        Injector.appDatabase.ztReplayDao().insertAll(ztReplayBeanList)
-        Log.i("股票超人", "成功网络获取${date}涨停复盘数据，size=${ztReplayBeanList.size}")
 
     }
 
@@ -1214,6 +1220,22 @@ object StockRepo {
 
         return@withContext listOf()
     }
+    suspend fun fetchCLSPopularityRanking() = withContext(Dispatchers.IO) {
+        Log.i("股票超人", "从网络获取财联社股票热度排名")
+
+        try {
+            val r = Injector.apiService.getCLSHotRanking()
+            if (r.data.isNotEmpty()) {
+                return@withContext r.data.apply {
+                    Log.i("股票超人", "成功从网络获取财联社股票热度排名，size=${this}")
+                }
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+
+        return@withContext listOf()
+    }
 
 
     suspend fun fetchDZHPopularityRanking() = withContext(Dispatchers.IO) {
@@ -1739,6 +1761,9 @@ object StockRepo {
                 )
             }
         }
+
+
+
         val popularityRankMap = mutableMapOf<String, PopularityRank>()
         Injector.appDatabase.popularityRankDao().getRanksByDate(endTime).forEach {
             popularityRankMap[it.code] = it
@@ -1747,7 +1772,7 @@ object StockRepo {
         Injector.appDatabase.dragonTigerDao().getDragonTigerByDate(endTime).forEach {
             dragonTigerMap[it.code] = it
         }
-        // val stocks=listOf( stockDao.getStockByCode("301056"))
+     //   val stocks=listOf( stockDao.getStockByCode("600601"))
         val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())
         val follows = Injector.appDatabase.followDao().getFollowStocks()
         val result = stocks.compute(4) {

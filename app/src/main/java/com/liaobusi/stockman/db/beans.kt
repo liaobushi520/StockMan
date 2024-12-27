@@ -286,9 +286,9 @@ val HistoryStock.longUpShadow: Boolean
 
 @Database(
     entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class, PopularityRank::class,DragonTigerRank::class],
-    version = 24,
+    version = 25,
     autoMigrations = [
-        AutoMigration(from = 23, to = 24)
+        AutoMigration(from = 24, to = 25)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -412,7 +412,7 @@ data class User(
 )
 
 @Entity(primaryKeys = ["date", "code"])
-data class PopularityRank(val code: String, val date: Int, val rank: Int,@ColumnInfo(defaultValue = "-1") val thsRank:Int,@ColumnInfo(defaultValue = "-1") val tgbRank:Int,@ColumnInfo(defaultValue = "无") val explain:String,@ColumnInfo(defaultValue = "-1") val dzhRank:Int)
+data class PopularityRank(val code: String, val date: Int, val rank: Int,@ColumnInfo(defaultValue = "-1") val thsRank:Int,@ColumnInfo(defaultValue = "-1") val tgbRank:Int,@ColumnInfo(defaultValue = "无") val explain:String,@ColumnInfo(defaultValue = "-1") val dzhRank:Int,@ColumnInfo(defaultValue = "-1") val clsRank:Int)
 
 @Entity(primaryKeys = ["date", "code"])
 data class DragonTigerRank(val code: String, val date: Int,   val explanation:String)

@@ -333,3 +333,31 @@ data class DZHRankResponse(
     val result: List<Map<String,Double>>
 )
 
+
+data class CLSRankResponse(
+    val data: List<CLSData>,
+    val errno: Int
+)
+
+data class CLSData(
+    val atype: Int,
+    val config_id: Int,
+    val ctype: Int,
+    val data_id: Int,
+    val ranking_change: Int,
+    val stock: CLSStock,
+    val title: String
+)
+
+data class CLSStock(
+    val RiseRange: Double,
+    val StockID: String,
+    val is_stib: Boolean,
+    val last: Double,
+    val name: String,
+    val rise_range_has_null: Any,
+    val schema: String,
+    val status: String
+)
+
+

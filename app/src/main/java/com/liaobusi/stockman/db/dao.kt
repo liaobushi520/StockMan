@@ -33,6 +33,9 @@ interface StockDao {
     @Query("select * from stock where  code=:code")
     fun getStockByCode(code: String): Stock
 
+    @Query("select * from stock where  code IN (:codes)")
+    fun getStockByCodes(codes: List<String>): List<Stock>
+
     @Query("select * from stock where name  like '%ST%' ")
     fun getSTStock(): List<Stock>
 
