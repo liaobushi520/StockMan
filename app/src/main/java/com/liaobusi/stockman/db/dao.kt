@@ -185,6 +185,8 @@ interface HistoryBKDao {
     @Query("select * from historybk where code=:code AND date=:date   order by date asc limit 1")
     fun getHistoryByDate2(code: String, date: Int): HistoryBK?
 
+
+
     @Query("select * from historybk where code=:code AND date<=:date   order by date desc limit 1")
     fun getHistoryByDate3(code: String, date: Int): HistoryBK
 
@@ -224,7 +226,7 @@ interface HideDao {
     fun getHideBks(): List<Hide>
 
     @Query("select * from hide ")
-    fun getHides(): List<Follow>
+    fun getHides(): List<Hide>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertHide(hide: Hide)
@@ -265,6 +267,9 @@ interface HistoryStockDao {
 
     @Query("select * from historystock where code=:code AND date <= :date order by date desc limit :limit")
     fun getHistoryBefore3(code: String, date: Int, limit: Int = 5): List<HistoryStock>
+
+    @Query("select * from historystock where date=:date AND chg>9.6")
+    fun getZTHistoryByDate(date: Int):List<HistoryStock>
 
     @Query("select * from historystock where code=:code AND date > :date order by date asc limit :limit")
     fun getHistoryAfter3(code: String, date: Int, limit: Int = 5): List<HistoryStock>

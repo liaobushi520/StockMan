@@ -37,8 +37,8 @@ interface StockService {
 //    m:0 t:7,m:1 t:3 B股
 //    b:MK0021,b:MK0022,b:MK0023,b:MK0024 ETF
 
-    @GET("http://20.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&np=1&fid=f3&fields=${FILED}&fs=m:1+t:2,m:0+t:6,m:0+t:13,m:0+t:80,m:1+t:23,t:81+s:2048")
-    suspend fun getRealTimeStocks():EMResponse
+    @GET("http://20.push2.eastmoney.com/api/qt/clist/get?pz=200&np=1&fid=f3&fields=${FILED}&fs=m:1+t:2,m:0+t:6,m:0+t:13,m:0+t:80,m:1+t:23,t:81+s:2048")
+    suspend fun getRealTimeStocks(@Query("pn") pn:Int):EMResponse
 //    @Streaming
 //    @GET("http://72.push2.eastmoney.com/api/qt/stock/details/sse?fields1=${FILED}&fields2=f51,f52,f53,f54,f55&mpi=1000&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&pos=-11&wbp2u=8678395952121844|0|1|0|web")
 //    suspend fun getRealTimeStockData(@Query("secid") secid:String ):ResponseBody
@@ -75,8 +75,8 @@ interface StockService {
 
 
 
-    @GET("https://43.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&wbp2u=|0|0|0|web&fid=f3&fs=m:90+t:3+f:!50&fields=f2,f3,f7,f8,f12,f14,f15,f16,f17,f18,f20,f21,f297")
-    suspend fun getRealTimeConceptBK():EMResponse
+    @GET("https://43.push2.eastmoney.com/api/qt/clist/get?pz=200&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&wbp2u=|0|0|0|web&fid=f3&fs=m:90+t:3+f:!50&fields=f2,f3,f7,f8,f12,f14,f15,f16,f17,f18,f20,f21,f297")
+    suspend fun getRealTimeConceptBK(@Query("pn") pn: Int=1):EMResponse
 
     //https://push2.eastmoney.com/api/qt/clist/get?np=1&fltt=1&invt=2&fs=b:BK0482&fields=f14,f12,f13,f1,f2,f4,f3,f152,f128,f140,f141,f62,f184,f66,f69,f72,f75,f78,f81,f84,f87,f109,f160,f164,f165,f166,f167,f168,f169,f170,f171,f172,f173,f174,f175,f176,f177,f178,f179,f180,f181,f182,f183&fid=f62&pn=1&pz=8&po=1&ut=fa5fd1943c7b386f172d6893dbfba10b&wbp2u=|0|0|0|web&_=1670382926497
 

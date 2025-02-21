@@ -224,7 +224,7 @@ data class TGBResponse(
 data class TGBStock(
     val continuenum: Int,
     val fullCode: String,
-    val gnList: List<Gn>,
+    val gnList: List<Gn>?,
     val implied: Implied,
     val linkingBoard: String,
     val popularValue: Int,

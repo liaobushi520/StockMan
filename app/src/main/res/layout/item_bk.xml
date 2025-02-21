@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:orientation="vertical"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_height="wrap_content">
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+
+        <TextView
+            android:id="@+id/flagTv"
+            android:layout_width="16dp"
+            android:layout_height="0dp"
+            android:layout_gravity="center"
+            android:background="#ffff0000"
+            android:gravity="center"
+            android:textColor="#444444"
+            android:textStyle="bold"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+
+        <TextView
+            android:id="@+id/bkName"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="22dp"
+            android:maxLines="1"
+            android:autoSizeMinTextSize="10sp"
+            android:autoSizeTextType="uniform"
+            android:paddingHorizontal="2dp"
+            android:textColor="#000"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/flagTv"
+            app:layout_constraintTop_toTopOf="parent" />
+
+
+        <LinearLayout
+            android:id="@+id/ll"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="@+id/bkName"
+            app:layout_constraintStart_toEndOf="@id/bkName"
+            app:layout_constraintTop_toTopOf="@+id/bkName">
+
+            <TextView
+                android:id="@+id/currentChg"
+                android:layout_width="35dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical|start"
+                android:maxLength="5"
+                android:maxLines="1"
+                android:visibility="gone" />
+
+
+            <TextView
+                android:id="@+id/nextDayChg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="2dp"
+                android:gravity="center_vertical|start"
+                android:maxLength="5"
+                android:maxLines="1"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#66333333"
+        />
+</LinearLayout>
+

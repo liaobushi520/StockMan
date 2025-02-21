@@ -189,14 +189,16 @@ class AnalysisActivity : AppCompatActivity() {
             binding.chart.xAxis.apply {
                 valueFormatter = object : ValueFormatter() {
                     override fun getFormattedValue(value: Float): String {
-                        if(r.size<=0||value.toInt()>r.size){
+                        if(r.isEmpty() ||value.toInt()>r.size){
                             return ""
                         }
                         return r[value.toInt()].date.toString()
                     }
                 }
             }
-            binding.chart.viewPortHandler.setMinimumScaleX(3.5f)
+
+
+            binding.chart.viewPortHandler.setMinimumScaleX(0.8f)
 
             r.forEachIndexed { index, item ->
                 ztEntries.add(Entry(index.toFloat(), item.ztCount.toFloat()))
@@ -229,6 +231,12 @@ class AnalysisActivity : AppCompatActivity() {
             binding.chart.data = lineData
          //   binding.chart.viewPortHandler.setZoom(4f,8f)
             binding.chart.invalidate()
+
+            binding.chart.data.setValueFormatter(object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    return  value.toInt().toString()
+                }
+            })
 
 
 

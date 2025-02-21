@@ -222,7 +222,7 @@ class Strategy9Activity : AppCompatActivity() {
 
             val newList = mutableListOf<StockResult>()
             r.forEach {
-                if (it.follow) {
+                if (it.follow?.stickyOnTop==1) {
                     newList.add(0, it)
                 } else {
                     newList.add(it)
@@ -252,7 +252,7 @@ class Strategy9Activity : AppCompatActivity() {
 
 
 
-                        if (result.follow) {
+                        if (result.follow!=null) {
                             this.root.setBackgroundColor(0x33333333)
                         }
 
@@ -280,10 +280,13 @@ class Strategy9Activity : AppCompatActivity() {
                             val b =
                                 LayoutStockPopupWindowBinding.inflate(LayoutInflater.from(it.context))
 
-                            if (result.follow) {
+                            if (result.follow!=null) {
                                 b.followBtn.text = "取消关注"
                             }
 
+                            if (result.follow?.stickyOnTop==1){
+                                b.stickyOnTopBtn.text = "取消置顶"
+                            }
 
                             val pw = PopupWindow(
                                 b.root,
@@ -295,22 +298,43 @@ class Strategy9Activity : AppCompatActivity() {
                             b.followBtn.setOnClickListener {
                                 pw.dismiss()
                                 lifecycleScope.launch(Dispatchers.IO) {
-                                    if (result.follow) {
+                                    if (result.follow!=null) {
                                         Injector.appDatabase.followDao()
                                             .deleteFollow(Follow(result.stock.code, 1))
-                                        result.follow = false
+                                        result.follow = null
                                         output(list)
                                     } else {
-                                        result.follow = true
+                                        val n=Follow(result.stock.code, 1,0)
+                                        result.follow = n
                                         Injector.appDatabase.followDao()
-                                            .insertFollow(Follow(result.stock.code, 1))
+                                            .insertFollow(n)
                                         output(list)
                                     }
-
-
                                 }
-
                             }
+
+                            b.stickyOnTopBtn.setOnClickListener {
+                                pw.dismiss()
+                                lifecycleScope.launch(Dispatchers.IO) {
+                                    if (result.follow?.stickyOnTop==1) {
+                                        val n=Follow(result.stock.code, 1,0)
+                                        Injector.appDatabase.followDao()
+                                            .insertFollow(n)
+                                        result.follow = n
+                                        output(list)
+                                    } else {
+                                        val n=Follow(result.stock.code, 1,1)
+                                        result.follow = n
+                                        Injector.appDatabase.followDao()
+                                            .insertFollow(n)
+                                        output(list)
+                                    }
+                                }
+                            }
+
+
+
+
                             pw.showAsDropDown(it, (ev?.x ?: 0f).toInt(), -300)
                             return@setOnLongClickListener true
                         }

@@ -15,6 +15,16 @@
         android:textColor="#fff"
         android:textSize="18sp" />
 
+    <TextView
+        android:id="@+id/stickyOnTopBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="10dp"
+        android:text="置顶"
+        android:textColor="#fff"
+        android:textSize="18sp" />
+
 
     <TextView
         android:visibility="gone"

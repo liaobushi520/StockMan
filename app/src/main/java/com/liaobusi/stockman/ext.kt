@@ -10,6 +10,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.roundToInt
 
 fun <T> List<T>.split(groupCount: Int = 3): List<List<T>> {
     val result = mutableListOf<List<T>>()
@@ -98,7 +101,7 @@ fun View.multiClick(count: Int, callback: () -> Unit) {
 }
 
 
- fun String.removeSurroundingWhenExist(prefix: CharSequence, suffix: CharSequence): String {
+fun String.removeSurroundingWhenExist(prefix: CharSequence, suffix: CharSequence): String {
     return if (startsWith(prefix)) {
         if (endsWith(suffix)) {
             substring(prefix.length, length - suffix.length)
@@ -112,5 +115,86 @@ fun View.multiClick(count: Int, callback: () -> Unit) {
             this
         }
     }
- }
+}
 
+fun routeRemainDisStr(routeRemainDis: Int): String {
+    if (routeRemainDis == null) {
+        return ""
+    }
+    val km = (routeRemainDis / 1000)
+    val m = (routeRemainDis - km * 1000)
+
+    if (km > 999) {
+        return "$km km"
+    }
+
+    if (km in 10..999) {
+        return "$km km"
+    }
+
+    if (km in 1..9) {
+        return String.format("%.1f", (routeRemainDis / 100f).toInt() / 10f) + " km"
+    }
+
+    if (routeRemainDis in 100..999) {
+        return "${(routeRemainDis / 50) * 50} m"
+    }
+
+    if (routeRemainDis in 0..99) {
+        return "${(routeRemainDis / 10) * 10} m"
+    }
+
+    val sb = StringBuilder()
+
+    if (km > 0) {
+        sb.append("$km km")
+    } else {
+        if (m > 0) {
+            sb.append("$m m")
+        }
+    }
+
+
+    return sb.toString()
+}
+
+fun routeRemainTimeStr(routeRemainTime: Int): String {
+    if (routeRemainTime == null) {
+        return ""
+    }
+
+    if (routeRemainTime in 0..59) {
+        return "1 min"
+    }
+
+    if (routeRemainTime in 60..3599) {
+        if (routeRemainTime % 60 <= 30) {
+            return "${floor(routeRemainTime / 60f).toInt()} min"
+        }
+        return "${ceil(routeRemainTime / 60f).toInt()} min"
+    }
+
+    if (routeRemainTime > 359940) {
+        return ">100 h"
+    }
+
+    val hour = (routeRemainTime / 3600)
+    val min = (routeRemainTime - hour * 3600)
+
+    val sb = StringBuilder()
+
+    if (hour > 0) {
+        sb.append("$hour h")
+    }
+
+    if (min > 0) {
+        if (sb.isNotEmpty()) sb.append(" ")
+        if (min % 60 <= 30) {
+            sb.append("${floor(min / 60f).toInt()} min")
+        }else{
+            sb.append("${ceil(min / 60f).toInt()} min")
+        }
+
+    }
+    return sb.toString()
+}

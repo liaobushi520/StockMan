@@ -98,6 +98,12 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
+        binding.fp.setOnClickListener {
+            val i = Intent(this, FPActivity::class.java)
+            startActivity(i)
+        }
+
+
         binding.analysisBtn.setOnClickListener {
             val i = Intent(this, AnalysisActivity::class.java)
             startActivity(i)
@@ -185,6 +191,7 @@ class HomeActivity : AppCompatActivity() {
 
 
 
+
         lifecycleScope.launch(Dispatchers.IO) {
 
             val d = Injector.appDatabase.stockDao()
@@ -221,6 +228,9 @@ class HomeActivity : AppCompatActivity() {
                 sp.edit().putLong("fetch_gdrs_time", System.currentTimeMillis()).apply()
             }
 
+            StockRepo.getRealTimeIndexByCode("1.000001")
+            StockRepo.getRealTimeIndexByCode("2.932000")
+
 
 //            bkStockDao.getStocksByBKCode("BK0438").forEach {
 //                Log.e("XXX", it.toString())
@@ -251,9 +261,11 @@ class HomeActivity : AppCompatActivity() {
 //            }
 
 
+
+
 //            StockRepo.fixData("002279",20221102)
 
-//            h.getHistoryAfter("601136",today)
+//            h.getHistoryBefore("002261",today())
 //              .forEach {
 //                Log.e("XX",it.toString())
 //            }

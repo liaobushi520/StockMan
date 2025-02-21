@@ -97,7 +97,7 @@ fun BK.openWeb(context: Context) {
 data class BKStock(val bkCode: String, val stockCode: String)
 
 @Entity
-data class Follow(@PrimaryKey val code: String, val type: Int)
+data class Follow(@PrimaryKey val code: String, val type: Int , @ColumnInfo(defaultValue = "1") val stickyOnTop:Int=1)
 
 @Entity
 data class Hide(@PrimaryKey val code: String, val type: Int)
@@ -286,9 +286,9 @@ val HistoryStock.longUpShadow: Boolean
 
 @Database(
     entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class, PopularityRank::class,DragonTigerRank::class],
-    version = 25,
+    version = 26,
     autoMigrations = [
-        AutoMigration(from = 24, to = 25)
+        AutoMigration(from = 25, to = 26)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {

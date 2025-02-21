@@ -34,6 +34,17 @@ fun howDayShowZTFlag(context: Context): Int {
     return sp.getInt("how_day_show_zt_flag", 1)
 }
 
+
+fun trackingType(context: Context): Boolean {
+    val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
+    return sp.getBoolean("trackingType", false)
+}
+
+fun isFocusLB(context: Context): Boolean {
+    val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
+    return sp.getBoolean("focusLB", false)
+}
+
 fun isShowLianBanFlag(context: Context): Boolean {
     val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
     return sp.getBoolean("show_lianban_count_flag", true)
@@ -104,9 +115,23 @@ class SettingActivity : AppCompatActivity() {
         binding.showSTSwitch.isChecked = showST
         binding.showSTSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
             sp.edit().putBoolean("show_ST", isChecked).apply()
-
         }
 
+        val focusLB = sp.getBoolean("focusLB", false)
+        binding.focusLB.isChecked = focusLB
+        binding.focusLB.setOnCheckedChangeListener { buttonView, isChecked ->
+            sp.edit().putBoolean("focusLB", isChecked).apply()
+            Injector.startTracking()
+        }
+
+
+        val trackingType = sp.getBoolean("trackingType", false)
+        binding.trackingType.isChecked = trackingType
+        binding.trackingType.setOnCheckedChangeListener { _, isChecked ->
+            sp.edit().putBoolean("trackingType", isChecked).apply()
+            Injector.trackerType=isChecked
+            Injector.startTracking()
+        }
 
 
         binding.autoRefresh.isChecked = sp.getBoolean("auto_refresh", false)

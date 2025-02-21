@@ -126,6 +126,9 @@ class Strategy4Activity : AppCompatActivity() {
             binding.endTimeTv.setText(intent.getStringExtra("endTime"))
         } else {
             binding.endTimeTv.setText(SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())))
+            lifecycleScope.launch(Dispatchers.IO) {
+                StockRepo.dpAnalysis(today())
+            }
         }
 
 
@@ -398,8 +401,11 @@ class Strategy4Activity : AppCompatActivity() {
                     abnormalRate = abnormalRate,
                     bkList = bkList,
                     stockList = Injector.getSnapshot()
-
                 )
+                if (!isActive) return@launch
+
+                list.zz2000 =
+                    Injector.appDatabase.historyBKDao().getHistoryByDate3("932000", date = endTime)
                 output(list)
             }
 
@@ -635,6 +641,8 @@ class Strategy4Activity : AppCompatActivity() {
                 stockList = strictParam.stockList
 
             )
+            list.zz2000 =
+                Injector.appDatabase.historyBKDao().getHistoryByDate3("932000", date = strictParam.endTime)
             output(list)
         }
     }
@@ -1088,7 +1096,7 @@ class Strategy4Activity : AppCompatActivity() {
 
             val newList = mutableListOf<StockResult>()
             r.forEach {
-                if (it.follow) {
+                if (it.follow?.stickyOnTop == 1) {
                     newList.add(0, it)
                 } else {
                     newList.add(it)
@@ -1116,7 +1124,10 @@ class Strategy4Activity : AppCompatActivity() {
                         "" + r.count { it.dt && !it.isGroupHeader },
                         ForegroundColorSpan(STOCK_GREEN),
                         SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
-                    )
+                    ).append(
+                        ("   " + strategyResult.zz2000?.chg?.toString()),ForegroundColorSpan(
+                        strategyResult.zz2000?.color?:Color.TRANSPARENT),
+                        SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE)
             binding.resultCount.text = resultText
 
             (binding.rv.adapter as ResultAdapter).setData(
@@ -1147,12 +1158,6 @@ class Strategy4Activity : AppCompatActivity() {
 
         fun getStockList(): List<Stock> {
             return data.map { it.stock }
-        }
-
-        override fun onViewDetachedFromWindow(holder: VH) {
-            super.onViewDetachedFromWindow(holder)
-
-
         }
 
 
@@ -1264,7 +1269,7 @@ class Strategy4Activity : AppCompatActivity() {
 
                 val stock = result.stock
                 binding.apply {
-                    if (result.follow) {
+                    if (result.follow != null) {
                         this.root.setBackgroundColor(0x33333333)
                     } else {
                         this.root.setBackgroundColor(0xffffffff.toInt())
@@ -1440,8 +1445,12 @@ class Strategy4Activity : AppCompatActivity() {
                         val b =
                             LayoutStockPopupWindowBinding.inflate(LayoutInflater.from(it.context))
 
-                        if (result.follow) {
+                        if (result.follow != null) {
                             b.followBtn.text = "取消关注"
+                        }
+
+                        if (result.follow?.stickyOnTop == 1) {
+                            b.stickyOnTopBtn.text = "取消置顶"
                         }
 
                         if (result.expandReason) {
@@ -1502,15 +1511,43 @@ class Strategy4Activity : AppCompatActivity() {
                             result.stock.openDragonTigerRank(this@Strategy4Activity)
                         }
 
+                        //仅关注不置顶
                         b.followBtn.setOnClickListener {
                             pw.dismiss()
                             lifecycleScope.launch(Dispatchers.IO) {
                                 val p = data.indexOf(result)
-                                if (result.follow) {
+                                if (result.follow != null) {
                                     Injector.appDatabase.followDao()
                                         .deleteFollow(Follow(result.stock.code, 1))
 
-                                    result.follow = false
+                                    result.follow = null
+
+                                    lifecycleScope.launch(Dispatchers.Main) {
+                                        notifyItemChanged(p)
+                                    }
+
+                                } else {
+                                    result.follow = Follow(result.stock.code, 1, 0)
+                                    Injector.appDatabase.followDao()
+                                        .insertFollow(result.follow!!)
+                                    lifecycleScope.launch(Dispatchers.Main) {
+                                        notifyItemChanged(p)
+                                    }
+
+                                }
+
+
+                            }
+                        }
+
+                        b.stickyOnTopBtn.setOnClickListener {
+                            pw.dismiss()
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                val p = data.indexOf(result)
+                                if (result.follow?.stickyOnTop == 1) {
+                                    val n = Follow(result.stock.code, 1, 0)
+                                    Injector.appDatabase.followDao().insertFollow(n)
+                                    result.follow = n
 
                                     lifecycleScope.launch(Dispatchers.Main) {
                                         data.remove(result)
@@ -1521,9 +1558,10 @@ class Strategy4Activity : AppCompatActivity() {
                                     }
 
                                 } else {
-                                    result.follow = true
+                                    val n = Follow(result.stock.code, 1, 1)
+                                    result.follow = n
                                     Injector.appDatabase.followDao()
-                                        .insertFollow(Follow(result.stock.code, 1))
+                                        .insertFollow(n)
                                     lifecycleScope.launch(Dispatchers.Main) {
                                         data.remove(result)
                                         notifyItemRemoved(p)
@@ -1591,26 +1629,18 @@ class StockInfoFragment(private val stock: Stock, private val date: String) : Di
             val list = stock.bk.split(",").map {
                 Pair(
                     Injector.appDatabase.bkDao().getBKByCode(it),
-                    Injector.appDatabase.historyBKDao().getHistoryByDate2(it, date.toInt())
+                    Injector.appDatabase.historyBKDao().getHistoryByDate3(it, date.toInt())
                 )
             }.filter { it.first != null && !it.first!!.specialBK }
-                .sortedByDescending { it.second!!.chg }
+                .sortedByDescending { it.second.chg }
             launch(Dispatchers.Main) {
                 list.forEach { pair ->
                     val bk = pair.first
                     val historyBK = pair.second
                     val b = ItemStockInfoBkBinding.inflate(inflater).apply {
                         bkCodeName.text = "${bk!!.code}-${bk.name}"
-                        if (historyBK != null) {
-                            chgTv.text = historyBK.chg.toString()
-                            val color = when {
-                                historyBK.chg < 0 -> STOCK_GREEN
-                                historyBK.chg > 0 -> Color.RED
-                                else -> Color.GRAY
-                            }
-                            chgTv.setTextColor(color)
-                        }
-
+                        chgTv.text = historyBK.chg.toString()
+                        chgTv.setTextColor(historyBK.color)
                         bkCodeName.setOnClickListener {
                             bk.openWeb(requireContext())
                         }

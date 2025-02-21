@@ -48,7 +48,7 @@ import java.util.Date
 
 val log = StringBuilder()
 
-const val ENABLE_LOG = false
+const val ENABLE_LOG = true
 
 fun writeLog(code: String, msg: String) {
 
@@ -78,7 +78,11 @@ object Injector {
 
     var activityActive = true
 
+    val realTimeStockMap = mutableMapOf<String, Stock>()
+
     val scope = MainScope()
+
+    var  trackerType=false
 
     fun inject(applicationContext: Context) {
         context = applicationContext
@@ -103,6 +107,7 @@ object Injector {
             sp.edit().putInt("diy_bk_code", 100000).apply()
         }
 
+        trackerType= trackingType(context)
 
         (applicationContext as Application).registerActivityLifecycleCallbacks(object :
             ActivityLifecycleCallbacks {
@@ -175,18 +180,31 @@ object Injector {
         autoRefresh(sp.getBoolean("auto_refresh", false))
     }
 
+
+    private val calendar = Calendar.getInstance()
+
+    private fun isTradingTime(): Boolean {
+        calendar.time = Date()
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        return hour in 9 until 12 || hour in 13 until 15
+    }
+
     fun autoRefresh(enable: Boolean) {
         autoRefreshJob?.cancel()
         if (enable) {
             autoRefreshJob = scope.launch(Dispatchers.IO) {
+                if (!isTradingDay(today())) {
+                    return@launch
+                }
+                var count = 0
                 while (true) {
-                    val cal = Calendar.getInstance().apply {
-                        time = Date()
-                    }
-                    val hour = cal.get(Calendar.HOUR_OF_DAY)
-                    if (hour in 9..14) {
+                    if (isTradingTime()) {
                         if (activityActive) {
-                            StockRepo.getRealTimeBKs()
+                            count++
+                            if (count == 2) {
+                                StockRepo.getRealTimeBKs()
+                                count = 0
+                            }
                             StockRepo.getRealTimeStocks()
                         }
                         delay(2000)
@@ -283,7 +301,7 @@ object Injector {
 
             if (tgb != null) {
                 explainSb.append("[淘股吧] ${tgb.ranking}\n")
-                tgb.gnList.forEach {
+                tgb.gnList?.forEach {
                     explainSb.append("${it.gnName}|")
                 }
                 if (explainSb.endsWith("|")) {
@@ -343,164 +361,93 @@ object Injector {
     val stockLianBanCountMap = mutableMapOf<String, Int>()
 
 
-    fun startTracking() {
-        val cal = Calendar.getInstance().apply {
-            time = Date()
-        }
-        val hour = cal.get(Calendar.HOUR_OF_DAY)
-        if (hour in 9..14) {
-            scope.launch(Dispatchers.IO) {
-                val list =
-                    appDatabase.popularityRankDao().getRanksByDate(today()).map { it.code }
+    val trackerMap = mutableMapOf<String, Tracker>()
+    private fun startTracking2() {
+        scope.launch(Dispatchers.IO) {
+            val list = if (isFocusLB(context)) {
+                appDatabase.historyStockDao().getZTHistoryByDate(preTradingDay(today()))
+                    .map { it.code }
+            } else {
+                appDatabase.popularityRankDao().getRanksByDate(today()).map { it.code }
+            }
+            Log.e("股票超人","开始跟踪股票异动方式2 聚焦昨日涨停${isFocusLB(context)} 数量${list.size}")
+            list.forEach {
+                trackerMap[it] = Tracker()
+            }
 
-                list.split(50).forEach {
+        }
+    }
+
+
+
+    private var trackingJob: Job? = null
+
+    fun startTracking() {
+        trackingJob?.cancel()
+        trackerMap.clear()
+        if (trackerType) {
+            startTracking1()
+        } else {
+            startTracking2()
+        }
+    }
+
+    private fun startTracking1() {
+        if (isTradingTime()) {
+            trackingJob = scope.launch(Dispatchers.IO) {
+                val list = if (isFocusLB(context)) {
+                    appDatabase.historyStockDao().getZTHistoryByDate(preTradingDay(today()))
+                        .map { it.code }
+                } else {
+                    appDatabase.popularityRankDao().getRanksByDate(today()).map { it.code }
+                }
+                Log.e("股票超人","开始跟踪股票异动方式1 聚焦昨日涨停${isFocusLB(context)} 数量${list.size}")
+                list.split(10).forEachIndexed { index, codes ->
                     launch(Dispatchers.Default) {
-                        tracking(it)
+                        tracking(codes, "track${index}")
                     }
                 }
-
-
-//                list.map { StockTracker(it) }.forEach {
-//                    launch {
-//                        it.startTrack()
-//                    }
-//                }
             }
 
         }
     }
 
 
-}
-
-data class StockRecord(val stock: Stock, val time: Long = System.currentTimeMillis())
+    data class StockRecord(val stock: Stock, val time: Long = System.currentTimeMillis())
 
 
-
-
-suspend fun tracking(codes: List<String>) {
-    val trackerMap = mutableMapOf<String, Tracker>()
-    codes.forEach {
-        trackerMap[it] = Tracker()
-    }
-    while (true) {
-        val dao = Injector.appDatabase.stockDao()
-        val stockList = dao.getStockByCodes(codes)
-        stockList.forEach {
-            trackerMap[it.code]?.update(it)
+    private suspend fun tracking(codes: List<String>, tag: String) {
+        val trackerMap = mutableMapOf<String, Tracker>()
+        codes.forEach {
+            trackerMap[it] = Tracker()
         }
-        delay(1000)
-    }
-}
-
-class  Tracker{
-    private val cache = mutableListOf<StockRecord>()
-    fun update(s: Stock) {
-        val sb = StringBuilder()
-        val last = if (cache.size >= 3) cache[cache.size - 2] else cache.lastOrNull()
-        if (last != null) {
-            val zf = (s.price - last.stock.price) / last.stock.price
-            if (zf >= 0.01) {
-                sb.append("${(System.currentTimeMillis() - last.time) / 1000}秒内涨幅${zf * 100}%")
-            }
-
-            if (last.stock.ztPrice == last.stock.price && s.price < s.ztPrice) {
-                sb.append("[炸板]")
-            }
-
-            if (last.stock.dtPrice == last.stock.price && s.price > s.dtPrice) {
-                sb.append("[翘板]")
-            }
-        }
-
-        val mid = if (cache.size >= 28) cache[cache.size / 2] else null
-        if (mid != null) {
-            val zf = (s.price - mid.stock.price) / mid.stock.price
-            if (zf >= 0.03) {
-                sb.append("${(System.currentTimeMillis() - mid.time) / 1000}秒内涨幅${zf * 100}%")
-            }
-        }
-
-        val first = cache.firstOrNull()
-        if (first != null) {
-            val zf = (s.price - first.stock.price) / first.stock.price
-            if (zf >= 0.06) {
-                sb.append("${(System.currentTimeMillis() - first.time) / 1000}秒内涨幅${zf * 100}%")
-            }
-
-
-        }
-
-        if (sb.isNotEmpty()) {
-            sendNotification(s, "${s.code}${s.name}异动,涨跌幅${s.chg}%", sb.toString())
-        }
-
-        cache.add(StockRecord(s))
-        if (cache.size >= 30) {
-            cache.removeAt(0)
-        }
-    }
-
-
-    private fun sendNotification(stock: Stock, title: String, content: String) {
-        val channel = NotificationChannel(
-            "股票超人",
-            "异动",
-            NotificationManager.IMPORTANCE_HIGH
-        )
-        channel.description = "Channel description"
-        val notificationManager: NotificationManager = Injector.context.getSystemService(
-            NotificationManager::class.java
-        )
-        notificationManager.createNotificationChannel(channel)
-        val s = "dfcf18://stock?market=${stock.marketCode()}&code=${stock.code}"
-        val uri: Uri = Uri.parse(s)
-        val intent = Intent(Intent.ACTION_VIEW, uri)
-
-        val builder: NotificationCompat.Builder =
-            NotificationCompat.Builder(Injector.context, "股票超人")
-                .setSmallIcon(R.mipmap.ic_launcher) // 设置通知小图标
-                .setContentTitle(title) // 设置通知标题
-                .setContentText(content) // 设置通知内容
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT) // 设置通知优先级
-                .setVibrate(longArrayOf(1000, 1000, 1000, 1000, 1000)) // 设置震动模式
-                .setLights(Color.RED, 1000, 1000) // 设置呼吸灯效果
-                .setContentIntent(
-                    PendingIntent.getActivity(
-                        Injector.context,
-                        100,
-                        intent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                )
-
-
-        notificationManager.notify(stock.code.toInt(), builder.build())
-
-
-    }
-}
-
-
-class StockTracker(val code: String) {
-
-
-    private val cache = mutableListOf<StockRecord>()
-
-
-    suspend fun startTrack() {
-
-        val dao = Injector.appDatabase.stockDao()
-
         while (true) {
-            val s = dao.getStockByCode(code)
+            codes.forEach {
+                val stock = realTimeStockMap[it]
+                if (stock != null)
+                    trackerMap[it]?.update(stock)
+            }
+            delay(1000)
+        }
+    }
 
+    class Tracker {
+        private val cache = mutableListOf<StockRecord>()
+        fun update(s: Stock) {
             val sb = StringBuilder()
             val last = if (cache.size >= 3) cache[cache.size - 2] else cache.lastOrNull()
             if (last != null) {
                 val zf = (s.price - last.stock.price) / last.stock.price
                 if (zf >= 0.01) {
                     sb.append("${(System.currentTimeMillis() - last.time) / 1000}秒内涨幅${zf * 100}%")
+                }
+
+                if (last.stock.ztPrice == last.stock.price && s.price < s.ztPrice) {
+                    sb.append("[炸板]")
+                }
+
+                if (last.stock.dtPrice == last.stock.price && s.price > s.dtPrice) {
+                    sb.append("[翘板]")
                 }
             }
 
@@ -519,14 +466,9 @@ class StockTracker(val code: String) {
                     sb.append("${(System.currentTimeMillis() - first.time) / 1000}秒内涨幅${zf * 100}%")
                 }
 
-                if (first.stock.ztPrice == first.stock.price && s.price < s.ztPrice) {
-                    sb.append("[炸板]")
-                }
 
-                if (first.stock.dtPrice == first.stock.price && s.price > s.dtPrice) {
-                    sb.append("[翘板]")
-                }
             }
+
 
             if (sb.isNotEmpty()) {
                 sendNotification(s, "${s.code}${s.name}异动,涨跌幅${s.chg}%", sb.toString())
@@ -536,47 +478,46 @@ class StockTracker(val code: String) {
             if (cache.size >= 30) {
                 cache.removeAt(0)
             }
-            delay(1200)
+        }
+
+
+        private fun sendNotification(stock: Stock, title: String, content: String) {
+            val channel = NotificationChannel(
+                "股票超人",
+                "异动",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            channel.description = "Channel description"
+            val notificationManager: NotificationManager = Injector.context.getSystemService(
+                NotificationManager::class.java
+            )
+            notificationManager.createNotificationChannel(channel)
+            val s = "dfcf18://stock?market=${stock.marketCode()}&code=${stock.code}"
+            val uri: Uri = Uri.parse(s)
+            val intent = Intent(Intent.ACTION_VIEW, uri)
+
+            val builder: NotificationCompat.Builder =
+                NotificationCompat.Builder(Injector.context, "股票超人")
+                    .setSmallIcon(R.mipmap.ic_launcher) // 设置通知小图标
+                    .setContentTitle(title) // 设置通知标题
+                    .setContentText(content) // 设置通知内容
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT) // 设置通知优先级
+                    .setVibrate(longArrayOf(1000, 1000, 1000, 1000, 1000)) // 设置震动模式
+                    .setLights(Color.RED, 1000, 1000) // 设置呼吸灯效果
+                    .setContentIntent(
+                        PendingIntent.getActivity(
+                            Injector.context,
+                            100,
+                            intent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                    )
+
+
+            notificationManager.notify(stock.code.toInt(), builder.build())
+
+
         }
     }
-
-
-    private fun sendNotification(stock: Stock, title: String, content: String) {
-        val channel = NotificationChannel(
-            "股票超人",
-            "异动",
-            NotificationManager.IMPORTANCE_HIGH
-        )
-        channel.description = "Channel description"
-        val notificationManager: NotificationManager = Injector.context.getSystemService(
-            NotificationManager::class.java
-        )
-        notificationManager.createNotificationChannel(channel)
-        val s = "dfcf18://stock?market=${stock.marketCode()}&code=${stock.code}"
-        val uri: Uri = Uri.parse(s)
-        val intent = Intent(Intent.ACTION_VIEW, uri)
-
-        val builder: NotificationCompat.Builder =
-            NotificationCompat.Builder(Injector.context, "股票超人")
-                .setSmallIcon(R.mipmap.ic_launcher) // 设置通知小图标
-                .setContentTitle(title) // 设置通知标题
-                .setContentText(content) // 设置通知内容
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT) // 设置通知优先级
-                .setVibrate(longArrayOf(1000, 1000, 1000, 1000, 1000)) // 设置震动模式
-                .setLights(Color.RED, 1000, 1000) // 设置呼吸灯效果
-                .setContentIntent(
-                    PendingIntent.getActivity(
-                        Injector.context,
-                        100,
-                        intent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                )
-
-
-        notificationManager.notify(stock.code.toInt(), builder.build())
-
-
-    }
-
 }
+
