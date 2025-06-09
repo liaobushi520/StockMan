@@ -202,7 +202,7 @@ data class THSStock(
 )
 
 data class Tag(
-    val concept_tag: List<String>,
+    val concept_tag: List<String>?,
     val live_tag: LiveTag,
     val popularity_tag: String?
 )
@@ -360,4 +360,171 @@ data class CLSStock(
     val status: String
 )
 
+data class DraganTigerDataResponse(
+    val data : DragonTiger2Data,
+    val status_code: Int,
+    val status_msg: String
+)
+
+data class DragonTiger2Data(
+    val count: Int,
+    val items: List<DragonTiger2Item>,
+    val module: String,
+    val page: Int,
+    val size: Int,
+    val stock_count: Int
+)
+
+data class DragonTiger2Item(
+    val buy_value: Double,
+    val change: Double,
+    val concept_list: List<Concept>,
+    val hot_money_net_value: Double,
+    val hot_rank: Int,
+    val limit_reason: String,
+    val market_id: String,
+    val net_rate: Double,
+    val net_value: Double,
+    val org_net_value: Double,
+    val range_days: Int,
+    val sell_value: Double,
+    val stock_code: String,
+    val stock_name: String,
+    val tags: List<DragonTiger2Tag>
+)
+
+data class Concept(
+    val code: String,
+    val market_id: String,
+    val name: String
+)
+
+data class DragonTiger2Tag(
+    val color: String,
+    val id: Any,
+    val name: String,
+    val type: String
+)
+
+
+data class BDStockResponse(
+    val QueryID: String,
+    val Result: ResultBD,
+    val ResultCode: String
+)
+
+data class ResultBD(
+    val QueryID: String,
+    val Result: List<ResultBDX>,
+    val ResultCode: String,
+    val ResultNum: String
+)
+
+data class ResultBDX(
+    val ClickNeed: String,
+    val DisplayData: DisplayData,
+    val OriginSrcID: String,
+    val RecoverCacheTime: String,
+    val ResultURL: String,
+    val Sort: String,
+    val SrcID: String,
+    val SubResNum: String,
+    val SubResult: List<Any?>,
+    val Weight: String
+)
+
+data class DisplayData(
+    val StdStg: String,
+    val StdStl: String,
+    val resultData: ResultData,
+    val strategy: Strategy
+)
+
+data class ResultData(
+    val extData: ExtData,
+    val tplData: TplData
+)
+
+data class Strategy(
+    val ctplOrPhp: String,
+    val hilightWord: String,
+    val precharge: String,
+    val tempName: String
+)
+
+data class ExtData(
+    val OriginQuery: String,
+    val resourceid: String,
+    val tplt: String
+)
+
+data class TplData(
+    val ResultURL: String,
+    val StdStg: String,
+    val StdStl: String,
+    val cardName: String,
+    val card_order: String,
+    val data_source: String,
+    val disp_data_url_ex: DispDataUrlEx,
+    val encoding: String,
+    val normal_use: String,
+    val pk: List<Any?>,
+    val result: ResultXX,
+    val sigma_use: String,
+    val strong_use: String,
+    val templateName: String,
+    val title: String,
+    val weak_use: String
+)
+
+data class DispDataUrlEx(
+    val aesplitid: String
+)
+
+data class ResultXX(
+    val async_url: String,
+    val brief: List<String>,
+    val rank: List<Rank>,
+    val ratio: Ratio,
+    val totalDeal: TotalDeal
+)
+
+data class Rank(
+    val code: String,
+    val exchange: String,
+    val expire_date: String,
+    val financeType: String,
+    val follow_status: String,
+    val is_warrants: String,
+    val list: List<Item8>,
+    val market: String,
+    val name: String,
+    val sf_url: String,
+    val status: String
+)
+
+data class TempWrapper(  val price: Float,  val chg: Float ,val amplitude: Float,val highest: Float,val lowest: Float)
+
+
+data class RankWrapper(  val price: Float,  val chg: Float, val turnoverRate: Float,val amplitude: Float,)
+
+data class Ratio(
+    val balance: String,
+    val down: String,
+    val up: String
+)
+
+data class TotalDeal(
+    val price: String,
+    val status: String,
+    val title: String
+)
+
+data class Item8(
+    val text: String,
+    val value: String
+)
+
+
+data class StockResponse(val date:Int,val list:List<List<Any>>)
 

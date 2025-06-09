@@ -76,6 +76,7 @@ class BKStrategyActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityBkstrategyBinding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
+        setSupportActionBar(binding.toolbar)
         supportActionBar?.title = "板块强势"
 
         lifecycleScope.launch {
@@ -842,151 +843,171 @@ class BKStrategyActivity : AppCompatActivity() {
         }
     }
 
-    data class SelectableItem<T>(val data: T, var selected: Boolean = false)
-    class DIYBKDialogFragment(private val bk: BK) : DialogFragment() {
 
-        private lateinit var binding: FragmentDiyBkBinding
-
-
-        override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
-        ): View? {
-            binding = FragmentDiyBkBinding.inflate(inflater)
-            binding.rv.layoutManager = LinearLayoutManager(binding.rv.context)
-
-            lifecycleScope.launch(Dispatchers.IO) {
-                val list = Injector.appDatabase.diyBkDao().getDIYBks()
-                launch(Dispatchers.Main) {
-                    binding.rv.adapter = DIYBKAdapter(list.map {
-                        SelectableItem(it, it.bkCodes.contains(bk.code, true))
-                    }.toMutableList())
-                }
-
-            }
-
-            binding.cancelBtn.setOnClickListener {
-                dismiss()
-            }
-
-            binding.okBtn.setOnClickListener {
-                lifecycleScope.launch(Dispatchers.IO) {
-
-                    (binding.rv.adapter as DIYBKAdapter).save(bk)
-                    dismiss()
-
-
-                }
-
-            }
-
-            binding.bkCodeName.text = bk.code + "-" + bk.name
-
-            binding.createBkBtn.setOnClickListener {
-
-                val name = binding.diyBkName.editableText.toString()
-                val codes = bk.code
-                val code = Injector.sp.getInt("diy_bk_code", 10000) + 1
-                val dsp = bk.code + "(${bk.name})"
-                binding.diyBkName.setText("")
-                val item = DIYBk("BK$code", name, codes, dsp)
-
-                lifecycleScope.launch(Dispatchers.IO) {
-                    Injector.appDatabase.diyBkDao().insert(item)
-                    Injector.sp.edit().putInt("diy_bk_code", code).apply()
-                    launch(Dispatchers.Main) {
-                        (binding.rv.adapter as DIYBKAdapter).add(SelectableItem(item, true))
-                    }
-
-                }
-
-            }
-
-            return binding.root
-        }
-
-
-        inner class DIYBKAdapter(private val data: MutableList<SelectableItem<DIYBk>>) :
-            RecyclerView.Adapter<DIYBKAdapter.VH>() {
-
-            fun add(item: SelectableItem<DIYBk>) {
-                data.add(item)
-                notifyItemInserted(data.size - 1)
-            }
-
-
-            fun save(bk: BK) {
-                data.forEach {
-                    if (it.selected) {
-                        if (!it.data.bkCodes.contains(bk.code)) {
-                            val newBkCodes = it.data.bkCodes + ",${bk.code}"
-                            newBkCodes.removePrefix(",")
-                            val newDsp = it.data.dsp + ",${bk.code}(${bk.name})"
-                            newDsp.removePrefix(",")
-                            val newBean = it.data.copy(bkCodes = newBkCodes, dsp = newDsp)
-                            Injector.appDatabase.diyBkDao().insert(newBean)
-                        }
-                    } else {
-                        if (it.data.bkCodes.contains(bk.code)) {
-                            val newCodes = if (it.data.bkCodes.startsWith(bk.code)) {
-                                it.data.bkCodes.replaceFirst(bk.code, "").removePrefix(",")
-                                    .replace("," + bk.code, "").removePrefix(",")
-                            } else {
-                                it.data.bkCodes.replace("," + bk.code, "").removePrefix(",")
-                            }
-
-                            val newDsp = if (it.data.dsp.startsWith("${bk.code}(${bk.name})")) {
-                                it.data.bkCodes.replaceFirst("${bk.code}(${bk.name})", "")
-                                    .removePrefix(",")
-                            } else {
-                                it.data.bkCodes.replace(",${bk.code}(${bk.name})", "")
-                                    .replace(",${bk.code}", "").removePrefix(",")
-                            }
-                            val newBean = it.data.copy(bkCodes = newCodes, dsp = newDsp)
-                            Injector.appDatabase.diyBkDao().insert(newBean)
-                        }
-                    }
-                }
-            }
-
-            inner class VH(private val itemBinding: ItemDiyBkBinding) :
-                RecyclerView.ViewHolder(itemBinding.root) {
-                fun bind(item: SelectableItem<DIYBk>, position: Int) {
-                    itemBinding.apply {
-                        codeNameTv.text = item.data.code + "-" + item.data.name
-
-                        cb.isChecked = item.selected
-                        codes.text = item.data.dsp
-                        cb.setOnCheckedChangeListener { _, isChecked ->
-                            item.selected = isChecked
-                        }
-
-                    }
-                }
-            }
-
-            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-                return VH(
-                    ItemDiyBkBinding.inflate(
-                        LayoutInflater.from(parent.context),
-                        parent,
-                        false
-                    )
-                )
-            }
-
-            override fun getItemCount(): Int {
-                return data.size
-            }
-
-            override fun onBindViewHolder(holder: VH, position: Int) {
-                holder.bind(data[position], position)
-            }
-        }
-
-
-    }
 
 
 }
+
+
+
+
+data class SelectableItem<T>(val data: T, var selected: Boolean = false)
+class DIYBKDialogFragment(private val bk:BK) : DialogFragment() {
+
+    private lateinit var binding: FragmentDiyBkBinding
+
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        binding = FragmentDiyBkBinding.inflate(inflater)
+        binding.rv.layoutManager = LinearLayoutManager(binding.rv.context)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val list = Injector.appDatabase.diyBkDao().getDIYBks()
+            launch(Dispatchers.Main) {
+                binding.rv.adapter = DIYBKAdapter(list.map {
+                    SelectableItem(it, it.bkCodes.contains(bk.code, true))
+                }.toMutableList())
+            }
+
+        }
+
+        binding.cancelBtn.setOnClickListener {
+            dismiss()
+        }
+
+        binding.okBtn.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.IO) {
+                (binding.rv.adapter as DIYBKAdapter).save(bk)
+                dismiss()
+            }
+
+        }
+
+        binding.bkCodeName.text = bk.code + "-" + bk.name
+
+        binding.createBkBtn.setOnClickListener {
+
+            val name = binding.diyBkName.editableText.toString()
+            val codes = bk.code
+            val code = Injector.sp.getInt("diy_bk_code", 10000) + 1
+            val dsp = bk.code + "(${bk.name})"
+            binding.diyBkName.setText("")
+            val item = DIYBk("BK$code", name, codes, dsp)
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                Injector.appDatabase.diyBkDao().insert(item)
+                Injector.sp.edit().putInt("diy_bk_code", code).apply()
+                launch(Dispatchers.Main) {
+                    (binding.rv.adapter as DIYBKAdapter).add(SelectableItem(item, true))
+                }
+
+            }
+
+        }
+
+        return binding.root
+    }
+
+
+
+
+
+}
+
+class DIYBKAdapter(private val data: MutableList<SelectableItem<DIYBk>>) :
+    RecyclerView.Adapter<DIYBKAdapter.VH>() {
+
+    fun add(item: SelectableItem<DIYBk>) {
+        data.add(item)
+        notifyItemInserted(data.size - 1)
+    }
+
+
+    fun save(bk: BK) {
+        data.forEach {
+            if (it.selected) {
+                if (!it.data.bkCodes.contains(bk.code)) {
+                    val newBkCodes = it.data.bkCodes + ",${bk.code}"
+                    val newDsp = it.data.dsp + ",${bk.code}(${bk.name})"
+                    val newBean = it.data.copy(bkCodes =  newBkCodes.removePrefix(","), dsp = newDsp.removePrefix(","))
+                    Injector.appDatabase.diyBkDao().insert(newBean)
+                }
+            } else {
+                if (it.data.bkCodes.contains(bk.code)) {
+                    val l=it.data.bkCodes.split(",").toMutableList()
+                    val newCodes=kotlin.text.StringBuilder()
+                    l.filter { it!=bk.code}.forEach {
+                        newCodes.append(it).append(",")
+                    }
+                    val newDsp=kotlin.text.StringBuilder()
+                    val dspList=it.data.dsp.split(",").toMutableList()
+                    dspList.filter { !it.contains(bk.code) }.forEach {
+                        newDsp.append(it).append(",")
+                    }
+                    val newBean = it.data.copy(bkCodes = newCodes.removeSuffix(",").toString(), dsp = newDsp.removeSuffix(",").toString())
+                    Injector.appDatabase.diyBkDao().insert(newBean)
+
+                }
+            }
+        }
+    }
+
+
+    fun getSelectedList():List<DIYBk>{
+        return  data.filter { it.selected }.map { it.data }
+    }
+
+    inner class VH(private val itemBinding: ItemDiyBkBinding) :
+        RecyclerView.ViewHolder(itemBinding.root) {
+        fun bind(item: SelectableItem<DIYBk>, position: Int) {
+            itemBinding.apply {
+                codeNameTv.text = item.data.code + "-" + item.data.name
+
+                cb.setOnCheckedChangeListener(null)
+                cb.isChecked = item.selected
+                codes.text = item.data.dsp
+                cb.setOnCheckedChangeListener { _, isChecked ->
+                    item.selected = isChecked
+                }
+
+            }
+        }
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+        return VH(
+            ItemDiyBkBinding.inflate(
+                LayoutInflater.from(parent.context),
+                parent,
+                false
+            )
+        )
+    }
+
+    override fun getItemCount(): Int {
+        return data.size
+    }
+
+    override fun onBindViewHolder(holder: VH, position: Int) {
+        holder.bind(data[position], position)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

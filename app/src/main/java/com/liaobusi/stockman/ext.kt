@@ -1,18 +1,31 @@
 package com.liaobusi.stockman
 
+import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
+import android.util.Log
 import android.view.View
+import androidx.annotation.RequiresPermission
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.ceil
-import kotlin.math.floor
-import kotlin.math.roundToInt
 
 fun <T> List<T>.split(groupCount: Int = 3): List<List<T>> {
     val result = mutableListOf<List<T>>()
@@ -31,6 +44,40 @@ fun <T> List<T>.split(groupCount: Int = 3): List<List<T>> {
     }
 
     return result.toList()
+}
+
+fun broadcastReceiverFlow(
+    context: Context,
+    lifecycleOwner: LifecycleOwner,
+    intentFilter: IntentFilter
+): Flow<Intent?> {
+    return callbackFlow {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                launch(Dispatchers.Main) {
+                    Log.i("broadcastReceiverFlow", "接收intent${intent}")
+                    send(intent)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onCreate(owner: LifecycleOwner) {
+                super.onCreate(owner)
+                Log.i("broadcastReceiverFlow", "注册广播")
+                launch(Dispatchers.IO) {
+                    context.registerReceiver(receiver, intentFilter)
+                }
+            }
+
+            override fun onDestroy(owner: LifecycleOwner) {
+                super.onDestroy(owner)
+                Log.i("broadcastReceiverFlow", "解绑广播")
+                close()
+            }
+        })
+        awaitClose { launch(Dispatchers.IO) { context.unregisterReceiver(receiver) } }
+    }
+
 }
 
 suspend fun <T, R> List<T>.compute(
@@ -117,84 +164,66 @@ fun String.removeSurroundingWhenExist(prefix: CharSequence, suffix: CharSequence
     }
 }
 
-fun routeRemainDisStr(routeRemainDis: Int): String {
-    if (routeRemainDis == null) {
-        return ""
-    }
-    val km = (routeRemainDis / 1000)
-    val m = (routeRemainDis - km * 1000)
 
-    if (km > 999) {
-        return "$km km"
+@RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
+fun getNetworkType(context: Context): NetworkType {
+    val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
+    if (cm == null) {
+        return NetworkType.UNKNOWN
     }
 
-    if (km in 10..999) {
-        return "$km km"
-    }
+    // 处理Android 6.0（API 23）及以上版本
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val network = cm.getActiveNetwork()
+        if (network == null) {
+            return NetworkType.UNKNOWN
+        }
+        val nc = cm.getNetworkCapabilities(network)
+        if (nc == null) {
+            return NetworkType.UNKNOWN
+        }
 
-    if (km in 1..9) {
-        return String.format("%.1f", (routeRemainDis / 100f).toInt() / 10f) + " km"
-    }
-
-    if (routeRemainDis in 100..999) {
-        return "${(routeRemainDis / 50) * 50} m"
-    }
-
-    if (routeRemainDis in 0..99) {
-        return "${(routeRemainDis / 10) * 10} m"
-    }
-
-    val sb = StringBuilder()
-
-    if (km > 0) {
-        sb.append("$km km")
+        // 检测传输类型
+        if (nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+            return NetworkType.WIFI
+        } else if (nc.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+            return NetworkType.CELLULAR
+        } else if (nc.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
+            return NetworkType.ETHERNET
+        } else if (nc.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+            return NetworkType.VPN
+        } else {
+            return NetworkType.UNKNOWN
+        }
     } else {
-        if (m > 0) {
-            sb.append("$m m")
+        // 兼容旧版本（API 23以下）
+        val activeNetwork = cm.getActiveNetworkInfo()
+        if (activeNetwork == null || !activeNetwork.isConnected()) {
+            return NetworkType.UNKNOWN
+        }
+        val type = activeNetwork.getType()
+        if (type == ConnectivityManager.TYPE_WIFI) {
+            return NetworkType.WIFI
+        } else if (type == ConnectivityManager.TYPE_MOBILE) {
+            return NetworkType.CELLULAR
+        } else if (type == ConnectivityManager.TYPE_ETHERNET) {
+            return NetworkType.ETHERNET
+        } else {
+            return NetworkType.UNKNOWN
         }
     }
-
-
-    return sb.toString()
 }
 
-fun routeRemainTimeStr(routeRemainTime: Int): String {
-    if (routeRemainTime == null) {
-        return ""
-    }
-
-    if (routeRemainTime in 0..59) {
-        return "1 min"
-    }
-
-    if (routeRemainTime in 60..3599) {
-        if (routeRemainTime % 60 <= 30) {
-            return "${floor(routeRemainTime / 60f).toInt()} min"
-        }
-        return "${ceil(routeRemainTime / 60f).toInt()} min"
-    }
-
-    if (routeRemainTime > 359940) {
-        return ">100 h"
-    }
-
-    val hour = (routeRemainTime / 3600)
-    val min = (routeRemainTime - hour * 3600)
-
-    val sb = StringBuilder()
-
-    if (hour > 0) {
-        sb.append("$hour h")
-    }
-
-    if (min > 0) {
-        if (sb.isNotEmpty()) sb.append(" ")
-        if (min % 60 <= 30) {
-            sb.append("${floor(min / 60f).toInt()} min")
-        }else{
-            sb.append("${ceil(min / 60f).toInt()} min")
-        }
-
-    }
-    return sb.toString()
+enum class NetworkType {
+    WIFI,
+    CELLULAR,
+    ETHERNET,
+    VPN,
+    UNKNOWN
 }
+
+
+
+
+
+

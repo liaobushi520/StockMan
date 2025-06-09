@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.liaobusi.stockman">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <application
         android:name=".App"
@@ -20,10 +20,21 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
+            android:name=".DPActivity"
+            android:exported="false" />
+        <!-- <activity -->
+        <!-- android:name=".GeckoActivity" -->
+        <!-- android:exported="false" /> -->
+        <activity
+            android:name=".WebViewActivity"
+            android:windowSoftInputMode="adjustResize|stateAlwaysVisible" />
+        <activity
             android:name=".FPActivity"
             android:exported="false" />
 
-        <service android:name=".StockService" />
+        <service
+            android:name=".StockService"
+            android:foregroundServiceType="specialUse" />
 
         <activity
             android:name=".AnalysisActivity"

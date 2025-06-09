@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
+import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
@@ -17,6 +18,7 @@ import com.liaobusi.stockman.repo.StockRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import androidx.core.content.edit
 
 
 fun isShowHiddenStockAndBK(context: Context): Boolean {
@@ -28,6 +30,22 @@ fun isShowST(context: Context): Boolean {
     val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
     return sp.getBoolean("show_ST", false)
 }
+
+//true 同花顺 false 韭研
+fun isFPSource(context: Context): Boolean {
+    val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
+    return sp.getBoolean("fp_source", true)
+}
+
+
+//true 东方财富 false 百度
+fun isRealTimeDataSource(context: Context): Boolean {
+    val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
+    return sp.getBoolean("realtime_data_source", true)
+}
+
+
+
 
 fun howDayShowZTFlag(context: Context): Int {
     val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
@@ -66,7 +84,6 @@ fun isActiveRateWithPopularity(context: Context): Boolean {
 }
 
 
-
 class SettingActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingBinding
 
@@ -84,6 +101,7 @@ class SettingActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySettingBinding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
+        setSupportActionBar(binding.toolbar)
         supportActionBar?.title = "设置"
 
         val sp = getSharedPreferences("app", Context.MODE_PRIVATE)
@@ -117,6 +135,24 @@ class SettingActivity : AppCompatActivity() {
             sp.edit().putBoolean("show_ST", isChecked).apply()
         }
 
+        val fpSource = sp.getBoolean("fp_source", true)
+        binding.fpSwitch.isChecked =fpSource
+        binding.fpSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+            sp.edit().putBoolean("fp_source", isChecked).apply()
+        }
+
+
+        val realDataSource = sp.getBoolean("realtime_data_source", true)
+        binding.realTimeSource.isChecked =realDataSource
+        binding.realTimeSource.setOnCheckedChangeListener { buttonView, isChecked ->
+            sp.edit().putBoolean("realtime_data_source", isChecked).apply()
+        }
+
+
+
+
+
+
         val focusLB = sp.getBoolean("focusLB", false)
         binding.focusLB.isChecked = focusLB
         binding.focusLB.setOnCheckedChangeListener { buttonView, isChecked ->
@@ -128,8 +164,8 @@ class SettingActivity : AppCompatActivity() {
         val trackingType = sp.getBoolean("trackingType", false)
         binding.trackingType.isChecked = trackingType
         binding.trackingType.setOnCheckedChangeListener { _, isChecked ->
-            sp.edit().putBoolean("trackingType", isChecked).apply()
-            Injector.trackerType=isChecked
+            sp.edit() { putBoolean("trackingType", isChecked) }
+            Injector.trackerType = isChecked
             Injector.startTracking()
         }
 
@@ -143,16 +179,17 @@ class SettingActivity : AppCompatActivity() {
 
         binding.showCurrentChg.isChecked = sp.getBoolean("show_current_chg", false)
         binding.showCurrentChg.setOnCheckedChangeListener { buttonView, isChecked ->
-            sp.edit().putBoolean("show_current_chg", isChecked).apply()
+            sp.edit() { putBoolean("show_current_chg", isChecked) }
         }
 
 
         binding.showNextChg.isChecked = sp.getBoolean("show_next_chg", false)
         binding.showNextChg.setOnCheckedChangeListener { buttonView, isChecked ->
-            sp.edit().putBoolean("show_next_chg", isChecked).apply()
+            sp.edit() { putBoolean("show_next_chg", isChecked) }
         }
 
-        binding.activeRateWithPopularity.isChecked = sp.getBoolean("active_rate_with_popularity", false)
+        binding.activeRateWithPopularity.isChecked =
+            sp.getBoolean("active_rate_with_popularity", false)
         binding.activeRateWithPopularity.setOnCheckedChangeListener { buttonView, isChecked ->
             sp.edit().putBoolean("active_rate_with_popularity", isChecked).apply()
         }
@@ -161,7 +198,7 @@ class SettingActivity : AppCompatActivity() {
 
         binding.showLianbanCount.isChecked = sp.getBoolean("show_lianban_count_flag", true)
         binding.showLianbanCount.setOnCheckedChangeListener { buttonView, isChecked ->
-            sp.edit().putBoolean("show_lianban_count_flag", isChecked).apply()
+            sp.edit() { putBoolean("show_lianban_count_flag", isChecked) }
         }
 
 
@@ -169,7 +206,7 @@ class SettingActivity : AppCompatActivity() {
         binding.howDayShowZTFlagEt.setText(day.toString())
         binding.howDayShowZTFlagConfirmBtn.setOnClickListener {
             val d = binding.howDayShowZTFlagEt.editableText.toString().toIntOrNull()
-            sp.edit().putInt("how_day_show_zt_flag", d ?: 1).apply()
+            sp.edit() { putInt("how_day_show_zt_flag", d ?: 1) }
 
         }
 
@@ -181,27 +218,42 @@ class SettingActivity : AppCompatActivity() {
                     val rsp = Gson().fromJson(s, FPResponse::class.java)
                     val list = mutableListOf<ZTReplayBean>()
                     rsp.data.forEach {
-                        val name = it.name
+                        val groupName = it.name
                         val reason = it.reason
-                        val date = it.date.replace("-", "").toInt()
+                        val date = it.date!!.replace("-", "").toInt()
                         it.list?.forEach {
-                            if (it == null) return@forEach
                             val code = it.code.removeSurrounding("\"", "\"").removePrefix("sz")
                                 .removePrefix("sh")
                             val expound = it.article.action_info.expound
-                            list.add(
-                                ZTReplayBean(
-                                    date,
-                                    code,
-                                    reason,
-                                    name,
-                                    expound,
-                                    if (it.article.action_info.time.contains(":")) it.article.action_info.time else "--:--:--"
-                                )
+                            val time =
+                                if (it.article.action_info.time?.contains(":") == true) it.article.action_info.time else "--:--:--"
+                            val bean = Injector.appDatabase.ztReplayDao().getZTReplay(date, code)
+
+                            val newBean = bean?.copy(
+                                time = if (time == "--:--:--") bean.time else time,
+                                groupName2 = groupName,
+                                reason2 = reason,
+                                expound2 = expound
+                            ) ?: ZTReplayBean(
+                                date,
+                                code,
+                                reason,
+                                groupName,
+                                expound,
+                                time,
+                                groupName2 = groupName,
+                                reason2 = reason,
+                                expound2 = expound
                             )
+
+
+                            list.add(newBean)
                         }
                     }
                     Injector.appDatabase.ztReplayDao().insertAll(list)
+                    launch(Dispatchers.Main){
+                        Toast.makeText(this@SettingActivity,"解析完成并保存", Toast.LENGTH_LONG).show()
+                    }
                 }
             }
 
@@ -212,11 +264,11 @@ class SettingActivity : AppCompatActivity() {
         binding.bksOkBtn.setOnClickListener {
             val codes = binding.bksEt.editableText.toString()
             val name = binding.bkNameEt.editableText.toString()
-            val code = sp.getInt("diy_bk_code", 10000)+1
+            val code = sp.getInt("diy_bk_code", 10000) + 1
 
             lifecycleScope.launch(Dispatchers.IO) {
-                Injector.appDatabase.diyBkDao().insert(DIYBk("BK$code", name, codes,""))
-                sp.edit().putInt("diy_bk_code",code).apply()
+                Injector.appDatabase.diyBkDao().insert(DIYBk("BK$code", name, codes, ""))
+                sp.edit() { putInt("diy_bk_code", code) }
             }
 
 

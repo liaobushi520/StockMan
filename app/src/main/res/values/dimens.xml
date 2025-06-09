@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="et_padding_height">5dp</dimen>
+    <dimen name="dp_rv_height">417dp</dimen>
+    <dimen name="dp_rv_width">200dp</dimen>
 </resources>

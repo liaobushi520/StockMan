@@ -8,6 +8,7 @@ import android.util.Log
 import androidx.room.*
 import com.liaobusi.stockman.Injector
 import com.liaobusi.stockman.STOCK_GREEN
+import com.liaobusi.stockman.isFPSource
 
 @Entity(primaryKeys = ["date"])
 data class AnalysisBean(
@@ -97,10 +98,15 @@ fun BK.openWeb(context: Context) {
 data class BKStock(val bkCode: String, val stockCode: String)
 
 @Entity
-data class Follow(@PrimaryKey val code: String, val type: Int , @ColumnInfo(defaultValue = "1") val stickyOnTop:Int=1)
+data class Follow(
+    @PrimaryKey val code: String,
+    val type: Int,
+    @ColumnInfo(defaultValue = "1") val stickyOnTop: Int = 1
+)
 
 @Entity
 data class Hide(@PrimaryKey val code: String, val type: Int)
+
 
 /***
  * @param name 名称
@@ -140,7 +146,6 @@ data class Stock(
     )
 
 
-
 fun Stock.openWeb(context: Context) {
     val s = "dfcf18://stock?market=${this.marketCode()}&code=${this.code}"
     val uri: Uri = Uri.parse(s)
@@ -149,7 +154,8 @@ fun Stock.openWeb(context: Context) {
 }
 
 fun Stock.openDragonTigerRank(context: Context) {
-    val s ="amihexin://backwash_userid=ApUBS&backwash_source=wxhy&backwash_hxapp=gsc&url=https%253A%252F%252Fdata.10jqka.com.cn%252Fmobile%252Ftransaction%252Findex.html%253FreOpen%253DstockDetail%2526stockCode%253D${this.code}&live_app=app_0&backwash_id=open"
+    val s =
+        "amihexin://backwash_userid=ApUBS&backwash_source=wxhy&backwash_hxapp=gsc&url=https%253A%252F%252Fdata.10jqka.com.cn%252Fmobile%252Ftransaction%252Findex.html%253FreOpen%253DstockDetail%2526stockCode%253D${this.code}&live_app=app_0&backwash_id=open"
     val uri: Uri = Uri.parse(s)
     val intent = Intent(Intent.ACTION_VIEW, uri)
     context.startActivity(intent)
@@ -157,8 +163,12 @@ fun Stock.openDragonTigerRank(context: Context) {
 
 //主板
 fun Stock.isMainBoard(): Boolean {
-    return this.code.startsWith("600" +
-            "") || this.code.startsWith("601")|| this.code.startsWith("603")|| this.code.startsWith("605")|| this.code.startsWith("000")|| this.code.startsWith("002")|| this.code.startsWith("001")|| this.code.startsWith("003")
+    return this.code.startsWith(
+        "600" +
+                ""
+    ) || this.code.startsWith("601") || this.code.startsWith("603") || this.code.startsWith("605") || this.code.startsWith(
+        "000"
+    ) || this.code.startsWith("002") || this.code.startsWith("001") || this.code.startsWith("003")
 }
 
 //创业板
@@ -168,7 +178,7 @@ fun Stock.isChiNext(): Boolean {
 
 //科创板
 fun Stock.isSTARMarket(): Boolean {
-    return this.code.startsWith("688")||this.code.startsWith("689")
+    return this.code.startsWith("688") || this.code.startsWith("689")
 }
 
 //北交所
@@ -181,11 +191,6 @@ fun Stock.isBJStockExchange(): Boolean {
 fun Stock.isST(): Boolean {
     return name.startsWith("ST") || name.startsWith("*")
 }
-
-
-
-
-
 
 
 fun Stock.marketCode(): Int {
@@ -285,10 +290,10 @@ val HistoryStock.longUpShadow: Boolean
 
 
 @Database(
-    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class, PopularityRank::class,DragonTigerRank::class],
-    version = 26,
+    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class, PopularityRank::class, DragonTigerRank::class],
+    version = 29,
     autoMigrations = [
-        AutoMigration(from = 25, to = 26)
+        AutoMigration(from = 28, to = 29)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -312,7 +317,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun popularityRankDao(): PopularityRankDao
 
-    abstract fun dragonTigerDao():DragonTigerDao
+    abstract fun dragonTigerDao(): DragonTigerDao
 
 
 //    @DeleteTable.Entries(value = [DeleteTable(tableName = "BK"),DeleteTable(tableName = "HistoryBK")])
@@ -328,15 +333,84 @@ data class ZTReplayBean(
     val reason: String,
     val groupName: String,
     val expound: String,
-    @ColumnInfo(defaultValue = "--:--:--") val time: String
+    @ColumnInfo(defaultValue = "--:--:--") val time: String,
+    @ColumnInfo(defaultValue = "") val groupName2: String = "",
+    @ColumnInfo(defaultValue = "") val reason2: String = "",
+    @ColumnInfo(defaultValue = "") val expound2: String = "",
 )
+
+val ZTReplayBean.isYiZIBan: Boolean
+    get() {
+        try {
+            val s = time.replace(":", "").toInt()
+            if (s <= 93000) {
+                return true
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+        return false
+    }
+
+
+val ZTReplayBean.groupNameV: String
+    get() {
+        if (isFPSource(Injector.context)) {
+            if (groupName.isEmpty()){
+                return  groupName2
+            }
+            return groupName
+        } else {
+            return if (groupName2.isEmpty()) {
+                return groupName
+            } else {
+                groupName2
+            }
+        }
+    }
+
+
+val ZTReplayBean.reasonV: String
+    get() {
+        if (isFPSource(Injector.context)) {
+            if (groupName.isEmpty()){
+                return reason2
+            }
+            return reason
+        } else {
+            return if (groupName2.isEmpty()) {
+                return reason
+            } else {
+                reason2
+            }
+        }
+    }
+
+
+val ZTReplayBean.expoundV: String
+    get() {
+        if (isFPSource(Injector.context)) {
+            if (groupName.isEmpty()) {
+                return expound2
+            }
+            return expound
+        } else {
+            return if (groupName2.isEmpty()) {
+                return expound
+            } else {
+                expound2
+            }
+        }
+    }
+
 
 @Entity
 data class DIYBk(
     @PrimaryKey val code: String,
     val name: String,
     val bkCodes: String,
-    @ColumnInfo(defaultValue = "") val dsp: String
+    @ColumnInfo(defaultValue = "") val dsp: String,
+    @ColumnInfo(defaultValue = "") val stockCodes: String=""
 )
 
 
@@ -351,7 +425,7 @@ data class Data2(
     val action_field_id: String,
     val count: Int,
     val create_time: String,
-    val date: String,
+    val date: String?,
     val delete_time: Any,
     val is_delete: String,
     val list: List<ArticleWrap>?,
@@ -401,7 +475,7 @@ data class ActionInfo(
     val shares_range: Double,
     val sort_no: Int,
     val stock_id: String,
-    val time: String,
+    val time: String?,
     val update_time: Any
 )
 
@@ -412,12 +486,24 @@ data class User(
 )
 
 @Entity(primaryKeys = ["date", "code"])
-data class PopularityRank(val code: String, val date: Int, val rank: Int,@ColumnInfo(defaultValue = "-1") val thsRank:Int,@ColumnInfo(defaultValue = "-1") val tgbRank:Int,@ColumnInfo(defaultValue = "无") val explain:String,@ColumnInfo(defaultValue = "-1") val dzhRank:Int,@ColumnInfo(defaultValue = "-1") val clsRank:Int)
+data class PopularityRank(
+    val code: String,
+    val date: Int,
+    val rank: Int,
+    @ColumnInfo(defaultValue = "-1") val thsRank: Int,
+    @ColumnInfo(defaultValue = "-1") val tgbRank: Int,
+    @ColumnInfo(defaultValue = "无") val explain: String,
+    @ColumnInfo(defaultValue = "-1") val dzhRank: Int,
+    @ColumnInfo(defaultValue = "-1") val clsRank: Int
+)
 
 @Entity(primaryKeys = ["date", "code"])
-data class DragonTigerRank(val code: String, val date: Int,   val explanation:String)
-
-
+data class DragonTigerRank(
+    val code: String,
+    val date: Int,
+    val explanation: String,
+    @ColumnInfo(defaultValue = "") val tags: String = ""
+)
 
 
 data class THSFPResponse(

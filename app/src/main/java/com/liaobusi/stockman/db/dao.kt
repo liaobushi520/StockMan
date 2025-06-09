@@ -70,6 +70,7 @@ interface DragonTigerDao{
 
     @Delete
     fun delete(list:List<DragonTigerRank>)
+
     @Query("select * from dragontigerrank where date=:date")
     fun getDragonTigerByDate(date: Int):List<DragonTigerRank>
 
@@ -297,7 +298,7 @@ interface HistoryStockDao {
     @Query("select * from historystock where code=:code AND date =:date")
     fun getHistoryByDate3(code: String, date: Int ): HistoryStock
 
-    @Query("select * from historystock where closePrice=0.0")
+    @Query("select * from historystock where closePrice=0.0 or date<=20110504")
     fun getErrorHistory(): List<HistoryStock>
 
     @Transaction
@@ -316,7 +317,7 @@ interface ZTReplayDao {
     fun insertAll(list: List<ZTReplayBean>)
 
     @Query("select * from ztreplaybean where date=:date AND code=:code limit 1")
-    fun getZTReplay(date: Int, code: String): ZTReplayBean
+    fun getZTReplay(date: Int, code: String): ZTReplayBean?
 
 }
 

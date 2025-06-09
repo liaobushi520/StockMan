@@ -22,16 +22,20 @@ import android.view.View
 import android.view.View.OnAttachStateChangeListener
 import android.view.ViewGroup
 import android.widget.PopupWindow
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.liaobusi.stockman.Strategy4Activity.Companion.openJXQSStrategy
 import com.liaobusi.stockman.databinding.ActivityStrategy4Binding
+import com.liaobusi.stockman.databinding.FragmentDiyBkBinding
 import com.liaobusi.stockman.databinding.FragmentStockInfoBinding
+import com.liaobusi.stockman.databinding.ItemDiyBkBinding
 import com.liaobusi.stockman.databinding.ItemFollowBinding
 import com.liaobusi.stockman.databinding.ItemStockBinding
 import com.liaobusi.stockman.databinding.ItemStockInfoBkBinding
@@ -84,13 +88,15 @@ class Strategy4Activity : AppCompatActivity() {
             R.id.refresh -> {
                 lifecycleScope.launch(Dispatchers.IO) {
                     StockRepo.refreshData()
-                    launch(Dispatchers.Main) {
-                        binding.chooseStockBtn.callOnClick()
-                    }
                     val endTime = binding.endTimeTv.editableText.toString().toIntOrNull() ?: today()
                     StockRepo.fetchZTReplay2(date = endTime)
                     StockRepo.fetchDragonTigerRank(endTime)
+                    StockRepo.getRealTimeIndexByCode("2.932000")
                     Injector.refreshPopularityRanking()
+                    launch(Dispatchers.Main) {
+                        delay(2000)
+                        binding.chooseStockBtn.callOnClick()
+                    }
 
                 }
                 return true
@@ -104,17 +110,15 @@ class Strategy4Activity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityStrategy4Binding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
-
+        setSupportActionBar(binding.toolbar)
         binding.rv.layoutManager = LinearLayoutManager(this@Strategy4Activity)
         binding.rv.adapter = ResultAdapter()
-
-
         supportActionBar?.title = "均线强势"
 
 
         var fromBKStrategyActivity = false
         if (intent.hasExtra("bk")) {
-            val bk = intent.getStringExtra("bk")
+            val bk = intent.getStringExtra("bk")?.ifEmpty { "ALL" }
             binding.conceptAndBKTv.setText(bk)
             binding.lowMarketValue.setText("0.0")
             binding.highMarketValue.setText("1000000.0")
@@ -339,10 +343,12 @@ class Strategy4Activity : AppCompatActivity() {
             if (binding.onlyActiveRateCb.isChecked) {
                 binding.divergeRateTv.setText("0.0")
                 binding.allowBelowCountTv.setText(timeRange.toString())
-            } else {
-                binding.divergeRateTv.setText("0.0")
-                binding.allowBelowCountTv.setText("0")
             }
+
+//            else {
+//                binding.divergeRateTv.setText("0.0")
+//                binding.allowBelowCountTv.setText("0")
+//            }
 
             val allowBelowCount =
                 binding.allowBelowCountTv.editableText.toString().toIntOrNull()
@@ -603,6 +609,8 @@ class Strategy4Activity : AppCompatActivity() {
 
         }
 
+        binding.line5Btn.callOnClick()
+
 
     }
 
@@ -642,7 +650,8 @@ class Strategy4Activity : AppCompatActivity() {
 
             )
             list.zz2000 =
-                Injector.appDatabase.historyBKDao().getHistoryByDate3("932000", date = strictParam.endTime)
+                Injector.appDatabase.historyBKDao()
+                    .getHistoryByDate3("932000", date = strictParam.endTime)
             output(list)
         }
     }
@@ -1011,7 +1020,7 @@ class Strategy4Activity : AppCompatActivity() {
                 r = r.filter { it.zt }
                 var i = 0
                 val listPair =
-                    r.groupBy { it.ztReplay?.groupName ?: "" }.values.toMutableList().map {
+                    r.groupBy { it.ztReplay?.groupNameV ?: "" }.values.toMutableList().map {
                         var h = 1
                         it.forEach {
                             if (it.lianbanCount > h) {
@@ -1125,9 +1134,11 @@ class Strategy4Activity : AppCompatActivity() {
                         ForegroundColorSpan(STOCK_GREEN),
                         SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
                     ).append(
-                        ("   " + strategyResult.zz2000?.chg?.toString()),ForegroundColorSpan(
-                        strategyResult.zz2000?.color?:Color.TRANSPARENT),
-                        SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE)
+                        ("   " + strategyResult.zz2000?.chg?.toString()), ForegroundColorSpan(
+                            strategyResult.zz2000?.color ?: Color.TRANSPARENT
+                        ),
+                        SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
+                    )
             binding.resultCount.text = resultText
 
             (binding.rv.adapter as ResultAdapter).setData(
@@ -1138,15 +1149,12 @@ class Strategy4Activity : AppCompatActivity() {
     }
 
 
-    inner class ResultAdapter(
-
-    ) :
+    inner class ResultAdapter() :
         RecyclerView.Adapter<ResultAdapter.VH>() {
 
         private val data = mutableListOf<StockResult>()
 
         private var popularitySort: Int = 0
-
 
         fun setData(data: MutableList<StockResult>, popularitySort: Int = 0) {
             this.data.clear()
@@ -1240,6 +1248,7 @@ class Strategy4Activity : AppCompatActivity() {
                     binding.root.setBackgroundColor(0xffffffff.toInt())
                     binding.colorView.visibility = View.GONE
                     binding.groupHeaderLL.visibility = View.VISIBLE
+                    binding.dtTagsLL.visibility=View.GONE
                     binding.contentLL.visibility = View.GONE
                     binding.expoundTv.visibility = View.GONE
                     binding.dragonFlagIv.visibility = View.GONE
@@ -1247,20 +1256,28 @@ class Strategy4Activity : AppCompatActivity() {
                     binding.stockName.setOnClickListener(null)
                     binding.groupHeaderTv.setTextColor(result.groupColor)
                     binding.groupHeaderTv2.setTextColor(result.groupColor)
-                    if (result.ztReplay != null && result.ztReplay!!.groupName.isNotEmpty()) {
-                        binding.groupHeaderTv.text = result.ztReplay!!.groupName
+                    if (result.ztReplay != null && result.ztReplay!!.groupNameV.isNotEmpty()) {
+                        binding.groupHeaderTv.text = result.ztReplay!!.groupNameV
                         binding.groupHeaderTv.visibility = View.VISIBLE
                     } else {
                         binding.groupHeaderTv.visibility = View.GONE
                     }
-                    if (result.ztReplay != null && result.ztReplay!!.reason.length > 1) {
+                    if (result.ztReplay != null && result.ztReplay!!.reasonV.length > 1) {
                         binding.groupHeaderTv2.visibility = View.VISIBLE
-                        binding.groupHeaderTv2.text = result.ztReplay!!.reason
+                        binding.groupHeaderTv2.text = result.ztReplay!!.reasonV
                     } else {
                         binding.groupHeaderTv2.visibility = View.GONE
                     }
+
+                    binding.root.setOnLongClickListener {
+                        return@setOnLongClickListener true
+                    }
+
                     return
                 }
+
+
+
                 binding.groupHeaderLL.visibility = View.GONE
                 binding.contentLL.visibility = View.VISIBLE
                 binding.stockName.setOnClickListener(null)
@@ -1317,10 +1334,41 @@ class Strategy4Activity : AppCompatActivity() {
                     if (result.ztReplay != null && result.expandReason) {
                         this.expoundTv.visibility = View.VISIBLE
                         this.expoundTv.text =
-                            "${result.ztReplay!!.time}\n${result.ztReplay!!.expound}"
+                            "${result.ztReplay!!.time}\n${result.ztReplay!!.expoundV}"
                     } else {
                         this.expoundTv.visibility = View.GONE
                     }
+
+                    //一字板
+                    if (result.ztReplay != null && result.ztReplay!!.isYiZIBan) {
+                        binding.yizibanView.visibility = View.VISIBLE
+                    } else {
+                        binding.yizibanView.visibility = View.GONE
+                    }
+
+                    binding.dtTagsLL.children.toList().forEach {
+                        it.visibility=View.GONE
+                    }
+                    //龙虎榜游资机构买卖标签
+                    if (result.dargonTigerRank?.tags?.isNotEmpty() == true) {
+                        binding.dtTagsLL.visibility = View.VISIBLE
+                        binding.tv0.visibility=View.GONE
+                        val tags = result.dargonTigerRank?.tags
+                        val tagList = tags!!.split(":")
+
+                        tagList.forEachIndexed { index, item ->
+                            val child = binding.dtTagsLL.getChildAt(index) as TextView
+                            child.text = item
+                            if (item.contains("买")){
+                                child.setTextColor(Color.RED)
+                            }else if(item.contains("卖")){
+                                child.setTextColor(STOCK_GREEN)
+                            }
+                            child.visibility=View.VISIBLE
+                        } }else{
+                        binding.dtTagsLL.visibility=View.GONE
+                    }
+
 
                     if (result.expandPOPReason && result.popularity != null) {
                         this.popReasonTv.visibility = View.VISIBLE
@@ -1421,7 +1469,7 @@ class Strategy4Activity : AppCompatActivity() {
 
 
                     this.nextDayIv.visibility =
-                        if (result.nextDayZT || result.nextDayCry) View.VISIBLE else View.INVISIBLE
+                        if (result.nextDayZT || result.nextDayCry) View.VISIBLE else View.GONE
                     if (result.nextDayCry) {
                         this.nextDayIv.setImageResource(R.drawable.ic_cry)
                     }
@@ -1486,6 +1534,13 @@ class Strategy4Activity : AppCompatActivity() {
                             val p = data.indexOf(result)
                             result.expandReason = !result.expandReason
                             notifyItemChanged(p)
+                            pw.dismiss()
+                        }
+                        b.joinBtn.setOnClickListener {
+                            DIYBKDialogFragment2(result.stock).show(
+                                this@Strategy4Activity.supportFragmentManager,
+                                "diy_bk"
+                            )
                             pw.dismiss()
                         }
 
@@ -1644,6 +1699,14 @@ class StockInfoFragment(private val stock: Stock, private val date: String) : Di
                         bkCodeName.setOnClickListener {
                             bk.openWeb(requireContext())
                         }
+                        bkCodeName.setOnLongClickListener {
+                            this@StockInfoFragment.parentFragmentManager
+                            DIYBKDialogFragment(bk).show(
+                                this@StockInfoFragment.parentFragmentManager,
+                                "diy_bk"
+                            )
+                            return@setOnLongClickListener true
+                        }
                         bkCb.setOnCheckedChangeListener { buttonView, isChecked ->
                             if (isChecked) {
                                 if (!resultList.contains(bk.code)) {
@@ -1688,6 +1751,149 @@ class StockInfoFragment(private val stock: Stock, private val date: String) : Di
 
 
 }
+
+
+class DIYBKDialogFragment2(private val stock: Stock) : DialogFragment() {
+
+    private lateinit var binding: FragmentDiyBkBinding
+
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        binding = FragmentDiyBkBinding.inflate(inflater)
+        binding.rv.layoutManager = LinearLayoutManager(binding.rv.context)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val list = Injector.appDatabase.diyBkDao().getDIYBks()
+            launch(Dispatchers.Main) {
+                binding.rv.adapter = DIYBKAdapter2(list.map {
+                    SelectableItem(it, it.stockCodes.contains(stock.code, true))
+                }.toMutableList())
+            }
+
+        }
+
+        binding.cancelBtn.setOnClickListener {
+            dismiss()
+        }
+
+        binding.okBtn.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.IO) {
+                (binding.rv.adapter as DIYBKAdapter2).save(stock)
+                dismiss()
+            }
+
+        }
+
+        binding.bkCodeName.text = stock.code + "-" + stock.name
+
+        binding.createBkBtn.setOnClickListener {
+            val name = binding.diyBkName.editableText.toString()
+            if (name.isEmpty()){
+                Toast.makeText(this.context,"请输入板块名称", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val codes = stock.code
+            val code = Injector.sp.getInt("diy_bk_code", 10000) + 1
+            val dsp = stock.code + "(${stock.name})"
+            binding.diyBkName.setText("")
+            val item = DIYBk("BK$code", name, "", dsp,codes)
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                Injector.appDatabase.diyBkDao().insert(item)
+                Injector.sp.edit().putInt("diy_bk_code", code).apply()
+                launch(Dispatchers.Main) {
+                    (binding.rv.adapter as DIYBKAdapter2).add(SelectableItem(item, true))
+                }
+
+            }
+
+        }
+
+        return binding.root
+    }
+
+
+    inner class DIYBKAdapter2(private val list: MutableList<SelectableItem<DIYBk>>) :
+        RecyclerView.Adapter<DIYBKAdapter2.VH>() {
+
+        fun add(item: SelectableItem<DIYBk>) {
+            list.add(item)
+            notifyItemInserted(list.size - 1)
+        }
+
+
+        fun save(stock: Stock) {
+            list.forEach {
+                if (it.selected) {
+                    if (!it.data.stockCodes.contains(stock.code)) {
+                        val newStockCodes = it.data.stockCodes + ",${stock.code}"
+                        val newDsp = it.data.dsp + ",${stock.code}(${stock.name})"
+                        val newBean = it.data.copy(stockCodes = newStockCodes.removePrefix(","), dsp = newDsp.removePrefix(","))
+                        Injector.appDatabase.diyBkDao().insert(newBean)
+                    }
+                } else {
+                    if (it.data.stockCodes.contains(stock.code)) {
+                        val l=it.data.stockCodes.split(",").toMutableList()
+                        val newCodes=kotlin.text.StringBuilder()
+                        l.filter { it!=stock.code}.forEach {
+                            newCodes.append(it).append(",")
+                        }
+                        val newDsp=kotlin.text.StringBuilder()
+                        val dspList=it.data.dsp.split(",").toMutableList()
+                        dspList.filter { !it.contains(stock.code) }.forEach {
+                            newDsp.append(it).append(",")
+                        }
+                        val newBean = it.data.copy(stockCodes = newCodes.removeSuffix(",").toString(), dsp = newDsp.removeSuffix(",").toString())
+                        Injector.appDatabase.diyBkDao().insert(newBean)
+                    }
+                }
+            }
+        }
+
+        inner class VH(private val itemBinding: ItemDiyBkBinding) :
+            RecyclerView.ViewHolder(itemBinding.root) {
+            fun bind(item: SelectableItem<DIYBk>, position: Int) {
+                itemBinding.apply {
+                    cb.setOnCheckedChangeListener(null)
+                    codeNameTv.text = item.data.code + "-" + item.data.name
+
+                    cb.isChecked = item.selected
+                    codes.text = item.data.dsp
+                    cb.setOnCheckedChangeListener { _, isChecked ->
+                        item.selected = isChecked
+                    }
+
+                }
+            }
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+            return VH(
+                ItemDiyBkBinding.inflate(
+                    LayoutInflater.from(parent.context),
+                    parent,
+                    false
+                )
+            )
+        }
+
+        override fun getItemCount(): Int {
+            return list.size
+        }
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            holder.bind(list[position], position)
+        }
+    }
+
+
+}
+
+
 
 
 

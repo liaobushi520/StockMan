@@ -10,6 +10,8 @@ import android.text.SpannableStringBuilder
 import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -41,6 +43,7 @@ import com.liaobusi.stockman.db.isChiNext
 import com.liaobusi.stockman.db.isMainBoard
 import com.liaobusi.stockman.db.isST
 import com.liaobusi.stockman.db.isSTARMarket
+import com.liaobusi.stockman.db.isYiZIBan
 import com.liaobusi.stockman.db.openDragonTigerRank
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.repo.BKResult
@@ -65,11 +68,44 @@ import kotlin.math.min
 class FPActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityFpactivityBinding
+
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.page_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.refresh -> {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    StockRepo.refreshData()
+                    launch(Dispatchers.Main) {
+                        binding.chooseStockBtn.callOnClick()
+                    }
+                    val endTime = binding.endTimeTv.editableText.toString().toIntOrNull() ?: today()
+                    StockRepo.fetchZTReplay2(date = endTime)
+                    StockRepo.fetchDragonTigerRank(endTime)
+                    Injector.refreshPopularityRanking()
+                }
+                return true
+            }
+
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+
+
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         binding = ActivityFpactivityBinding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.title = "复盘"
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -444,12 +480,13 @@ class FPActivity : AppCompatActivity() {
             r = mutableListOf<BKResult>().apply { addAll(r) }
 
             if (!binding.conceptCb.isChecked) {
-                r = r.filter { it.bk.type != 1 }
+                r = r.filter { it.bk.type < 1 }
             }
 
             if (!binding.tradeCb.isChecked) {
                 r = r.filter { it.bk.type != 0 }
             }
+
 
 
 
@@ -802,9 +839,7 @@ class FPActivity : AppCompatActivity() {
     }
 
 
-    inner class StockAdapter(
-
-    ) :
+    inner class StockAdapter() :
         RecyclerView.Adapter<StockAdapter.VH>() {
 
         private val data = mutableListOf<StockResult>()
@@ -836,59 +871,57 @@ class FPActivity : AppCompatActivity() {
 
         override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
             super.onAttachedToRecyclerView(recyclerView)
-            job = lifecycleScope.launch(Dispatchers.IO) {
-                while (true) {
-                    delay(1200)
-                    if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE || !Injector.activityActive) {
-                        continue
-                    }
-                    val lm = recyclerView.layoutManager as LinearLayoutManager
-                    val firstPos = lm.findFirstVisibleItemPosition()
-                    val lastPos = lm.findLastVisibleItemPosition()
-                    if (firstPos == RecyclerView.NO_POSITION || lastPos == RecyclerView.NO_POSITION) {
-                        continue
-                    }
+            if (Injector.isTradingTime()){
+                job = lifecycleScope.launch(Dispatchers.IO) {
+                    while (true) {
+                        delay(1200)
 
-
-                    if (data.size > 0) {
-                        for (i in firstPos until lastPos + 1) {
-
-                            val result = data[i]
-                            if (result.currentDayHistory != null && !result.isGroupHeader) {
-                                val s =
-                                    Injector.appDatabase.stockDao()
-                                        .getStockByCode(result.stock.code)
-                                val h = Injector.appDatabase.historyStockDao().getHistoryByDate3(
-                                    result.stock.code,
-                                    result.currentDayHistory!!.date
-                                )
-                                val n =
-                                    if (result.nextDayHistory != null) Injector.appDatabase.historyStockDao()
-                                        .getHistoryByDate3(
-                                            result.stock.code,
-                                            result.nextDayHistory!!.date
-                                        ) else null
-                                if (h.chg != result.currentDayHistory!!.chg || n?.chg != result.nextDayHistory?.chg) {
-                                    val changeRate =
-                                        if (h.chg != result.currentDayHistory!!.chg) (h.chg - result.currentDayHistory!!.chg)
-                                        else (if (n == null || result.nextDayHistory == null) 0f
-                                        else n.chg - result.nextDayHistory!!.chg)
-                                    data[i] = result.copy(
-                                        stock = s,
-                                        currentDayHistory = h,
-                                        nextDayHistory = n,
-                                        changeRate = changeRate
+                        if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE || !Injector.activityActive) {
+                            continue
+                        }
+                        val lm = recyclerView.layoutManager as LinearLayoutManager
+                        val firstPos = lm.findFirstVisibleItemPosition()
+                        val lastPos = lm.findLastVisibleItemPosition()
+                        if (firstPos == RecyclerView.NO_POSITION || lastPos == RecyclerView.NO_POSITION) {
+                            continue
+                        }
+                        if (data.isNotEmpty()) {
+                            for (i in firstPos until lastPos + 1) {
+                                val result = data[i]
+                                if (result.currentDayHistory != null && !result.isGroupHeader) {
+                                    val s =
+                                        Injector.appDatabase.stockDao()
+                                            .getStockByCode(result.stock.code)
+                                    val h = Injector.appDatabase.historyStockDao().getHistoryByDate3(
+                                        result.stock.code,
+                                        result.currentDayHistory!!.date
                                     )
-                                    launch(Dispatchers.Main) {
-                                        notifyItemChanged(i)
-                                    }
+                                    val n =
+                                        if (result.nextDayHistory != null) Injector.appDatabase.historyStockDao()
+                                            .getHistoryByDate3(
+                                                result.stock.code,
+                                                result.nextDayHistory!!.date
+                                            ) else null
+                                    if (h.chg != result.currentDayHistory!!.chg || n?.chg != result.nextDayHistory?.chg) {
+                                        val changeRate =
+                                            if (h.chg != result.currentDayHistory!!.chg) (h.chg - result.currentDayHistory!!.chg)
+                                            else (if (n == null || result.nextDayHistory == null) 0f
+                                            else n.chg - result.nextDayHistory!!.chg)
+                                        data[i] = result.copy(
+                                            stock = s,
+                                            currentDayHistory = h,
+                                            nextDayHistory = n,
+                                            changeRate = changeRate
+                                        )
+                                        launch(Dispatchers.Main) {
+                                            notifyItemChanged(i)
+                                        }
 
+                                    }
                                 }
                             }
                         }
                     }
-
-
                 }
             }
         }
@@ -967,6 +1000,14 @@ class FPActivity : AppCompatActivity() {
                         this.popReasonTv.text = "${result.popularity?.explain}"
                     } else {
                         this.popReasonTv.visibility = View.GONE
+                    }
+
+
+                    //一字板
+                    if (result.ztReplay != null && result.ztReplay!!.isYiZIBan) {
+                        binding.yizibanView.visibility = View.VISIBLE
+                    } else {
+                        binding.yizibanView.visibility = View.GONE
                     }
 
                     if (isShowLianBanFlag(binding.root.context)) {
@@ -1053,7 +1094,7 @@ class FPActivity : AppCompatActivity() {
 
 
                     this.nextDayIv.visibility =
-                        if (result.nextDayZT || result.nextDayCry) View.VISIBLE else View.INVISIBLE
+                        if (result.nextDayZT || result.nextDayCry) View.VISIBLE else View.GONE
                     if (result.nextDayCry) {
                         this.nextDayIv.setImageResource(R.drawable.ic_cry)
                     }

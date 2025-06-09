@@ -1,0 +1,14 @@
+{
+  "applications": {
+    "gecko": {
+      "id": "stockman@liaobusi.com"
+    }
+  },
+  "manifest_version": 2,
+  "name": "Network Interceptor",
+  "version": "1.0",
+  "permissions": ["webRequest", "webRequestBlocking", "<all_urls>","nativeMessaging"],
+  "background": {
+    "scripts": ["background.js"]
+  }
+}

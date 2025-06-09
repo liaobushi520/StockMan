@@ -3,7 +3,6 @@ package com.liaobusi.stockman.repo
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.DiscretePathEffect
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
@@ -12,13 +11,15 @@ import android.util.LruCache
 import android.widget.Toast
 
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.liaobusi.stockman.*
-import com.liaobusi.stockman.api.DataX
-import com.liaobusi.stockman.api.FPRequest
+import com.liaobusi.stockman.api.DragonTiger2Item
+import com.liaobusi.stockman.api.FS
+import com.liaobusi.stockman.api.Rank
+import com.liaobusi.stockman.api.RankWrapper
+import com.liaobusi.stockman.api.SZ_BZ_FS
 import com.liaobusi.stockman.api.StockService
 import com.liaobusi.stockman.api.StockTrend
-import com.liaobusi.stockman.api.THSStock
+import com.liaobusi.stockman.api.TempWrapper
 import com.liaobusi.stockman.api.getDefaultSpecificDataBean
 import com.liaobusi.stockman.db.*
 import kotlinx.coroutines.*
@@ -28,11 +29,6 @@ import java.io.InputStreamReader
 import java.lang.Integer.min
 import java.lang.Math.max
 import java.text.SimpleDateFormat
-import java.time.DayOfWeek
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.util.*
 import kotlin.math.atan
 import kotlin.math.pow
@@ -153,10 +149,13 @@ object StockRepo {
             val listResponse = api.getAllTabList(date)
             if (listResponse.status_code == 0) {
                 listResponse.data.tab_list.forEach {
-                    val tabName = it.tab_name
+                    val groupName = it.tab_name
                     it.tab_data.forEach {
                         val code = it.stock_code
                         val fp = map[code]
+
+                        val bean = Injector.appDatabase.ztReplayDao().getZTReplay(date, code)
+
                         if (fp != null) {
                             val expound = "【" + fp.reason_type + "】\n" + fp.reason_info
                             val time = timestampToDate(fp.first_limit_up_time.toLong() * 1000)
@@ -165,9 +164,12 @@ object StockRepo {
                                     date,
                                     code,
                                     it.abnormal_reason ?: "",
-                                    tabName,
+                                    groupName,
                                     expound,
-                                    time
+                                    time,
+                                    groupName2 = bean?.groupName2 ?: "",
+                                    reason2 = bean?.reason2 ?: "",
+                                    expound2 = bean?.expound2 ?: ""
                                 )
                             )
                         } else {
@@ -176,9 +178,12 @@ object StockRepo {
                                     date,
                                     code,
                                     it.abnormal_reason ?: "",
-                                    tabName,
+                                    groupName,
                                     "",
-                                    "--:--:--"
+                                    time = bean?.time ?: "--:--:--",
+                                    groupName2 = bean?.groupName2 ?: "",
+                                    reason2 = bean?.reason2 ?: "",
+                                    expound2 = bean?.expound2 ?: ""
                                 )
                             )
                             codes.add("${it.market}:${it.stock_code}")
@@ -612,13 +617,17 @@ object StockRepo {
         val bkStockDao = Injector.appDatabase.bkStockDao()
         val l = bkDao.getAllBK().filter { !it.specialBK && it.code != "000001" }.compute { bk ->
             val fs = "b:" + bk.code
-            val response = api.getBKStocks(fs)
-            if (response.data != null) {
-                val list = response.data.diff.map {
-                    return@map BKStock(bk.code, it.code)
+            try {
+                val response = api.getBKStocks(fs)
+                if (response.data != null) {
+                    val list = response.data.diff.map {
+                        return@map BKStock(bk.code, it.code)
+                    }
+                    Log.i("股票超人", "获取板块${bk.name}-${bk.code}股票列表数据,共${list.size}条")
+                    return@compute list
                 }
-                Log.i("股票超人", "获取板块${bk.name}-${bk.code}股票列表数据,共${list.size}条")
-                return@compute list
+            } catch (e: Throwable) {
+                e.printStackTrace()
             }
             return@compute null
         }
@@ -859,7 +868,7 @@ object StockRepo {
             dao1.insertHistory(shHistory)
             Log.i("股票超人", "从网络获取${codeWithMarket}指数数据${sh}")
 
-        }catch (e:Throwable){
+        } catch (e: Throwable) {
             e.printStackTrace()
         }
 
@@ -876,7 +885,7 @@ object StockRepo {
             val dao1 = Injector.appDatabase.historyBKDao()
             val api = Injector.retrofit.create(StockService::class.java)
 
-            listOf(0, 1, 2, 3).forEach { type ->
+            listOf(0, 1, 2, 3, 4, 5, 6, 7).forEach { type ->
                 val response =
                     if (type == 0) api.getRealTimeTradeBK() else api.getRealTimeConceptBK(type)
                 if (response.data != null) {
@@ -893,7 +902,7 @@ object StockRepo {
                             openPrice = it.openPrice,
                             yesterdayClosePrice = it.yesterdayClosePrice,
                             circulationMarketValue = it.circulationMarketValue,
-                            type = type
+                            type = if (type == 0) 0 else 1
                         )
                     }
                     bks.addAll(list)
@@ -928,9 +937,11 @@ object StockRepo {
     }
 
     suspend fun getRealTimeStockData(code: String) = withContext(Dispatchers.IO) {
-        val response = Injector.retrofit.create(StockService::class.java).getRealTimeStockData(code)
-        val reader = BufferedReader(InputStreamReader(response.byteStream()))
+        var reader: BufferedReader? = null
         try {
+            val response =
+                Injector.retrofit.create(StockService::class.java).getRealTimeStockData(code)
+            reader = BufferedReader(InputStreamReader(response.byteStream()))
             val results = StringBuilder()
             while (true) {
                 val line = reader.readLine() ?: break
@@ -954,52 +965,64 @@ object StockRepo {
         } catch (e: Throwable) {
             e.printStackTrace()
         } finally {
-            reader.close()
+            reader?.close()
         }
     }
 
 
-    private suspend fun getRealTimeStocks2(start: Int, end: Int) = withContext(Dispatchers.IO) {
+     
+    //上海证券交易所
+    suspend fun getRealTimeStocksSH() = withContext(Dispatchers.IO) {
         val newList = mutableListOf<Stock>()
         var date = 0
-        for (index in start until end) {
-            try {
-                val response =
-                    Injector.retrofit.create(StockService::class.java).getRealTimeStocks(index)
-                if (response.data != null) {
-                    date = response.data.diff.first().date
-                    val list = response.data.diff.filter { it.price != 0f }.map {
-                        val stock = Stock(
-                            code = it.code,
-                            name = it.name,
-                            turnoverRate = it.turnoverRate / 100,
-                            highest = it.highest / 100,
-                            lowest = it.lowest / 100,
-                            price = it.price / 100,
-                            chg = it.chg / 100,
-                            amplitude = it.amplitude / 100,
-                            openPrice = it.openPrice / 100,
-                            yesterdayClosePrice = it.yesterdayClosePrice / 100,
-                            toMarketTime = it.toMarketTime,
-                            circulationMarketValue = it.circulationMarketValue,
-                            ztPrice = it.ztPrice / 100,
-                            dtPrice = it.dtPrice / 100,
-                            averagePrice = it.averagePrice / 100,
-                            bk = it.concept
-                        )
-                        if (!Injector.trackerType)
-                            Injector.trackerMap[stock.code]?.update(stock)
-                        return@map stock
-                    }
-                    newList.addAll(list)
+
+        try {
+            val map = mutableMapOf<String, TempWrapper>()
+            val codes = mutableListOf<String>()
+            val rsp = Injector.apiService.getRealTimeStocks3()
+            date = rsp.date
+            rsp.list.forEach {
+                val code = it[0] as String
+                val chg = it[7].toString().toFloatOrNull()
+                val price = it[5].toString().toFloatOrNull()
+                val amplitude = it[12].toString().toFloatOrNull()
+                val highest = it[3].toString().toFloatOrNull()
+                val lowest = it[4].toString().toFloatOrNull()
+                if (chg != null && price != null && amplitude != null && highest != null && lowest != null && price != 0f) {
+                    codes.add(code)
+
+
+                    map[code] = TempWrapper(
+                        price = price,
+                        chg = chg,
+                        amplitude = amplitude,
+                        highest = highest,
+                        lowest = lowest
+                    )
                 }
-            } catch (e: Throwable) {
-                e.printStackTrace()
             }
+            val l = Injector.appDatabase.stockDao().getStockByCodes(codes)
+            val stocks = l.map {
+                val rank = map[it.code]
+                val stock = it.copy(
+                    price = rank!!.price,
+                    amplitude = rank.amplitude / 100f,
+                    chg = rank.chg,
+                    highest = rank.highest,
+                    lowest = rank.lowest
+                )
+                if (!Injector.trackerType) {
+                    Injector.trackerMap[stock.code]?.update(stock)
+                }
+                return@map stock
+            }
+            newList.addAll(stocks)
+        } catch (e: Throwable) {
+            e.printStackTrace()
         }
 
-        Log.i("股票超人", "从网络获取股票${newList.size}")
 
+        Log.i("股票超人", "从上海证券接口获取股票${newList.size}")
         if (Injector.trackerType) {
             newList.forEach {
                 Injector.realTimeStockMap[it.code] = it
@@ -1009,7 +1032,7 @@ object StockRepo {
         if (newList.isNotEmpty() && date != 0) {
             val dao = Injector.appDatabase.stockDao()
             dao.insertAll(newList)
-            Log.i("股票超人", "插入股票信息数据库")
+            Log.i("股票超人", "插入股票数据库，来源上海证券")
             val dao1 = Injector.appDatabase.historyStockDao()
             val historyStocks = newList.filter { it.price != 0f }.map {
                 return@map HistoryStock(
@@ -1029,96 +1052,298 @@ object StockRepo {
                 )
             }
             dao1.insertHistory(historyStocks)
-            Log.i("股票超人", "插入股票历史信息数据库")
+            Log.i("股票超人", "插入股票历史数据库，来源上海证券")
         }
+
         return@withContext newList
+
+    }
+
+    //百度数据源
+    private suspend fun getRealTimeStocksBD2(start: Int, end: Int, date: Int) =
+        withContext(Dispatchers.IO) {
+            val newList = mutableListOf<Stock>()
+            for (index in start until end) {
+                try {
+
+                    val response =
+                        Injector.retrofit.create(StockService::class.java)
+                            .getRealTimeStocks2(index * 200)
+
+                    if (response.ResultCode == "0") {
+
+                        val ranks =
+                            response.Result.Result.first().DisplayData.resultData.tplData.result.rank
+                        val codes = mutableListOf<String>()
+                        val map = mutableMapOf<String, RankWrapper>()
+                        ranks.forEach {
+
+                            var price = -1f
+                            var turnoverRate = -1f
+                            var chg = -1f
+                            var amplitude = -1f
+                            it.list.forEach {
+                                when (it.text) {
+                                    "最新价" -> {
+                                        price = it.value.toFloat()
+                                    }
+
+                                    "换手率" -> {
+                                        turnoverRate =
+                                            it.value.removeSuffix("%").toFloat() / 100
+                                    }
+
+                                    "涨跌幅" -> {
+                                        chg = it.value.removeSuffix("%").toFloat()
+                                    }
+
+                                    "振幅" -> {
+                                        amplitude =
+                                            it.value.removeSuffix("%").toFloat() / 100
+                                    }
+                                }
+                            }
+                            if (turnoverRate>0){
+                                codes.add(it.code)
+                                map[it.code] = RankWrapper(
+                                    price = price,
+                                    turnoverRate = turnoverRate,
+                                    chg = chg,
+                                    amplitude = amplitude
+                                )
+                            }
+                        }
+
+                        val l = Injector.appDatabase.stockDao().getStockByCodes(codes)
+
+
+                        val stocks = l.map {
+                            val rank = map[it.code]
+                            val stock = it.copy(
+                                price = rank!!.price,
+                                turnoverRate = rank.turnoverRate,
+                                amplitude = rank.amplitude,
+                                chg = rank.chg
+                            )
+                            if (!Injector.trackerType) {
+                                Injector.trackerMap[stock.code]?.update(stock)
+                            }
+                            return@map stock
+                        }
+                        newList.addAll(stocks)
+                    }
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
+            }
+
+            Log.i("股票超人", "从百度接口获取股票${newList.size}")
+
+            if (Injector.trackerType) {
+                newList.forEach {
+                    Injector.realTimeStockMap[it.code] = it
+                }
+            }
+
+            if (newList.isNotEmpty() && date != 0) {
+                val dao = Injector.appDatabase.stockDao()
+                dao.insertAll(newList)
+                Log.i("股票超人", "插入股票数据库，来源百度")
+                val dao1 = Injector.appDatabase.historyStockDao()
+                val historyStocks = newList.filter { it.price != 0f }.map {
+                    return@map HistoryStock(
+                        code = it.code,
+                        date = date,
+                        closePrice = it.price,
+                        chg = it.chg,
+                        amplitude = it.amplitude,
+                        turnoverRate = it.turnoverRate,
+                        highest = it.highest,
+                        lowest = it.lowest,
+                        openPrice = it.openPrice,
+                        ztPrice = it.ztPrice,
+                        dtPrice = it.dtPrice,
+                        yesterdayClosePrice = it.yesterdayClosePrice,
+                        averagePrice = it.averagePrice
+                    )
+                }
+                dao1.insertHistory(historyStocks)
+                Log.i("股票超人", "插入股票历史数据库，来源百度")
+            }
+            return@withContext newList
+        }
+    suspend fun getRealTimeStocksBD() = withContext(Dispatchers.IO) {
+
+        val date = Injector.appDatabase.historyBKDao().getHistoryByDate3("000001", today()).date
+        if (date != today()) return@withContext
+
+        val start = System.currentTimeMillis()
+        val list = mutableListOf<Deferred<List<Stock>>>()
+        list.add(async {
+            getRealTimeStocksBD2(0, 4, date)
+        })
+        list.add(async {
+            getRealTimeStocksBD2(4, 8, date)
+        })
+        list.add(async {
+            getRealTimeStocksBD2(8, 12, date)
+        })
+        list.add(async {
+            getRealTimeStocksBD2(12, 16, date)
+        })
+
+        list.add(async {
+            getRealTimeStocksBD2(16, 20, date)
+        })
+
+        list.add(async {
+            getRealTimeStocksBD2(20, 24, date)
+        })
+
+        list.add(async {
+            getRealTimeStocksBD2(24, 27, date)
+        })
+
+        list.add(async {
+            getRealTimeStocksBD2(27, 30, date)
+        })
+
+
+        list.awaitAll()
+        Log.e("股票超人", "百度刷新股票数据耗时${(System.currentTimeMillis() - start) / 1000f}")
+
     }
 
 
+    private suspend fun getRealTimeStocks2(start: Int, end: Int, fs: String = FS) =
+        withContext(Dispatchers.IO) {
+            val newList = mutableListOf<Stock>()
+            var date = 0
+            for (index in start until end) {
+                try {
+                    val response =
+                        Injector.retrofit.create(StockService::class.java)
+                            .getRealTimeStocks(index, fs)
+                    if (response.data != null) {
+                        date = response.data.diff.first().date
+                        val list = response.data.diff.filter { it.price != 0f }.map {
+                            val stock = Stock(
+                                code = it.code,
+                                name = it.name,
+                                turnoverRate = it.turnoverRate / 100,
+                                highest = it.highest / 100,
+                                lowest = it.lowest / 100,
+                                price = it.price / 100,
+                                chg = it.chg / 100,
+                                amplitude = it.amplitude / 100,
+                                openPrice = it.openPrice / 100,
+                                yesterdayClosePrice = it.yesterdayClosePrice / 100,
+                                toMarketTime = it.toMarketTime,
+                                circulationMarketValue = it.circulationMarketValue,
+                                ztPrice = it.ztPrice / 100,
+                                dtPrice = it.dtPrice / 100,
+                                averagePrice = it.averagePrice / 100,
+                                bk = it.concept
+                            )
+                            if (!Injector.trackerType)
+                                Injector.trackerMap[stock.code]?.update(stock)
+                            return@map stock
+                        }
+                        newList.addAll(list)
+                    }
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
+            }
+
+            Log.i("股票超人", "从东方财富获取股票数据${newList.size}")
+
+            if (Injector.trackerType) {
+                newList.forEach {
+                    Injector.realTimeStockMap[it.code] = it
+                }
+            }
+
+            if (newList.isNotEmpty() && date != 0) {
+                val dao = Injector.appDatabase.stockDao()
+                dao.insertAll(newList)
+                Log.i("股票超人", "插入股票数据库，来源东方财富")
+                val dao1 = Injector.appDatabase.historyStockDao()
+                val historyStocks = newList.filter { it.price != 0f }.map {
+                    return@map HistoryStock(
+                        code = it.code,
+                        date = date,
+                        closePrice = it.price,
+                        chg = it.chg,
+                        amplitude = it.amplitude,
+                        turnoverRate = it.turnoverRate,
+                        highest = it.highest,
+                        lowest = it.lowest,
+                        openPrice = it.openPrice,
+                        ztPrice = it.ztPrice,
+                        dtPrice = it.dtPrice,
+                        yesterdayClosePrice = it.yesterdayClosePrice,
+                        averagePrice = it.averagePrice
+                    )
+                }
+                dao1.insertHistory(historyStocks)
+                Log.i("股票超人", "插入股票历史数据库，来源东方财富")
+            }
+            return@withContext newList
+        }
+    //东方财富和上海证券交易所
+    suspend fun getRealTimeStocksDFCF() = withContext(Dispatchers.IO) {
+
+        val start = System.currentTimeMillis()
+        val list = mutableListOf<Deferred<List<Stock>>>()
+        list.add(async {
+            getRealTimeStocks2(1, 10, SZ_BZ_FS)
+        })
+        list.add(async {
+            getRealTimeStocks2(10, 20, SZ_BZ_FS)
+        })
+        list.add(async {
+            getRealTimeStocks2(20, 34, SZ_BZ_FS)
+        })
+
+        list.add(async {
+            getRealTimeStocksSH()
+        })
+
+        list.awaitAll()
+        Log.e("股票超人", "东方财富和上海证券交易所刷新股票数据耗时${(System.currentTimeMillis() - start) / 1000f}")
+    }
+    //东方财富
     suspend fun getRealTimeStocks() = withContext(Dispatchers.IO) {
 
         val start = System.currentTimeMillis()
         val list = mutableListOf<Deferred<List<Stock>>>()
         list.add(async {
-            getRealTimeStocks2(1, 7)
+            getRealTimeStocks2(1, 10)
         })
         list.add(async {
-            getRealTimeStocks2(7, 13)
+            getRealTimeStocks2(10, 20)
         })
         list.add(async {
-            getRealTimeStocks2(13, 19)
+            getRealTimeStocks2(20, 30)
         })
         list.add(async {
-            getRealTimeStocks2(19, 22)
+            getRealTimeStocks2(30, 40)
         })
 
         list.add(async {
-            getRealTimeStocks2(22, 30)
+            getRealTimeStocks2(40, 50)
         })
+
+        list.add(async {
+            getRealTimeStocks2(50, 60)
+        })
+
+
         list.awaitAll()
-        Log.e("股票超人", "刷新股票数据耗时${(System.currentTimeMillis() - start) / 1000f}")
+        Log.e("股票超人", "东方财富刷新股票数据耗时${(System.currentTimeMillis() - start) / 1000f}")
 
 
-//        repeat(30) { index ->
-//            launch {
-//                try {
-//                    val response =
-//                        Injector.retrofit.create(StockService::class.java).getRealTimeStocks(index)
-//                    if (response.data != null) {
-//                        val list = response.data.diff.filter { it.price != 0f }.map {
-//                            return@map Stock(
-//                                code = it.code,
-//                                name = it.name,
-//                                turnoverRate = it.turnoverRate / 100,
-//                                highest = it.highest / 100,
-//                                lowest = it.lowest / 100,
-//                                price = it.price / 100,
-//                                chg = it.chg / 100,
-//                                amplitude = it.amplitude / 100,
-//                                openPrice = it.openPrice / 100,
-//                                yesterdayClosePrice = it.yesterdayClosePrice / 100,
-//                                toMarketTime = it.toMarketTime,
-//                                circulationMarketValue = it.circulationMarketValue,
-//                                ztPrice = it.ztPrice / 100,
-//                                dtPrice = it.dtPrice / 100,
-//                                averagePrice = it.averagePrice / 100,
-//                                bk = it.concept
-//
-//                            )
-//                        }
-//                        Log.i("股票超人", "从网络获取所有股票${list.size}")
-//                        val dao = Injector.appDatabase.stockDao()
-//                        dao.insertAll(list)
-//                        Log.i("股票超人", "插入股票信息数据库")
-//
-//                        val dao1 = Injector.appDatabase.historyStockDao()
-//                        val date = response.data.diff.first().date
-//                        val historyStocks = list.filter { it.price != 0f }.map {
-//                            return@map HistoryStock(
-//                                code = it.code,
-//                                date = date,
-//                                closePrice = it.price,
-//                                chg = it.chg,
-//                                amplitude = it.amplitude,
-//                                turnoverRate = it.turnoverRate,
-//                                highest = it.highest,
-//                                lowest = it.lowest,
-//                                openPrice = it.openPrice,
-//                                ztPrice = it.ztPrice,
-//                                dtPrice = it.dtPrice,
-//                                yesterdayClosePrice = it.yesterdayClosePrice,
-//                                averagePrice = it.averagePrice
-//                            )
-//                        }
-//                        dao1.insertHistory(historyStocks)
-//                        Log.i("股票超人", "插入股票历史信息数据库")
-//
-//                    }
-//                } catch (e: Throwable) {
-//                    e.printStackTrace()
-//                }
-//            }
-//        }
     }
 
 
@@ -1432,14 +1657,28 @@ object StockRepo {
             Log.i("股票超人", "从网络获取${str}龙虎榜")
             val url =
                 "https://datacenter-web.eastmoney.com/api/data/v1/get?sortColumns=SECURITY_CODE%2CTRADE_DATE&sortTypes=1%2C-1&pageSize=100&pageNumber=1&reportName=RPT_DAILYBILLBOARD_DETAILSNEW&columns=SECURITY_CODE%2CSECUCODE%2CSECURITY_NAME_ABBR%2CTRADE_DATE%2CEXPLAIN%2CCLOSE_PRICE%2CCHANGE_RATE%2CBILLBOARD_NET_AMT%2CBILLBOARD_BUY_AMT%2CBILLBOARD_SELL_AMT%2CBILLBOARD_DEAL_AMT%2CACCUM_AMOUNT%2CDEAL_NET_RATIO%2CDEAL_AMOUNT_RATIO%2CTURNOVERRATE%2CFREE_MARKET_CAP%2CEXPLANATION%2CD1_CLOSE_ADJCHRATE%2CD2_CLOSE_ADJCHRATE%2CD5_CLOSE_ADJCHRATE%2CD10_CLOSE_ADJCHRATE%2CSECURITY_TYPE_CODE&source=WEB&client=WEB&filter=(TRADE_DATE%3C%3D%27${str}%27)(TRADE_DATE%3E%3D%27${str}%27)"
+
+            val data2Map = fetchDragonTigerRank2(date)
+
             val r = Injector.apiService.getDragonTigerRank(url)
             if (r.success) {
                 return@withContext r.result.data.sortedBy { it.CHANGE_RATE }.apply {
                     val ll = this.map {
+
+                        val sb = StringBuilder()
+                        val t = data2Map[it.SECURITY_CODE]?.tags
+                        if (t?.isNotEmpty() == true) {
+                            t.forEach {
+                                sb.append(it.name).append(":")
+                            }
+                            sb.removeSuffix(":")
+                        }
+
                         return@map DragonTigerRank(
                             it.SECURITY_CODE,
                             date,
-                            it.EXPLANATION
+                            it.EXPLANATION,
+                            sb.toString()
                         )
                     }
                     if (ll.isNotEmpty())
@@ -1452,6 +1691,30 @@ object StockRepo {
         }
 
         return@withContext listOf()
+    }
+
+
+    suspend fun fetchDragonTigerRank2(date: Int): Map<String, DragonTiger2Item> {
+        try {
+            val d = SimpleDateFormat("yyyyMMdd").parse(date.toString())
+            val str = SimpleDateFormat("yyyy-MM-dd").format(d)
+            Log.i("股票超人", "从网络获取${str}龙虎榜2")
+
+            val url =
+                "https://data.10jqka.com.cn/dataapi/transaction/stock/v1/list?order_field=hot_rank&order_type=asc&date=${str}&filter=&page=1&size=50&module=all&order_null_greater=1"
+            val r = Injector.apiService.getDragonTigerRank2(url)
+            if (r.status_code == 0) {
+                val map = mutableMapOf<String, DragonTiger2Item>()
+                r.data.items.forEach {
+                    map[it.stock_code] = it
+                }
+                return map
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+
+        return mutableMapOf<String, DragonTiger2Item>()
     }
 
 
@@ -1670,10 +1933,11 @@ object StockRepo {
 
 
         }
-        Collections.sort(result, kotlin.Comparator
-        { v0, v1 ->
-            return@Comparator v1.signalCount - v0.signalCount
-        })
+        Collections.sort(
+            result, kotlin.Comparator
+            { v0, v1 ->
+                return@Comparator v1.signalCount - v0.signalCount
+            })
 
         return@withContext result
     }
@@ -1870,14 +2134,14 @@ object StockRepo {
      */
     suspend fun strategy4(
         startMarketTime: Int = 19900102,
-        endMarketTime: Int = 20180102,
-        lowMarketValue: Double = 1000000000.0,
-        highMarketValue: Double = 10000000000.0,
-        range: Int = 50,
-        averageDay: Int = 10,
+        endMarketTime: Int = 20300102,
+        lowMarketValue: Double = 100000000.0,
+        highMarketValue: Double = 1000000000000.0,
+        range: Int = 5,
+        averageDay: Int = 5,
         divergeRate: Double = 0.03,
         endTime: Int = 20220722,
-        allowBelowCount: Int = 10,
+        allowBelowCount: Int = 5,
         //异常放量区间
         abnormalRange: Int = 20,
         abnormalRate: Double = 3.0,
@@ -2198,10 +2462,11 @@ object StockRepo {
 
         }
 
-        Collections.sort(result, kotlin.Comparator
-        { v0, v1 ->
-            return@Comparator v1.signalCount - v0.signalCount
-        })
+        Collections.sort(
+            result, kotlin.Comparator
+            { v0, v1 ->
+                return@Comparator v1.signalCount - v0.signalCount
+            })
 
         return@withContext StrategyResult(
             result,
@@ -2277,10 +2542,11 @@ object StockRepo {
             )
 
         }
-        Collections.sort(result, kotlin.Comparator
-        { v0, v1 ->
-            return@Comparator v1.activeCount - v0.activeCount
-        })
+        Collections.sort(
+            result, kotlin.Comparator
+            { v0, v1 ->
+                return@Comparator v1.activeCount - v0.activeCount
+            })
 
         return@withContext result.subList(0, min(200, result.size))
     }
@@ -2547,6 +2813,8 @@ object StockRepo {
                 val bkChg = (bkFirst.closePrice - bkLast.closePrice) / bkLast.closePrice
                 val dpLast = historyDao.getHistoryByDate("000001", bkLast.date)
                 val dpFirst = historyDao.getHistoryByDate("000001", bkFirst.date)
+
+
                 val dpChg = (dpFirst.closePrice - dpLast.closePrice) / dpLast.closePrice
 
                 Log.i(
@@ -3004,15 +3272,16 @@ object StockRepo {
         }
 
 
-        Collections.sort(result, kotlin.Comparator
-        { v0, v1 ->
-            if (v1.activeRate - v0.activeRate == 0.0f) {
-                return@Comparator 0
-            } else if (v1.activeRate - v0.activeRate > 0) {
-                return@Comparator 1
-            }
-            return@Comparator -1
-        })
+        Collections.sort(
+            result, kotlin.Comparator
+            { v0, v1 ->
+                if (v1.activeRate - v0.activeRate == 0.0f) {
+                    return@Comparator 0
+                } else if (v1.activeRate - v0.activeRate > 0) {
+                    return@Comparator 1
+                }
+                return@Comparator -1
+            })
 
         return@withContext StrategyResult(result, stocks.size)
     }
@@ -3181,7 +3450,7 @@ data class StrategyResult(
     val stockResults: List<StockResult>,
     val total: Int,
     var popularityRankMap: Map<String, PopularityRank> = mutableMapOf(),
-    var zz2000:HistoryBK?=null
+    var zz2000: HistoryBK? = null
 
 )
 

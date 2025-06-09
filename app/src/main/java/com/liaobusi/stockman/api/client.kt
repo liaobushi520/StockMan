@@ -45,7 +45,6 @@ private val x509TrustManager = object : X509TrustManager {
 }
 
 
-private var okHttpClientBuilder: OkHttpClient.Builder? = null
 fun getOkHttpClientBuilder() = OkHttpClient.Builder().apply {
     val logging =
         HttpLoggingInterceptor()

@@ -19,24 +19,22 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.room.Room
+import com.google.gson.GsonBuilder
 import com.liaobusi.stockman.api.StockService
 import com.liaobusi.stockman.api.TGBStock
 import com.liaobusi.stockman.api.THSStock
 import com.liaobusi.stockman.api.getOkHttpClientBuilder
 import com.liaobusi.stockman.db.AppDatabase
 import com.liaobusi.stockman.db.BK
-import com.liaobusi.stockman.db.DragonTigerRank
 import com.liaobusi.stockman.db.PopularityRank
 import com.liaobusi.stockman.db.Stock
 import com.liaobusi.stockman.db.marketCode
-import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.db.specialBK
 import com.liaobusi.stockman.repo.StockRepo
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -48,7 +46,7 @@ import java.util.Date
 
 val log = StringBuilder()
 
-const val ENABLE_LOG = true
+const val ENABLE_LOG = false
 
 fun writeLog(code: String, msg: String) {
 
@@ -74,6 +72,7 @@ object Injector {
     lateinit var conceptBks: List<BK>
     lateinit var tradeBks: List<BK>
 
+
     lateinit var sp: SharedPreferences
 
     var activityActive = true
@@ -82,17 +81,21 @@ object Injector {
 
     val scope = MainScope()
 
-    var  trackerType=false
+    var trackerType = false
 
     fun inject(applicationContext: Context) {
         context = applicationContext
+
         appDatabase = Room.databaseBuilder(
             applicationContext,
             AppDatabase::class.java, "stock_man"
         ).build()
         retrofit = Retrofit.Builder()
             .baseUrl("https://api.github.com/")
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(
+                GsonBuilder()
+                    .setLenient() // 允许非严格 JSON
+                    .create()))
             .client(getOkHttpClientBuilder().build())
             .build()
         apiService = retrofit.create(StockService::class.java)
@@ -107,25 +110,19 @@ object Injector {
             sp.edit().putInt("diy_bk_code", 100000).apply()
         }
 
-        trackerType= trackingType(context)
+        trackerType = trackingType(context)
 
         (applicationContext as Application).registerActivityLifecycleCallbacks(object :
             ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 if (activity is HomeActivity) {
                     scope.launch(Dispatchers.IO) {
-                        StockRepo.getRealTimeStocks()
-                        StockRepo.getRealTimeBKs()
-                        val l = StockRepo.fetchDragonTigerRank(today())
-                        val ll = l.map {
-                            return@map DragonTigerRank(
-                                it.SECURITY_CODE,
-                                today(),
-                                it.EXPLANATION
-                            )
-                        }
-                        appDatabase.dragonTigerDao().insert(ll)
-                        appDatabase.dragonTigerDao().getDragonTigerByDate(today())
+//                        StockRepo.getRealTimeIndexByCode("1.000001")
+//                        StockRepo.getRealTimeIndexByCode("2.932000")
+//                        StockRepo.getRealTimeStocks()
+//                        StockRepo.getRealTimeBKs()
+//                        StockRepo.fetchDragonTigerRank(today())
+
                     }
 
                     val serviceIntent =
@@ -183,33 +180,76 @@ object Injector {
 
     private val calendar = Calendar.getInstance()
 
-    private fun isTradingTime(): Boolean {
+    fun isTradingTime(): Boolean {
+
         calendar.time = Date()
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
-        return hour in 9 until 12 || hour in 13 until 15
+        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+        val minute = calendar.get(Calendar.MINUTE)
+        if (dayOfWeek == Calendar.SUNDAY || dayOfWeek == Calendar.SATURDAY) return false
+
+        if (hour < 9) {
+            return false
+        }
+
+        if (hour == 9 && minute <= 15) {
+            return false
+        }
+
+        if (hour == 11 && minute >= 30) return false
+
+        return (hour in 9 until 12 || hour in 13 until 15)
     }
+
 
     fun autoRefresh(enable: Boolean) {
         autoRefreshJob?.cancel()
         if (enable) {
             autoRefreshJob = scope.launch(Dispatchers.IO) {
-                if (!isTradingDay(today())) {
-                    return@launch
-                }
-                var count = 0
-                while (true) {
-                    if (isTradingTime()) {
-                        if (activityActive) {
-                            count++
-                            if (count == 2) {
-                                StockRepo.getRealTimeBKs()
-                                count = 0
+                async {
+                    while (true) {
+                        while (true) {
+                            if (isTradingTime()) {
+                                if (activityActive) {
+                                    StockRepo.getRealTimeBKs()
+                                }
+                                delay(30 * 1000)
+                            } else {
+                                delay(1000 * 60 * 6)
                             }
-                            StockRepo.getRealTimeStocks()
                         }
-                        delay(2000)
-                    } else {
-                        delay(1000 * 60 * 6)
+                    }
+                }
+
+                async {
+                    while (true){
+                        if (isTradingTime()) {
+                            if (activityActive&&getNetworkType(context) == NetworkType.WIFI&&!isRealTimeDataSource(context)) {
+                                StockRepo.getRealTimeStocksSH()
+                            }
+                            delay(6 * 1000)
+                        } else {
+                            delay(1000 * 60 * 6)
+                        }
+                    }
+                }
+
+                async {
+                    while (true) {
+                        if (isTradingTime()) {
+                            if (activityActive) {
+                                if (isRealTimeDataSource(context)) {
+                                    StockRepo.getRealTimeStocksDFCF()
+                                    delay(900)
+                                } else {
+                                    if (getNetworkType(context) == NetworkType.WIFI) {
+                                        StockRepo.getRealTimeStocksBD()
+                                    }
+                                }
+                            }
+                        } else {
+                            delay(1000 * 60 * 6)
+                        }
                     }
                 }
             }
@@ -262,7 +302,7 @@ object Injector {
             val ths = map[it.SECURITY_CODE]
             if (ths != null) {
                 explainSb.append("[同花顺] ${ths.order}\n")
-                ths.tag.concept_tag.forEach {
+                ths.tag.concept_tag?.forEach {
                     explainSb.append("${it}|")
                 }
                 if (explainSb.endsWith("|")) {
@@ -331,10 +371,14 @@ object Injector {
     fun autoRefreshPopularityRanking() {
         autoRefreshPopularityRankingJob?.cancel()
         autoRefreshPopularityRankingJob = scope.launch(Dispatchers.IO) {
-            while (true) {
-                refreshPopularityRanking()
-                if (!isActive) return@launch
-                delay(1000 * 60 * 10)
+            try {
+                while (true) {
+                    refreshPopularityRanking()
+                    if (!isActive) return@launch
+                    delay(1000 * 60 * 10)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
             }
         }
 
@@ -370,14 +414,16 @@ object Injector {
             } else {
                 appDatabase.popularityRankDao().getRanksByDate(today()).map { it.code }
             }
-            Log.e("股票超人","开始跟踪股票异动方式2 聚焦昨日涨停${isFocusLB(context)} 数量${list.size}")
+            Log.e(
+                "股票超人",
+                "开始跟踪股票异动方式2 聚焦昨日涨停${isFocusLB(context)} 数量${list.size}"
+            )
             list.forEach {
                 trackerMap[it] = Tracker()
             }
 
         }
     }
-
 
 
     private var trackingJob: Job? = null
@@ -401,7 +447,10 @@ object Injector {
                 } else {
                     appDatabase.popularityRankDao().getRanksByDate(today()).map { it.code }
                 }
-                Log.e("股票超人","开始跟踪股票异动方式1 聚焦昨日涨停${isFocusLB(context)} 数量${list.size}")
+                Log.e(
+                    "股票超人",
+                    "开始跟踪股票异动方式1 聚焦昨日涨停${isFocusLB(context)} 数量${list.size}"
+                )
                 list.split(10).forEachIndexed { index, codes ->
                     launch(Dispatchers.Default) {
                         tracking(codes, "track${index}")
@@ -431,15 +480,24 @@ object Injector {
         }
     }
 
+
     class Tracker {
         private val cache = mutableListOf<StockRecord>()
+
+        val cacheSize = 30
         fun update(s: Stock) {
+
+
             val sb = StringBuilder()
-            val last = if (cache.size >= 3) cache[cache.size - 2] else cache.lastOrNull()
+            val last = if (cache.size >= 2) cache[cache.size - 2] else cache.lastOrNull()
             if (last != null) {
                 val zf = (s.price - last.stock.price) / last.stock.price
-                if (zf >= 0.01) {
-                    sb.append("${(System.currentTimeMillis() - last.time) / 1000}秒内涨幅${zf * 100}%")
+                val time = (System.currentTimeMillis() - last.time) / 1000f
+
+
+
+                if (zf >= 0.009 && time <= 10) {
+                    sb.append("${time}秒内涨幅${"%.2f".format(zf * 100)}%")
                 }
 
                 if (last.stock.ztPrice == last.stock.price && s.price < s.ztPrice) {
@@ -451,31 +509,31 @@ object Injector {
                 }
             }
 
-            val mid = if (cache.size >= 28) cache[cache.size / 2] else null
+            val mid = if (cache.size >= cacheSize / 2) cache[cache.size * 2 / 3] else null
             if (mid != null) {
                 val zf = (s.price - mid.stock.price) / mid.stock.price
-                if (zf >= 0.03) {
-                    sb.append("${(System.currentTimeMillis() - mid.time) / 1000}秒内涨幅${zf * 100}%")
+                val time = (System.currentTimeMillis() - mid.time) / 1000
+                if (zf >= 0.02 && time > 11 && time <= 30) {
+                    sb.append("${time}秒内涨幅${"%.2f".format(zf * 100)}%")
                 }
             }
 
             val first = cache.firstOrNull()
             if (first != null) {
                 val zf = (s.price - first.stock.price) / first.stock.price
-                if (zf >= 0.06) {
-                    sb.append("${(System.currentTimeMillis() - first.time) / 1000}秒内涨幅${zf * 100}%")
+                val time = (System.currentTimeMillis() - first.time) / 1000
+                if (zf >= 0.04 && time > 30) {
+                    sb.append("${time}秒内涨幅${"%.2f".format(zf * 100)}%")
                 }
 
-
             }
-
-
             if (sb.isNotEmpty()) {
                 sendNotification(s, "${s.code}${s.name}异动,涨跌幅${s.chg}%", sb.toString())
             }
 
+
             cache.add(StockRecord(s))
-            if (cache.size >= 30) {
+            if (cache.size >= cacheSize) {
                 cache.removeAt(0)
             }
         }
