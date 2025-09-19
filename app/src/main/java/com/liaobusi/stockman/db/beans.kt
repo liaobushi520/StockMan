@@ -236,14 +236,13 @@ val HistoryStock.color: Int
 val HistoryStock.ZT: Boolean
     get() {
         if (this.ztPrice == -1f) {
-            this.yesterdayClosePrice
             if (this.code.startsWith("300") || this.code.startsWith("688") || this.code.startsWith("301")) {
                 return this.chg > 19
             } else {
                 return this.chg > 9.65
             }
         }
-        return this.ztPrice > 0 && this.closePrice == this.ztPrice
+        return this.ztPrice > 0 && this.closePrice == this.ztPrice &&this.chg>0
     }
 
 val HistoryStock.DT: Boolean
@@ -255,7 +254,7 @@ val HistoryStock.DT: Boolean
                 return this.chg < -9.6
             }
         }
-        return this.closePrice == this.dtPrice
+        return this.closePrice == this.dtPrice&&chg<0
     }
 
 val HistoryStock.DY: Boolean
@@ -430,7 +429,7 @@ data class Data2(
     val is_delete: String,
     val list: List<ArticleWrap>?,
     val name: String,
-    val reason: String,
+    val reason: String?=null,
     val sort_no: Int,
     val status: Int,
     val update_time: Any

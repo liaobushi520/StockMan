@@ -219,7 +219,7 @@ class SettingActivity : AppCompatActivity() {
                     val list = mutableListOf<ZTReplayBean>()
                     rsp.data.forEach {
                         val groupName = it.name
-                        val reason = it.reason
+                        val reason = it.reason?:""
                         val date = it.date!!.replace("-", "").toInt()
                         it.list?.forEach {
                             val code = it.code.removeSurrounding("\"", "\"").removePrefix("sz")

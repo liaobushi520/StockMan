@@ -158,7 +158,8 @@ class DPActivity : AppCompatActivity() {
                 diybkStr,
                 object : TypeToken<List<DIYBk>>() {}.getType()
             ).ifEmpty { Injector.appDatabase.diyBkDao().getDIYBks() }
-            reload(sortType, list, line)
+            val newList = Injector.appDatabase.diyBkDao().getDIYBksByCodes(list.map { it.code })
+            reload(sortType, newList, line)
         }
 
     }
@@ -170,6 +171,7 @@ class DPActivity : AppCompatActivity() {
                 val bkCodeList = item.bkCodes.split(",")
                 val codeList = item.stockCodes.split(",")
                 val l1 = Injector.appDatabase.stockDao().getStockByCodes(codeList)
+
                 val result = if (line == -1) {
                     StockRepo.strategy4(bkList = bkCodeList, stockList = l1, endTime = today())
                 } else {
@@ -178,7 +180,9 @@ class DPActivity : AppCompatActivity() {
                         stockList = l1,
                         endTime = today(),
                         allowBelowCount = 0,
-                        averageDay = line
+                        averageDay = line,
+                        range = line,
+                        divergeRate = 0.0
                     )
                 }
 
@@ -748,15 +752,17 @@ class DPSettingFragment(private val callback: (sortType: Int, line: Int, bks: Li
 
         when (line) {
 
-            5->{
-                binding.line5Cb.isChecked=true
+            5 -> {
+                binding.line5Cb.isChecked = true
             }
-            10->{
-                binding.line10Cb.isChecked=true
+
+            10 -> {
+                binding.line10Cb.isChecked = true
             }
+
             else -> {
                 binding.line10Cb.isChecked = false
-                binding.line5Cb.isChecked=false
+                binding.line5Cb.isChecked = false
             }
 
         }
@@ -784,8 +790,8 @@ class DPSettingFragment(private val callback: (sortType: Int, line: Int, bks: Li
             if (isChecked) {
                 line = 5
                 binding.line10Cb.isChecked = false
-            }else{
-                line=-1
+            } else {
+                line = -1
             }
 
         }
@@ -794,8 +800,8 @@ class DPSettingFragment(private val callback: (sortType: Int, line: Int, bks: Li
             if (isChecked) {
                 line = 10
                 binding.line5Cb.isChecked = false
-            }else{
-                line=-1
+            } else {
+                line = -1
             }
 
         }

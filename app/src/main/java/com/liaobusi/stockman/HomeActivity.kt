@@ -197,25 +197,6 @@ class HomeActivity : AppCompatActivity() {
 
 
 
-            val sp = getSharedPreferences("app", Context.MODE_PRIVATE)
-            if (System.currentTimeMillis() - sp.getLong(
-                    "fetch_bk_stocks_time",
-                    0
-                ) > 1 * 12 * 60 * 60 * 1000
-            ) {
-                StockRepo.getBKStocks()
-                sp.edit().putLong("fetch_bk_stocks_time", System.currentTimeMillis()).apply()
-            }
-
-
-            if (System.currentTimeMillis() - sp.getLong(
-                    "fetch_gdrs_time",
-                    0
-                ) > 5 * 24 * 60 * 60 * 1000
-            ) {
-                StockRepo.getHistoryGDRS()
-                sp.edit().putLong("fetch_gdrs_time", System.currentTimeMillis()).apply()
-            }
 
 
 //            bkStockDao.getStocksByBKCode("BK0438").forEach {
@@ -252,7 +233,7 @@ class HomeActivity : AppCompatActivity() {
 
 //            StockRepo.fixData("002279",20221102)
 
-//            h.getHistoryBefore("002261",today())
+//            h.getHistoryBefore("000627",today())
 //              .forEach {
 //                Log.e("XX",it.toString())
 //            }

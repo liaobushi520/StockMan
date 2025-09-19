@@ -244,6 +244,11 @@ interface DIYBkDao {
     fun insert(bean: DIYBk)
     @Query("select * from diybk")
     fun getDIYBks():List<DIYBk>
+
+    @Query("select * from diybk where code in (:codes)")
+    fun getDIYBksByCodes(codes:List<String>):List<DIYBk>
+
+
     @Delete
     fun delete(item:DIYBk)
 

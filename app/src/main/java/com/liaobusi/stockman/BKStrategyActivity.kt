@@ -974,6 +974,47 @@ class DIYBKAdapter(private val data: MutableList<SelectableItem<DIYBk>>) :
                     item.selected = isChecked
                 }
 
+                var ev: MotionEvent? = null
+                root.setOnTouchListener { view, motionEvent ->
+                    if (motionEvent.action == MotionEvent.ACTION_DOWN) {
+                        ev = motionEvent
+                    }
+                    return@setOnTouchListener false
+                }
+
+                this.root.setOnLongClickListener {
+
+                    val b =
+                        LayoutPopupWindow2Binding.inflate(LayoutInflater.from(it.context))
+                    val pw = PopupWindow(
+                        b.root,
+                        LayoutParams.WRAP_CONTENT,
+                        LayoutParams.WRAP_CONTENT,
+                        true
+                    )
+
+                    b.deleteBtn.setOnClickListener {
+                        Injector.scope.launch(Dispatchers.IO) {
+                            Injector.appDatabase.diyBkDao().delete(item.data)
+                            launch(Dispatchers.Main) {
+                                data.removeAt(position)
+                                notifyItemRemoved(position)
+                                Toast.makeText(
+                                    root.context,
+                                    "删除${item.data.name}板块",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                pw.dismiss()
+                            }
+                        }
+                    }
+                    pw.showAsDropDown(it, (ev?.x ?: 0f).toInt() + 50, -150)
+
+                    return@setOnLongClickListener true
+                }
+
+
+
             }
         }
     }

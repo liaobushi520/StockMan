@@ -157,18 +157,14 @@ class CustomWebView @JvmOverloads constructor(
                 val content = inputStream.bufferedReader().use { it.readText() }
                 val rsp = Gson().fromJson<FPResponse>(content, FPResponse::class.java)
                 val list = mutableListOf<ZTReplayBean>()
-                Log.e("XXXXXXX",content)
 
-                rsp.data.forEach {
-                    Log.e("XXXXXX", "!!!${it}")
-                }
                 rsp.data.forEach {
 
                     if (it.date==null)
                         return@forEach
 
                     val groupName = it.name
-                    val reason = it.reason
+                    val reason = it.reason?:""
                     val date = it.date.replace("-", "").toInt()
                     it.list?.forEach {
                         val code = it.code.removeSurrounding("\"", "\"").removePrefix("sz")

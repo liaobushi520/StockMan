@@ -197,7 +197,7 @@ data class THSStock(
     val order: Int,
     val rate: String,
     val rise_and_fall: Double,
-    val tag: Tag,
+    val tag: Tag?,
     val topic: Topic?
 )
 
@@ -230,7 +230,7 @@ data class TGBStock(
     val popularValue: Int,
     val rankRate: Any,
     val ranking: Int,
-    val remark: String,
+    val remark: String?,
     val stockGn: Any,
     val stockName: String
 )

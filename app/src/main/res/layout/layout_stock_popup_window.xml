@@ -75,7 +75,7 @@
         android:layout_height="wrap_content"
         android:paddingHorizontal="20dp"
         android:paddingVertical="10dp"
-        android:text="加入到"
+        android:text="自定义板块"
         android:textColor="#fff"
         android:textSize="18sp" />
 

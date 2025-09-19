@@ -3,14 +3,12 @@ package com.liaobusi.stockman
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.Color
-import android.graphics.DiscretePathEffect
 import android.os.Build
 import android.os.Bundle
-import android.text.BoringLayout
 import android.text.SpannableStringBuilder
 import android.text.style.ForegroundColorSpan
 import android.util.Log
@@ -19,8 +17,8 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
-import android.view.View.OnAttachStateChangeListener
 import android.view.ViewGroup
+import android.view.ViewGroup.LayoutParams
 import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
@@ -31,19 +29,20 @@ import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.Gson
+import com.liaobusi.stockman.BKStrategyActivity
 import com.liaobusi.stockman.Strategy4Activity.Companion.openJXQSStrategy
 import com.liaobusi.stockman.databinding.ActivityStrategy4Binding
 import com.liaobusi.stockman.databinding.FragmentDiyBkBinding
 import com.liaobusi.stockman.databinding.FragmentStockInfoBinding
 import com.liaobusi.stockman.databinding.ItemDiyBkBinding
-import com.liaobusi.stockman.databinding.ItemFollowBinding
 import com.liaobusi.stockman.databinding.ItemStockBinding
 import com.liaobusi.stockman.databinding.ItemStockInfoBkBinding
+import com.liaobusi.stockman.databinding.LayoutPopupWindow2Binding
 import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
 import com.liaobusi.stockman.db.*
 import com.liaobusi.stockman.repo.*
 import kotlinx.coroutines.*
-import java.lang.StringBuilder
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -73,9 +72,22 @@ class Strategy4Activity : AppCompatActivity() {
             }
             context.startActivity(i)
         }
+
+        fun openJXQSStrategy2(context: Context, diyBk: DIYBk, endTime: String) {
+            val i = Intent(
+                context,
+                Strategy4Activity::class.java
+            ).apply {
+                putExtra("diyBk", Gson().toJson(diyBk))
+                putExtra("endTime", endTime)
+            }
+            context.startActivity(i)
+        }
     }
 
     private lateinit var binding: ActivityStrategy4Binding
+
+    private var diyBk: DIYBk? = null
 
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -126,6 +138,16 @@ class Strategy4Activity : AppCompatActivity() {
             fromBKStrategyActivity = true
         }
 
+        if (intent.hasExtra("diyBk")) {
+            val s = intent.getStringExtra("diyBk")?.ifEmpty { "ALL" }
+            diyBk = Gson().fromJson<DIYBk>(s, DIYBk::class.java)
+            binding.conceptAndBKTv.setText(diyBk?.bkCodes ?: "ALL")
+            binding.lowMarketValue.setText("0.0")
+            binding.highMarketValue.setText("1000000.0")
+            binding.endMarketTime.setText(today().toString())
+            fromBKStrategyActivity = true
+        }
+
         if (intent.hasExtra("endTime")) {
             binding.endTimeTv.setText(intent.getStringExtra("endTime"))
         } else {
@@ -147,6 +169,8 @@ class Strategy4Activity : AppCompatActivity() {
             }
 
             val bkList = checkBKInput() ?: return@setOnClickListener
+
+
             val param = Strategy4Param(
                 startMarketTime = 19900101,
                 endMarketTime = if (fromBKStrategyActivity) today() else today(),
@@ -393,6 +417,19 @@ class Strategy4Activity : AppCompatActivity() {
             }
             val bkList = checkBKInput() ?: return@setOnClickListener
             job = lifecycleScope.launch(Dispatchers.IO) {
+                var stockList = mutableListOf<Stock>()
+                if (diyBk != null && diyBk?.stockCodes?.isNotEmpty() == true) {
+                    val list =
+                        Injector.appDatabase.stockDao()
+                            .getStockByCodes(diyBk!!.stockCodes.split(","))
+                    stockList.addAll(list)
+                }
+
+                if (Injector.getSnapshot().isNotEmpty() == true) {
+                    stockList.addAll(Injector.getSnapshot())
+                }
+
+
                 val list = StockRepo.strategy4(
                     startMarketTime = startMarketTime,
                     endMarketTime = endMarketTime,
@@ -406,7 +443,7 @@ class Strategy4Activity : AppCompatActivity() {
                     abnormalRange = abnormalRange,
                     abnormalRate = abnormalRate,
                     bkList = bkList,
-                    stockList = Injector.getSnapshot()
+                    stockList = stockList
                 )
                 if (!isActive) return@launch
 
@@ -633,6 +670,18 @@ class Strategy4Activity : AppCompatActivity() {
 
     private fun outputResult(strictParam: Strategy4Param) {
         lifecycleScope.launch(Dispatchers.IO) {
+            var stockList = mutableListOf<Stock>()
+            if (diyBk != null && diyBk?.stockCodes?.isNotEmpty() == true) {
+                val list =
+                    Injector.appDatabase.stockDao().getStockByCodes(diyBk!!.stockCodes.split(","))
+                stockList.addAll(list)
+            }
+
+            if (strictParam.stockList?.isNotEmpty() == true) {
+                stockList.addAll(strictParam.stockList)
+            }
+
+
             val list = StockRepo.strategy4(
                 startMarketTime = strictParam.startMarketTime,
                 endMarketTime = strictParam.endMarketTime,
@@ -646,8 +695,7 @@ class Strategy4Activity : AppCompatActivity() {
                 abnormalRate = strictParam.abnormalRate,
                 abnormalRange = strictParam.abnormalRange,
                 bkList = strictParam.bkList,
-                stockList = strictParam.stockList
-
+                stockList = stockList
             )
             list.zz2000 =
                 Injector.appDatabase.historyBKDao()
@@ -1248,7 +1296,7 @@ class Strategy4Activity : AppCompatActivity() {
                     binding.root.setBackgroundColor(0xffffffff.toInt())
                     binding.colorView.visibility = View.GONE
                     binding.groupHeaderLL.visibility = View.VISIBLE
-                    binding.dtTagsLL.visibility=View.GONE
+                    binding.dtTagsLL.visibility = View.GONE
                     binding.contentLL.visibility = View.GONE
                     binding.expoundTv.visibility = View.GONE
                     binding.dragonFlagIv.visibility = View.GONE
@@ -1347,26 +1395,28 @@ class Strategy4Activity : AppCompatActivity() {
                     }
 
                     binding.dtTagsLL.children.toList().forEach {
-                        it.visibility=View.GONE
+                        it.visibility = View.GONE
                     }
                     //龙虎榜游资机构买卖标签
                     if (result.dargonTigerRank?.tags?.isNotEmpty() == true) {
                         binding.dtTagsLL.visibility = View.VISIBLE
-                        binding.tv0.visibility=View.GONE
+                        binding.tv0.visibility = View.GONE
                         val tags = result.dargonTigerRank?.tags
                         val tagList = tags!!.split(":")
 
                         tagList.forEachIndexed { index, item ->
+                            if (index > 6) return@forEachIndexed
                             val child = binding.dtTagsLL.getChildAt(index) as TextView
                             child.text = item
-                            if (item.contains("买")){
+                            if (item.contains("买")) {
                                 child.setTextColor(Color.RED)
-                            }else if(item.contains("卖")){
+                            } else if (item.contains("卖")) {
                                 child.setTextColor(STOCK_GREEN)
                             }
-                            child.visibility=View.VISIBLE
-                        } }else{
-                        binding.dtTagsLL.visibility=View.GONE
+                            child.visibility = View.VISIBLE
+                        }
+                    } else {
+                        binding.dtTagsLL.visibility = View.GONE
                     }
 
 
@@ -1792,15 +1842,15 @@ class DIYBKDialogFragment2(private val stock: Stock) : DialogFragment() {
 
         binding.createBkBtn.setOnClickListener {
             val name = binding.diyBkName.editableText.toString()
-            if (name.isEmpty()){
-                Toast.makeText(this.context,"请输入板块名称", Toast.LENGTH_SHORT).show()
+            if (name.isEmpty()) {
+                Toast.makeText(this.context, "请输入板块名称", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             val codes = stock.code
             val code = Injector.sp.getInt("diy_bk_code", 10000) + 1
             val dsp = stock.code + "(${stock.name})"
             binding.diyBkName.setText("")
-            val item = DIYBk("BK$code", name, "", dsp,codes)
+            val item = DIYBk("BK$code", name, "", dsp, codes)
 
             lifecycleScope.launch(Dispatchers.IO) {
                 Injector.appDatabase.diyBkDao().insert(item)
@@ -1832,22 +1882,28 @@ class DIYBKDialogFragment2(private val stock: Stock) : DialogFragment() {
                     if (!it.data.stockCodes.contains(stock.code)) {
                         val newStockCodes = it.data.stockCodes + ",${stock.code}"
                         val newDsp = it.data.dsp + ",${stock.code}(${stock.name})"
-                        val newBean = it.data.copy(stockCodes = newStockCodes.removePrefix(","), dsp = newDsp.removePrefix(","))
+                        val newBean = it.data.copy(
+                            stockCodes = newStockCodes.removePrefix(","),
+                            dsp = newDsp.removePrefix(",")
+                        )
                         Injector.appDatabase.diyBkDao().insert(newBean)
                     }
                 } else {
                     if (it.data.stockCodes.contains(stock.code)) {
-                        val l=it.data.stockCodes.split(",").toMutableList()
-                        val newCodes=kotlin.text.StringBuilder()
-                        l.filter { it!=stock.code}.forEach {
+                        val l = it.data.stockCodes.split(",").toMutableList()
+                        val newCodes = kotlin.text.StringBuilder()
+                        l.filter { it != stock.code }.forEach {
                             newCodes.append(it).append(",")
                         }
-                        val newDsp=kotlin.text.StringBuilder()
-                        val dspList=it.data.dsp.split(",").toMutableList()
+                        val newDsp = kotlin.text.StringBuilder()
+                        val dspList = it.data.dsp.split(",").toMutableList()
                         dspList.filter { !it.contains(stock.code) }.forEach {
                             newDsp.append(it).append(",")
                         }
-                        val newBean = it.data.copy(stockCodes = newCodes.removeSuffix(",").toString(), dsp = newDsp.removeSuffix(",").toString())
+                        val newBean = it.data.copy(
+                            stockCodes = newCodes.removeSuffix(",").toString(),
+                            dsp = newDsp.removeSuffix(",").toString()
+                        )
                         Injector.appDatabase.diyBkDao().insert(newBean)
                     }
                 }
@@ -1856,10 +1912,58 @@ class DIYBKDialogFragment2(private val stock: Stock) : DialogFragment() {
 
         inner class VH(private val itemBinding: ItemDiyBkBinding) :
             RecyclerView.ViewHolder(itemBinding.root) {
+            @SuppressLint("ClickableViewAccessibility")
             fun bind(item: SelectableItem<DIYBk>, position: Int) {
                 itemBinding.apply {
                     cb.setOnCheckedChangeListener(null)
                     codeNameTv.text = item.data.code + "-" + item.data.name
+                    this.root.setOnClickListener {
+                        Strategy4Activity.openJXQSStrategy2(
+                            context!!,
+                            item.data,
+                            today().toString()
+                        )
+                    }
+
+                    var ev: MotionEvent? = null
+                    root.setOnTouchListener { view, motionEvent ->
+                        if (motionEvent.action == MotionEvent.ACTION_DOWN) {
+                            ev = motionEvent
+                        }
+                        return@setOnTouchListener false
+                    }
+
+                    this.root.setOnLongClickListener {
+
+                        val b =
+                            LayoutPopupWindow2Binding.inflate(LayoutInflater.from(it.context))
+                        val pw = PopupWindow(
+                            b.root,
+                            LayoutParams.WRAP_CONTENT,
+                            LayoutParams.WRAP_CONTENT,
+                            true
+                        )
+
+                        b.deleteBtn.setOnClickListener {
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                Injector.appDatabase.diyBkDao().delete(item.data)
+                                launch(Dispatchers.Main) {
+                                    list.removeAt(position)
+                                    notifyItemRemoved(position)
+                                    Toast.makeText(
+                                        context,
+                                        "删除${item.data.name}板块",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    pw.dismiss()
+                                }
+                            }
+                        }
+                        pw.showAsDropDown(it, (ev?.x ?: 0f).toInt() + 50, -150)
+
+                        return@setOnLongClickListener true
+                    }
+
 
                     cb.isChecked = item.selected
                     codes.text = item.data.dsp

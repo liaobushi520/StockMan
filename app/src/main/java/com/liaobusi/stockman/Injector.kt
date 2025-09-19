@@ -92,10 +92,13 @@ object Injector {
         ).build()
         retrofit = Retrofit.Builder()
             .baseUrl("https://api.github.com/")
-            .addConverterFactory(GsonConverterFactory.create(
-                GsonBuilder()
-                    .setLenient() // 允许非严格 JSON
-                    .create()))
+            .addConverterFactory(
+                GsonConverterFactory.create(
+                    GsonBuilder()
+                        .setLenient() // 允许非严格 JSON
+                        .create()
+                )
+            )
             .client(getOkHttpClientBuilder().build())
             .build()
         apiService = retrofit.create(StockService::class.java)
@@ -117,13 +120,35 @@ object Injector {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 if (activity is HomeActivity) {
                     scope.launch(Dispatchers.IO) {
-//                        StockRepo.getRealTimeIndexByCode("1.000001")
-//                        StockRepo.getRealTimeIndexByCode("2.932000")
-//                        StockRepo.getRealTimeStocks()
-//                        StockRepo.getRealTimeBKs()
-//                        StockRepo.fetchDragonTigerRank(today())
+                        StockRepo.getRealTimeIndexByCode("1.000001")
+                        StockRepo.getRealTimeIndexByCode("2.932000")
+                        StockRepo.getRealTimeStocks()
+                        StockRepo.getRealTimeBKs()
+                        StockRepo.fetchDragonTigerRank(today())
+
+                        val sp = activity.getSharedPreferences("app", Context.MODE_PRIVATE)
+                        if (System.currentTimeMillis() - sp.getLong(
+                                "fetch_bk_stocks_time",
+                                0
+                            ) > 1 * 12 * 60 * 60 * 1000
+                        ) {
+                            StockRepo.getBKStocks()
+                            sp.edit().putLong("fetch_bk_stocks_time", System.currentTimeMillis())
+                                .apply()
+                        }
+
+
+                        if (System.currentTimeMillis() - sp.getLong(
+                                "fetch_gdrs_time",
+                                0
+                            ) > 5 * 24 * 60 * 60 * 1000
+                        ) {
+                            StockRepo.getHistoryGDRS()
+                            sp.edit().putLong("fetch_gdrs_time", System.currentTimeMillis()).apply()
+                        }
 
                     }
+
 
                     val serviceIntent =
                         Intent(applicationContext, com.liaobusi.stockman.StockService::class.java)
@@ -181,7 +206,6 @@ object Injector {
     private val calendar = Calendar.getInstance()
 
     fun isTradingTime(): Boolean {
-
         calendar.time = Date()
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
         val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
@@ -222,9 +246,12 @@ object Injector {
                 }
 
                 async {
-                    while (true){
+                    while (true) {
                         if (isTradingTime()) {
-                            if (activityActive&&getNetworkType(context) == NetworkType.WIFI&&!isRealTimeDataSource(context)) {
+                            if (activityActive && getNetworkType(context) == NetworkType.WIFI && !isRealTimeDataSource(
+                                    context
+                                )
+                            ) {
                                 StockRepo.getRealTimeStocksSH()
                             }
                             delay(6 * 1000)
@@ -239,8 +266,8 @@ object Injector {
                         if (isTradingTime()) {
                             if (activityActive) {
                                 if (isRealTimeDataSource(context)) {
-                                    StockRepo.getRealTimeStocksDFCF()
-                                    delay(900)
+                                    StockRepo.getRealTimeStocks()
+                                    delay(1000)
                                 } else {
                                     if (getNetworkType(context) == NetworkType.WIFI) {
                                         StockRepo.getRealTimeStocksBD()
@@ -302,14 +329,14 @@ object Injector {
             val ths = map[it.SECURITY_CODE]
             if (ths != null) {
                 explainSb.append("[同花顺] ${ths.order}\n")
-                ths.tag.concept_tag?.forEach {
+                ths.tag?.concept_tag?.forEach {
                     explainSb.append("${it}|")
                 }
                 if (explainSb.endsWith("|")) {
                     explainSb.deleteCharAt(explainSb.length - 1)
                 }
 
-                if (ths.tag.popularity_tag != null) {
+                if (ths.tag?.popularity_tag != null) {
                     explainSb.append("   ${ths.tag.popularity_tag} ")
                 }
 
@@ -347,7 +374,8 @@ object Injector {
                 if (explainSb.endsWith("|")) {
                     explainSb.deleteCharAt(explainSb.length - 1)
                 }
-                explainSb.append("\n${tgb.remark}")
+                if (tgb.remark != null)
+                    explainSb.append("\n ${tgb.remark}")
             }
 
 

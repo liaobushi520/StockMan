@@ -2186,7 +2186,7 @@ object StockRepo {
         Injector.appDatabase.dragonTigerDao().getDragonTigerByDate(endTime).forEach {
             dragonTigerMap[it.code] = it
         }
-        // val stocks = listOf(stockDao.getStockByCode("002123"))
+       // val stocks = listOf(stockDao.getStockByCode("002427"))
         val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())
         val follows = Injector.appDatabase.followDao().getFollowStocks()
         val result = stocks.compute(4) {
