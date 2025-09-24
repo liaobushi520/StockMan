@@ -104,6 +104,7 @@ class Strategy4Activity : AppCompatActivity() {
                     StockRepo.fetchZTReplay2(date = endTime)
                     StockRepo.fetchDragonTigerRank(endTime)
                     StockRepo.getRealTimeIndexByCode("2.932000")
+                    StockRepo.getRealTimeIndexByCode("1.000905")
                     Injector.refreshPopularityRanking()
                     launch(Dispatchers.Main) {
                         delay(2000)
@@ -449,6 +450,8 @@ class Strategy4Activity : AppCompatActivity() {
 
                 list.zz2000 =
                     Injector.appDatabase.historyBKDao().getHistoryByDate3("932000", date = endTime)
+                list.zz500 =
+                    Injector.appDatabase.historyBKDao().getHistoryByDate3("000905", date = endTime)
                 output(list)
             }
 
@@ -700,6 +703,8 @@ class Strategy4Activity : AppCompatActivity() {
             list.zz2000 =
                 Injector.appDatabase.historyBKDao()
                     .getHistoryByDate3("932000", date = strictParam.endTime)
+            list.zz500 = Injector.appDatabase.historyBKDao()
+                .getHistoryByDate3("000905", date = strictParam.endTime)
             output(list)
         }
     }
@@ -1176,17 +1181,26 @@ class Strategy4Activity : AppCompatActivity() {
                         ForegroundColorSpan(Color.RED),
                         SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
                     )
-                    .append(":")
+                    .append(":",ForegroundColorSpan(Color.BLACK), SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE)
                     .append(
                         "" + r.count { it.dt && !it.isGroupHeader },
                         ForegroundColorSpan(STOCK_GREEN),
                         SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
-                    ).append(
-                        ("   " + strategyResult.zz2000?.chg?.toString()), ForegroundColorSpan(
+                    ).append("  ").append(
+                        (strategyResult.zz2000?.chg?.toString()), ForegroundColorSpan(
                             strategyResult.zz2000?.color ?: Color.TRANSPARENT
                         ),
                         SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
-                    )
+                    ).apply {
+                        if (strategyResult.zz500 != null) {
+                            append(":",ForegroundColorSpan(Color.BLACK), SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE)
+                            append((strategyResult.zz500?.chg?.toString()), ForegroundColorSpan(
+                                    strategyResult.zz500?.color ?: Color.TRANSPARENT
+                                ),
+                                SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
+                            )
+                        }
+                    }
             binding.resultCount.text = resultText
 
             (binding.rv.adapter as ResultAdapter).setData(

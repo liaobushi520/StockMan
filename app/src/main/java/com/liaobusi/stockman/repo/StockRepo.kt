@@ -3450,7 +3450,8 @@ data class StrategyResult(
     val stockResults: List<StockResult>,
     val total: Int,
     var popularityRankMap: Map<String, PopularityRank> = mutableMapOf(),
-    var zz2000: HistoryBK? = null
+    var zz2000: HistoryBK? = null,
+    var zz500: HistoryBK? = null
 
 )
 

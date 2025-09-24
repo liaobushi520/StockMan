@@ -154,6 +154,9 @@ class DPActivity : AppCompatActivity() {
             var sortType = Injector.sp.getInt("sort_type", 1)
             var diybkStr = Injector.sp.getString("diy_bks", "")
             var line = Injector.sp.getInt("line", -1)
+            if (diybkStr?.isEmpty()==true){
+                return@launch
+            }
             val list = Gson().fromJson<List<DIYBk>>(
                 diybkStr,
                 object : TypeToken<List<DIYBk>>() {}.getType()
@@ -214,9 +217,13 @@ class DPActivity : AppCompatActivity() {
                 }
             }
 
-            for (index in min(8, list.size) until 8) {
-                containerListView[index].visibility = View.INVISIBLE
+            launch (Dispatchers.Main){
+                for (index in min(8, list.size) until 8) {
+                    containerListView[index].visibility = View.INVISIBLE
+                }
             }
+
+
 
         }
 
@@ -727,6 +734,11 @@ class DPSettingFragment(private val callback: (sortType: Int, line: Int, bks: Li
 
     private lateinit var binding: FragmentDpSettingBinding
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setStyle(DialogFragment.STYLE_NORMAL,R.style.MyDialogTheme)
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -744,7 +756,7 @@ class DPSettingFragment(private val callback: (sortType: Int, line: Int, bks: Li
             val list = Injector.appDatabase.diyBkDao().getDIYBks()
             launch(Dispatchers.Main) {
                 binding.rv.adapter = DIYBKAdapter(list.map {
-                    SelectableItem(it, diybkStr?.contains(it.code) ?: false)
+                    SelectableItem(it, diybkStr?.contains(it.code) == true)
                 }.toMutableList())
             }
 

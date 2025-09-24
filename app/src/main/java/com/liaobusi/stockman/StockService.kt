@@ -45,7 +45,7 @@ class StockService : Service() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
-            "股票超人",
+            CHANNEL_ID,
             "异动",
             NotificationManager.IMPORTANCE_HIGH
         )
