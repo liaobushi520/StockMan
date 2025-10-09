@@ -118,6 +118,18 @@ fun Date.before(before: Int): Int {
 }
 
 
+fun Date.after(days: Int): Int {
+    val sdf = SimpleDateFormat("yyyyMMdd")
+
+    val c = Calendar.getInstance()
+    c.time = this
+    c.add(Calendar.DATE, days);
+    val time = c.time;
+    val preDay = sdf.format(time);
+    return preDay.toInt()
+}
+
+
 fun today(): Int {
     return SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())).toInt()
 }
@@ -221,6 +233,14 @@ enum class NetworkType {
     VPN,
     UNKNOWN
 }
+
+
+fun String.isAfter20220101(): Boolean {
+    val regex = """^(20220[1-9]\d{2}|2022(0[2-9]|1[0-2])\d{2}|202[3-9]\d{4}|20[3-9]\d{5}|2[1-9]\d{6}|[3-9]\d{7})$""".toRegex()
+    return regex.matches(this)
+}
+
+
 
 
 

@@ -10,6 +10,10 @@ import com.liaobusi.stockman.Injector
 import com.liaobusi.stockman.STOCK_GREEN
 import com.liaobusi.stockman.isFPSource
 
+@Entity(primaryKeys = ["id"])
+data class ExpectHot(val id: String,val bkCode: String, val summary: String, val date: Long, val expireTime: Long, val themeCode: String)
+
+
 @Entity(primaryKeys = ["date"])
 data class AnalysisBean(
     val date: Int,
@@ -289,10 +293,10 @@ val HistoryStock.longUpShadow: Boolean
 
 
 @Database(
-    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class, PopularityRank::class, DragonTigerRank::class],
-    version = 29,
+    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class, PopularityRank::class, DragonTigerRank::class, ExpectHot::class],
+    version = 30,
     autoMigrations = [
-        AutoMigration(from = 28, to = 29)
+        AutoMigration(from = 29, to = 30)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -317,6 +321,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun popularityRankDao(): PopularityRankDao
 
     abstract fun dragonTigerDao(): DragonTigerDao
+
+    abstract fun expectHotDao(): ExpectHotDao
 
 
 //    @DeleteTable.Entries(value = [DeleteTable(tableName = "BK"),DeleteTable(tableName = "HistoryBK")])

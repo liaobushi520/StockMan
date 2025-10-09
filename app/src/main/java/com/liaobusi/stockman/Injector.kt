@@ -20,6 +20,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.room.Room
 import com.google.gson.GsonBuilder
+import com.liaobusi.stockman.api.ExpectHotParam
 import com.liaobusi.stockman.api.StockService
 import com.liaobusi.stockman.api.TGBStock
 import com.liaobusi.stockman.api.THSStock
@@ -75,7 +76,6 @@ object Injector {
 
     lateinit var sp: SharedPreferences
 
-    var activityActive = true
 
     val realTimeStockMap = mutableMapOf<String, Stock>()
 
@@ -122,9 +122,11 @@ object Injector {
                     scope.launch(Dispatchers.IO) {
                         StockRepo.getRealTimeIndexByCode("1.000001")
                         StockRepo.getRealTimeIndexByCode("2.932000")
+                        StockRepo.getRealTimeIndexByCode("1.000905")
                         StockRepo.getRealTimeStocks()
                         StockRepo.getRealTimeBKs()
                         StockRepo.fetchDragonTigerRank(today())
+                        StockRepo.getExpectHot()
 
                         val sp = activity.getSharedPreferences("app", Context.MODE_PRIVATE)
                         if (System.currentTimeMillis() - sp.getLong(
@@ -166,15 +168,9 @@ object Injector {
             }
 
             override fun onActivityResumed(activity: Activity) {
-                if (activity is Strategy4Activity || activity is BKStrategyActivity) {
-                    activityActive = true
-                }
             }
 
             override fun onActivityPaused(activity: Activity) {
-                if (activity is Strategy4Activity || activity is BKStrategyActivity) {
-                    activityActive = true
-                }
             }
 
             override fun onActivityStopped(activity: Activity) {
@@ -234,9 +230,7 @@ object Injector {
                     while (true) {
                         while (true) {
                             if (isTradingTime()) {
-                                if (activityActive) {
-                                    StockRepo.getRealTimeBKs()
-                                }
+                                StockRepo.getRealTimeBKs()
                                 delay(30 * 1000)
                             } else {
                                 delay(1000 * 60 * 6)
@@ -248,7 +242,7 @@ object Injector {
                 async {
                     while (true) {
                         if (isTradingTime()) {
-                            if (activityActive && getNetworkType(context) == NetworkType.WIFI && !isRealTimeDataSource(
+                            if (getNetworkType(context) == NetworkType.WIFI && !isRealTimeDataSource(
                                     context
                                 )
                             ) {
@@ -264,14 +258,12 @@ object Injector {
                 async {
                     while (true) {
                         if (isTradingTime()) {
-                            if (activityActive) {
-                                if (isRealTimeDataSource(context)) {
-                                    StockRepo.getRealTimeStocks()
-                                    delay(1000)
-                                } else {
-                                    if (getNetworkType(context) == NetworkType.WIFI) {
-                                        StockRepo.getRealTimeStocksBD()
-                                    }
+                            if (isRealTimeDataSource(context)) {
+                                StockRepo.getRealTimeStocks()
+                                delay(1000)
+                            } else {
+                                if (getNetworkType(context) == NetworkType.WIFI) {
+                                    StockRepo.getRealTimeStocksBD()
                                 }
                             }
                         } else {

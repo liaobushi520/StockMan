@@ -7,9 +7,12 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.SpannableStringBuilder
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
 import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.view.LayoutInflater
@@ -26,6 +29,7 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -164,7 +168,8 @@ class Strategy4Activity : AppCompatActivity() {
             binding.root.requestFocus()
             val endTime =
                 binding.endTimeTv.editableText.toString().toIntOrNull()
-            if (endTime == null) {
+
+            if (endTime == null || !endTime.toString().isAfter20220101()) {
                 Toast.makeText(this@Strategy4Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
@@ -195,7 +200,7 @@ class Strategy4Activity : AppCompatActivity() {
             binding.root.requestFocus()
             val endTime =
                 binding.endTimeTv.editableText.toString().toIntOrNull()
-            if (endTime == null) {
+            if (endTime == null || !endTime.toString().isAfter20220101()) {
                 Toast.makeText(this@Strategy4Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
@@ -225,7 +230,7 @@ class Strategy4Activity : AppCompatActivity() {
             binding.root.requestFocus()
             val endTime =
                 binding.endTimeTv.editableText.toString().toIntOrNull()
-            if (endTime == null) {
+            if (endTime == null || !endTime.toString().isAfter20220101()) {
                 Toast.makeText(this@Strategy4Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
@@ -253,7 +258,7 @@ class Strategy4Activity : AppCompatActivity() {
             binding.root.requestFocus()
             val endTime =
                 binding.endTimeTv.editableText.toString().toIntOrNull()
-            if (endTime == null) {
+            if (endTime == null || !endTime.toString().isAfter20220101()) {
                 Toast.makeText(this@Strategy4Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
@@ -281,7 +286,7 @@ class Strategy4Activity : AppCompatActivity() {
             binding.root.requestFocus()
             val endTime =
                 binding.endTimeTv.editableText.toString().toIntOrNull()
-            if (endTime == null) {
+            if (endTime == null || !endTime.toString().isAfter20220101()) {
                 Toast.makeText(this@Strategy4Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
@@ -305,7 +310,6 @@ class Strategy4Activity : AppCompatActivity() {
             updateUI(param)
             outputResult(param)
         }
-
         binding.preBtn.setOnClickListener {
             val c = binding.endTimeTv.editableText.toString()
             lifecycleScope.launch(Dispatchers.IO) {
@@ -316,8 +320,6 @@ class Strategy4Activity : AppCompatActivity() {
                 }
             }
         }
-
-
         binding.postBtn.setOnClickListener {
             val c = binding.endTimeTv.editableText.toString()
             lifecycleScope.launch(Dispatchers.IO) {
@@ -336,7 +338,7 @@ class Strategy4Activity : AppCompatActivity() {
             binding.root.requestFocus()
             val endTime =
                 binding.endTimeTv.editableText.toString().toIntOrNull()
-            if (endTime == null) {
+            if (endTime == null || !endTime.toString().isAfter20220101()) {
                 Toast.makeText(this@Strategy4Activity, "截止时间不合法", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
@@ -450,7 +452,7 @@ class Strategy4Activity : AppCompatActivity() {
 
                 list.zz2000 =
                     Injector.appDatabase.historyBKDao().getHistoryByDate3("932000", date = endTime)
-                list.zz500 =
+                list.a500 =
                     Injector.appDatabase.historyBKDao().getHistoryByDate3("000905", date = endTime)
                 output(list)
             }
@@ -482,9 +484,6 @@ class Strategy4Activity : AppCompatActivity() {
         }
 
         binding.stCb.isChecked = isShowST(this)
-
-
-
 
         binding.startBtn.setOnClickListener {
 
@@ -703,7 +702,7 @@ class Strategy4Activity : AppCompatActivity() {
             list.zz2000 =
                 Injector.appDatabase.historyBKDao()
                     .getHistoryByDate3("932000", date = strictParam.endTime)
-            list.zz500 = Injector.appDatabase.historyBKDao()
+            list.a500 = Injector.appDatabase.historyBKDao()
                 .getHistoryByDate3("000905", date = strictParam.endTime)
             output(list)
         }
@@ -1167,6 +1166,7 @@ class Strategy4Activity : AppCompatActivity() {
             }
             r = newList
 
+            binding.resultCount.movementMethod = LinkMovementMethod.getInstance()
 
             val strategyResult2 = StrategyResult(r, strategyResult.total)
             val s = if (strategyResult2.total > 0 && r.isNotEmpty()) {
@@ -1181,26 +1181,61 @@ class Strategy4Activity : AppCompatActivity() {
                         ForegroundColorSpan(Color.RED),
                         SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
                     )
-                    .append(":",ForegroundColorSpan(Color.BLACK), SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE)
+                    .append(
+                        ":",
+                        ForegroundColorSpan(Color.BLACK),
+                        SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
+                    )
                     .append(
                         "" + r.count { it.dt && !it.isGroupHeader },
                         ForegroundColorSpan(STOCK_GREEN),
                         SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
-                    ).append("  ").append(
-                        (strategyResult.zz2000?.chg?.toString()), ForegroundColorSpan(
-                            strategyResult.zz2000?.color ?: Color.TRANSPARENT
-                        ),
-                        SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
-                    ).apply {
-                        if (strategyResult.zz500 != null) {
-                            append(":",ForegroundColorSpan(Color.BLACK), SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE)
-                            append((strategyResult.zz500?.chg?.toString()), ForegroundColorSpan(
-                                    strategyResult.zz500?.color ?: Color.TRANSPARENT
-                                ),
-                                SpannableStringBuilder.SPAN_INCLUSIVE_INCLUSIVE
-                            )
-                        }
+                    )
+
+
+
+            if (strategyResult.zz2000?.chg != null) {
+                binding.zz2000Tv.apply {
+                    visibility = View.VISIBLE
+                    text = strategyResult.zz2000!!.chg.toString()
+                    setTextColor(strategyResult.zz2000!!.color)
+                    setOnClickListener {
+                        val s = "dfcft://stock?market=2&code=932000"
+                        val uri: Uri = Uri.parse(s)
+                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                        context.startActivity(intent)
                     }
+                }
+            } else {
+                binding.zz2000Tv.apply {
+                    visibility = View.GONE
+                    text = ""
+                }
+            }
+
+
+            if (strategyResult.a500?.chg != null) {
+                binding.dotTv.visibility = View.VISIBLE
+                binding.a500Tv.apply {
+                    visibility = View.VISIBLE
+                    text = strategyResult.a500!!.chg.toString()
+                    setTextColor(strategyResult.a500!!.color)
+                    setOnClickListener {
+                        val s = "dfcft://stock?market=1&code=000905"
+                        val uri: Uri = Uri.parse(s)
+                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                        context.startActivity(intent)
+                    }
+                }
+
+            } else {
+                binding.dotTv.visibility = View.GONE
+                binding.a500Tv.apply {
+                    visibility = View.GONE
+                    text = ""
+                }
+            }
+
             binding.resultCount.text = resultText
 
             (binding.rv.adapter as ResultAdapter).setData(
@@ -1240,59 +1275,63 @@ class Strategy4Activity : AppCompatActivity() {
 
         override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
             super.onAttachedToRecyclerView(recyclerView)
-            job = lifecycleScope.launch(Dispatchers.IO) {
-                while (true) {
-                    delay(1200)
-                    if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE || !Injector.activityActive) {
-                        continue
-                    }
-                    val lm = recyclerView.layoutManager as LinearLayoutManager
-                    val firstPos = lm.findFirstVisibleItemPosition()
-                    val lastPos = lm.findLastVisibleItemPosition()
-                    if (firstPos == RecyclerView.NO_POSITION || lastPos == RecyclerView.NO_POSITION) {
-                        continue
-                    }
+            if (Injector.isTradingTime()) {
+                job = lifecycleScope.launch(Dispatchers.IO) {
+                    while (true) {
+                        delay(1200)
+                        if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE || !this@Strategy4Activity.lifecycle.currentState.isAtLeast(
+                                Lifecycle.State.RESUMED
+                            )
+                        ) {
+                            continue
+                        }
+                        Log.e("XXXX", "!!!!")
+                        val lm = recyclerView.layoutManager as LinearLayoutManager
+                        val firstPos = lm.findFirstVisibleItemPosition()
+                        val lastPos = lm.findLastVisibleItemPosition()
+                        if (firstPos == RecyclerView.NO_POSITION || lastPos == RecyclerView.NO_POSITION) {
+                            continue
+                        }
 
+                        if (data.size > 0) {
+                            for (i in firstPos until lastPos + 1) {
 
-                    if (data.size > 0) {
-                        for (i in firstPos until lastPos + 1) {
-
-                            val result = data[i]
-                            if (result.currentDayHistory != null && !result.isGroupHeader) {
-                                val s =
-                                    Injector.appDatabase.stockDao()
-                                        .getStockByCode(result.stock.code)
-                                val h = Injector.appDatabase.historyStockDao().getHistoryByDate3(
-                                    result.stock.code,
-                                    result.currentDayHistory!!.date
-                                )
-                                val n =
-                                    if (result.nextDayHistory != null) Injector.appDatabase.historyStockDao()
-                                        .getHistoryByDate3(
+                                val result = data[i]
+                                if (result.currentDayHistory != null && !result.isGroupHeader) {
+                                    val s =
+                                        Injector.appDatabase.stockDao()
+                                            .getStockByCode(result.stock.code)
+                                    val h =
+                                        Injector.appDatabase.historyStockDao().getHistoryByDate3(
                                             result.stock.code,
-                                            result.nextDayHistory!!.date
-                                        ) else null
-                                if (h.chg != result.currentDayHistory!!.chg || n?.chg != result.nextDayHistory?.chg) {
-                                    val changeRate =
-                                        if (h.chg != result.currentDayHistory!!.chg) (h.chg - result.currentDayHistory!!.chg)
-                                        else (if (n == null || result.nextDayHistory == null) 0f
-                                        else n.chg - result.nextDayHistory!!.chg)
-                                    data[i] = result.copy(
-                                        stock = s,
-                                        currentDayHistory = h,
-                                        nextDayHistory = n,
-                                        changeRate = changeRate
-                                    )
-                                    launch(Dispatchers.Main) {
-                                        notifyItemChanged(i)
-                                    }
+                                            result.currentDayHistory!!.date
+                                        )
+                                    val n =
+                                        if (result.nextDayHistory != null) Injector.appDatabase.historyStockDao()
+                                            .getHistoryByDate3(
+                                                result.stock.code,
+                                                result.nextDayHistory!!.date
+                                            ) else null
+                                    if (h.chg != result.currentDayHistory!!.chg || n?.chg != result.nextDayHistory?.chg) {
+                                        val changeRate =
+                                            if (h.chg != result.currentDayHistory!!.chg) (h.chg - result.currentDayHistory!!.chg)
+                                            else (if (n == null || result.nextDayHistory == null) 0f
+                                            else n.chg - result.nextDayHistory!!.chg)
+                                        data[i] = result.copy(
+                                            stock = s,
+                                            currentDayHistory = h,
+                                            nextDayHistory = n,
+                                            changeRate = changeRate
+                                        )
+                                        launch(Dispatchers.Main) {
+                                            notifyItemChanged(i)
+                                        }
 
+                                    }
                                 }
                             }
                         }
                     }
-
-
                 }
             }
         }
@@ -1589,8 +1628,8 @@ class Strategy4Activity : AppCompatActivity() {
 
                         val pw = PopupWindow(
                             b.root,
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            LayoutParams.WRAP_CONTENT,
+                            LayoutParams.WRAP_CONTENT,
                             true
                         )
 
@@ -1601,7 +1640,10 @@ class Strategy4Activity : AppCompatActivity() {
                             pw.dismiss()
                         }
                         b.joinBtn.setOnClickListener {
-                            DIYBKDialogFragment2(result.stock).show(
+                            DIYBKDialogFragment2(
+                                result.stock,
+                                this@Strategy4Activity.binding.endTimeTv.text.toString()
+                            ).show(
                                 this@Strategy4Activity.supportFragmentManager,
                                 "diy_bk"
                             )
@@ -1817,7 +1859,11 @@ class StockInfoFragment(private val stock: Stock, private val date: String) : Di
 }
 
 
-class DIYBKDialogFragment2(private val stock: Stock) : DialogFragment() {
+class DIYBKDialogFragment2(
+    private val stock: Stock,
+    private val endTime: String = today().toString()
+) :
+    DialogFragment() {
 
     private lateinit var binding: FragmentDiyBkBinding
 
@@ -1935,7 +1981,7 @@ class DIYBKDialogFragment2(private val stock: Stock) : DialogFragment() {
                         Strategy4Activity.openJXQSStrategy2(
                             context!!,
                             item.data,
-                            today().toString()
+                            this@DIYBKDialogFragment2.endTime
                         )
                     }
 

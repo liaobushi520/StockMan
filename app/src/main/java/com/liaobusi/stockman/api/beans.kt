@@ -265,7 +265,7 @@ data class SpecificDataBean(
     val sort: List<Sort>
 )
 
-fun getDefaultSpecificDataBean(codes:List<String>): SpecificDataBean {
+fun getDefaultSpecificDataBean(codes: List<String>): SpecificDataBean {
     return SpecificDataBean(
         sort = listOf(Sort()),
         page_info = PageInfo(),
@@ -274,7 +274,7 @@ fun getDefaultSpecificDataBean(codes:List<String>): SpecificDataBean {
             Indexe(index_id = "last_price"),
             Indexe(index_id = "price_change_ratio_pct"),
             Indexe(index_id = "up_down_stock_limit_up_reason"),
-            ),
+        ),
         code_selectors = CodeSelectors(intersection = listOf(Intersection(values = codes)))
     )
 }
@@ -330,7 +330,7 @@ data class Value(
 
 class Attribute
 data class DZHRankResponse(
-    val result: List<Map<String,Double>>
+    val result: List<Map<String, Double>>
 )
 
 
@@ -361,7 +361,7 @@ data class CLSStock(
 )
 
 data class DraganTigerDataResponse(
-    val data : DragonTiger2Data,
+    val data: DragonTiger2Data,
     val status_code: Int,
     val status_msg: String
 )
@@ -503,10 +503,21 @@ data class Rank(
     val status: String
 )
 
-data class TempWrapper(  val price: Float,  val chg: Float ,val amplitude: Float,val highest: Float,val lowest: Float)
+data class TempWrapper(
+    val price: Float,
+    val chg: Float,
+    val amplitude: Float,
+    val highest: Float,
+    val lowest: Float
+)
 
 
-data class RankWrapper(  val price: Float,  val chg: Float, val turnoverRate: Float,val amplitude: Float,)
+data class RankWrapper(
+    val price: Float,
+    val chg: Float,
+    val turnoverRate: Float,
+    val amplitude: Float,
+)
 
 data class Ratio(
     val balance: String,
@@ -526,5 +537,36 @@ data class Item8(
 )
 
 
-data class StockResponse(val date:Int,val list:List<List<Any>>)
+data class StockResponse(val date: Int, val list: List<List<Any>>)
+
+data class ExpectHotResponse(
+    val code: Int,
+    val costTime: Int,
+    val data: List<ExpectHotData>,
+    val message: String,
+    val requestId: String,
+    val reserve: Any
+)
+
+data class ExpectHotData(
+    val date: Long,
+    val expireTime: Long,
+    val isNew: Int,
+    val summary: String,
+    val theme: List<Theme>
+)
+
+data class Theme(
+    val code: String,
+    val f3: Double,
+    val name: String
+)
+
+data class ExpectHotParam(
+    val client: String = "web",
+    val clientType: String = "cfw",
+    val clientVersion: String = "8.3",
+    val randomCode: String = "XyuKF8DSJNhfne3N",
+    val timestamp: Long = System.currentTimeMillis()
+)
 

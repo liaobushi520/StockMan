@@ -13,6 +13,7 @@ import android.widget.Toast
 import com.google.gson.Gson
 import com.liaobusi.stockman.*
 import com.liaobusi.stockman.api.DragonTiger2Item
+import com.liaobusi.stockman.api.ExpectHotParam
 import com.liaobusi.stockman.api.FS
 import com.liaobusi.stockman.api.Rank
 import com.liaobusi.stockman.api.RankWrapper
@@ -28,6 +29,8 @@ import java.io.InputStreamReader
 
 import java.lang.Integer.min
 import java.lang.Math.max
+import java.math.BigInteger
+import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.atan
@@ -611,6 +614,52 @@ object StockRepo {
     }
 
 
+    fun String.toUniqueNumberViaMD5(): BigInteger {
+        val md = MessageDigest.getInstance("MD5")
+        val digest = md.digest(this.toByteArray(Charsets.UTF_8))
+        return BigInteger(1, digest)
+    }
+
+    suspend fun getExpectHot() {
+        val api = Injector.retrofit.create(StockService::class.java)
+        val rsp = api.getExpectHot(ExpectHotParam())
+        val bkDao = Injector.appDatabase.bkDao()
+        val expectHotDao = Injector.appDatabase.expectHotDao()
+
+        if (rsp.data.isNotEmpty()) {
+            val expectHotList = mutableListOf<ExpectHot>()
+            rsp.data.forEach { bean ->
+                bean.theme.forEach {
+                    val bk = bkDao.getBKByName(it.name)
+                    if (bk != null) {
+                        val id = "${bk.code}${bean.date}${bean.summary}".toUniqueNumberViaMD5()
+                            .toString()
+
+                        val dateStr= SimpleDateFormat("yyyy/MM/dd").format(Date(bean.date))
+                        expectHotList.add(
+                            ExpectHot(
+                                id = id,
+                                bk.code,
+                                summary = dateStr+" "+bean.summary,
+                                date = bean.date,
+                                expireTime = bean.expireTime,
+                                themeCode = it.code
+                            )
+                        )
+                    }
+
+                }
+
+            }
+            expectHotDao.insertAll(expectHotList)
+
+
+        }
+
+
+    }
+
+
     suspend fun getBKStocks() {
         val bkDao = Injector.appDatabase.bkDao()
         val api = Injector.retrofit.create(StockService::class.java)
@@ -970,7 +1019,6 @@ object StockRepo {
     }
 
 
-     
     //上海证券交易所
     suspend fun getRealTimeStocksSH() = withContext(Dispatchers.IO) {
         val newList = mutableListOf<Stock>()
@@ -1103,7 +1151,7 @@ object StockRepo {
                                     }
                                 }
                             }
-                            if (turnoverRate>0){
+                            if (turnoverRate > 0) {
                                 codes.add(it.code)
                                 map[it.code] = RankWrapper(
                                     price = price,
@@ -1172,6 +1220,7 @@ object StockRepo {
             }
             return@withContext newList
         }
+
     suspend fun getRealTimeStocksBD() = withContext(Dispatchers.IO) {
 
         val date = Injector.appDatabase.historyBKDao().getHistoryByDate3("000001", today()).date
@@ -1291,6 +1340,7 @@ object StockRepo {
             }
             return@withContext newList
         }
+
     //东方财富和上海证券交易所
     suspend fun getRealTimeStocksDFCF() = withContext(Dispatchers.IO) {
 
@@ -1311,8 +1361,12 @@ object StockRepo {
         })
 
         list.awaitAll()
-        Log.e("股票超人", "东方财富和上海证券交易所刷新股票数据耗时${(System.currentTimeMillis() - start) / 1000f}")
+        Log.e(
+            "股票超人",
+            "东方财富和上海证券交易所刷新股票数据耗时${(System.currentTimeMillis() - start) / 1000f}"
+        )
     }
+
     //东方财富
     suspend fun getRealTimeStocks() = withContext(Dispatchers.IO) {
 
@@ -2186,13 +2240,17 @@ object StockRepo {
         Injector.appDatabase.dragonTigerDao().getDragonTigerByDate(endTime).forEach {
             dragonTigerMap[it.code] = it
         }
-       // val stocks = listOf(stockDao.getStockByCode("002427"))
-        val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())
+        // val stocks = listOf(stockDao.getStockByCode("002427"))
+        // val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())
         val follows = Injector.appDatabase.followDao().getFollowStocks()
         val result = stocks.compute(4) {
             if (!isActive) {
                 return@compute null
             }
+
+//            if(it.name.contains("退")){
+//                return@compute null
+//            }
 //            val startTime = endDay.before(averageDay * 2 + range * 2 + 30)
 //            val histories = historyDao.getHistoryRange(
 //                it.code,
@@ -2201,6 +2259,9 @@ object StockRepo {
 //            )
             val histories =
                 historyDao.getHistoryBefore3(it.code, endTime, averageDay * 2 + range * 2)
+
+
+
 
             if (histories.size - averageDay < range) {
                 writeLog(it.code, "${it.name}历史记录不足,共${histories.size}")
@@ -2711,12 +2772,14 @@ object StockRepo {
 
         val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())!!
         val follows = Injector.appDatabase.followDao().getFollowBks()
-
         val hides = Injector.appDatabase.hideDao().getHides()
+
+
 
         //&& (it.code == "BK0454" || it.code == "BK0474")
         val result = bks.filter { !it.specialBK }
             .compute(3) {
+
 
                 if (!this.isActive) {
                     return@compute null
@@ -2727,6 +2790,7 @@ object StockRepo {
                     endDay.before(averageDay * 2 + range * 2 + 10),
                     endTime
                 )
+
                 if (histories.size - averageDay < range) {
                     writeLog(
                         it.code,
@@ -2855,6 +2919,13 @@ object StockRepo {
                 val nextDayHistory = historyDao.getHistoryAfter(it.code, endTime, 1).firstOrNull()
                 val preDayHistory = historyDao.getHistoryBefore(it.code, endTime, 1).firstOrNull()
 
+                val expectHotDao = Injector.appDatabase.expectHotDao()
+                val expectHotList = expectHotDao.getExpectHotListByCode(
+                    it.code,
+                    endDay.time,
+                    endDay.time + 60L * 24 * 60 * 60 * 1000
+                )
+
                 return@compute BKResult(
                     it,
                     overPreHigh = overPreHigh,
@@ -2865,13 +2936,13 @@ object StockRepo {
                     perZTRate = ztOne.second,
                     touchLine = touchLine,
                     follow = follows.filter { f -> f.code == it.code }.isNotEmpty(),
-                    hide = if (isShowHiddenStockAndBK) hides.filter { f -> f.code == it.code }
-                        .isNotEmpty() else false,
+                    hide = if (isShowHiddenStockAndBK) hides.any { f -> f.code == it.code } else false,
                     currentDayHistory = histories[0],
                     ztCount = ztOne.first,
                     highestLianBanCount = highestLianBanCount,
                     nextDayHistory = nextDayHistory,
-                    preDayHistory = preDayHistory
+                    preDayHistory = preDayHistory,
+                    expectHotList = expectHotList
                 )
 
             }
@@ -3358,7 +3429,9 @@ data class BKResult(
     var nextDayHistory: HistoryBK? = null,
     var currentDayHistory: HistoryBK? = null,
 
-    var diyBk: DIYBk? = null
+    var diyBk: DIYBk? = null,
+    var expectHotList: List<ExpectHot>? = null,
+    var expandSumary: Boolean = false
 )
 
 val BKResult.signalCount: Int
@@ -3451,7 +3524,7 @@ data class StrategyResult(
     val total: Int,
     var popularityRankMap: Map<String, PopularityRank> = mutableMapOf(),
     var zz2000: HistoryBK? = null,
-    var zz500: HistoryBK? = null
+    var a500: HistoryBK? = null
 
 )
 

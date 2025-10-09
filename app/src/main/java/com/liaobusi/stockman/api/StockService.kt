@@ -165,6 +165,9 @@ interface StockService {
     @GET
     suspend fun getDragonTigerRank2(@Url url: String): DraganTigerDataResponse
 
+    @POST("https://emcfgdata.eastmoney.com/api/themeInvest/getExpectHot")
+    suspend fun getExpectHot(@Body param: ExpectHotParam): ExpectHotResponse
+
 
 }
 

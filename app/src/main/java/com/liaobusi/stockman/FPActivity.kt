@@ -22,7 +22,9 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.liaobusi.stockman.databinding.ActivityFpactivityBinding
@@ -86,7 +88,9 @@ class FPActivity : AppCompatActivity() {
                     val endTime = binding.endTimeTv.editableText.toString().toIntOrNull() ?: today()
                     StockRepo.fetchZTReplay2(date = endTime)
                     StockRepo.fetchDragonTigerRank(endTime)
+                    StockRepo.getExpectHot()
                     Injector.refreshPopularityRanking()
+
                 }
                 return true
             }
@@ -94,9 +98,6 @@ class FPActivity : AppCompatActivity() {
         }
         return super.onOptionsItemSelected(item)
     }
-
-
-
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -155,14 +156,12 @@ class FPActivity : AppCompatActivity() {
             }
         }
 
-
-
         binding.bksRV.layoutManager = LinearLayoutManager(this)
-
         binding.stockRv.layoutManager = LinearLayoutManager(this)
-
         binding.stockRv.adapter = StockAdapter()
         binding.bksRV.adapter = BKsAdapter()
+
+        binding.chooseStockBtn.callOnClick()
     }
 
     fun selectBK(bk: String) {
@@ -438,6 +437,14 @@ class FPActivity : AppCompatActivity() {
             }
 
 
+            binding.expectHotCb.setOnCheckedChangeListener { compoundButton, b ->
+                outputBk(list)
+            }
+
+
+
+
+
             binding.zfBkCb.setOnCheckedChangeListener { compoundButton, b ->
                 if (b) {
                     binding.activeRateBkCb.isChecked = false
@@ -478,6 +485,11 @@ class FPActivity : AppCompatActivity() {
 
             var r = list
             r = mutableListOf<BKResult>().apply { addAll(r) }
+
+
+            if (binding.expectHotCb.isChecked) {
+                r = r.filter { it.expectHotList?.isNotEmpty() == true }
+            }
 
             if (!binding.conceptCb.isChecked) {
                 r = r.filter { it.bk.type < 1 }
@@ -541,7 +553,7 @@ class FPActivity : AppCompatActivity() {
             job = lifecycleScope.launch(Dispatchers.IO) {
                 while (true) {
                     delay(1000)
-                    if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE||recyclerView.isLayoutRequested) {
+                    if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE || recyclerView.isLayoutRequested) {
                         continue
                     }
                     val lm = recyclerView.layoutManager as LinearLayoutManager
@@ -591,6 +603,25 @@ class FPActivity : AppCompatActivity() {
             fun bind(result: BKResult, position: Int) {
                 itemBinding.apply {
 
+                    if (result.expectHotList?.isNotEmpty() == true) {
+                        hotIv.visibility = View.VISIBLE
+                        val sb = StringBuilder().apply {
+                            result.expectHotList!!.forEach {
+                                this.append("${it.summary}\n\n")
+                            }
+
+                        }
+                        summary.text = sb.trimEnd().toString()
+                    } else {
+                        hotIv.visibility = View.GONE
+                    }
+
+                    if (result.expandSumary&&summary.text.isNotEmpty()) {
+                        summary.visibility = View.VISIBLE
+                    } else {
+                        summary.visibility = View.GONE
+                    }
+
 
                     if (selectedItem?.bk?.code == result.bk.code) {
                         this.root.setBackgroundColor(0xffffff00.toInt())
@@ -638,13 +669,13 @@ class FPActivity : AppCompatActivity() {
                             nextDayChg.text = chg.toString()
                             nextDayChg.visibility = View.VISIBLE
                         }
-                    }else{
+                    } else {
                         nextDayChg.visibility = View.GONE
                     }
 
 
                     flagTv.visibility = View.INVISIBLE
-                     if (binding.ztModeCb.isChecked||binding.ztsCb.isChecked)  {
+                    if (binding.ztModeCb.isChecked || binding.ztsCb.isChecked) {
                         if (result.ztCount > 0) {
                             flagTv.setBackgroundColor(
                                 Color.valueOf(
@@ -696,8 +727,21 @@ class FPActivity : AppCompatActivity() {
                                 hideBtn.text = "取消隐藏"
                             }
 
+                            if (result.expandSumary) {
+                                expandBtn.text = "折叠详情"
+                            } else {
+                                expandBtn.text = "展开详情"
+                            }
+
 
                             val codes = result.bk.code
+
+                            expandBtn.setOnClickListener {
+                                val index = data.indexOf(result)
+                                result.expandSumary = !result.expandSumary
+                                notifyItemChanged(index)
+                                pw.dismiss()
+                            }
 
                             ztrcBtn.setOnClickListener {
                                 Strategy2Activity.openZTRCStrategy(
@@ -871,12 +915,15 @@ class FPActivity : AppCompatActivity() {
 
         override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
             super.onAttachedToRecyclerView(recyclerView)
-            if (Injector.isTradingTime()){
+            if (Injector.isTradingTime()) {
                 job = lifecycleScope.launch(Dispatchers.IO) {
                     while (true) {
                         delay(1200)
 
-                        if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE || !Injector.activityActive) {
+                        if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE || !this@FPActivity.lifecycle.currentState.isAtLeast(
+                                Lifecycle.State.RESUMED
+                            )
+                        ) {
                             continue
                         }
                         val lm = recyclerView.layoutManager as LinearLayoutManager
@@ -892,10 +939,11 @@ class FPActivity : AppCompatActivity() {
                                     val s =
                                         Injector.appDatabase.stockDao()
                                             .getStockByCode(result.stock.code)
-                                    val h = Injector.appDatabase.historyStockDao().getHistoryByDate3(
-                                        result.stock.code,
-                                        result.currentDayHistory!!.date
-                                    )
+                                    val h =
+                                        Injector.appDatabase.historyStockDao().getHistoryByDate3(
+                                            result.stock.code,
+                                            result.currentDayHistory!!.date
+                                        )
                                     val n =
                                         if (result.nextDayHistory != null) Injector.appDatabase.historyStockDao()
                                             .getHistoryByDate3(

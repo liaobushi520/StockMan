@@ -22,6 +22,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -283,7 +284,7 @@ class DPActivity : AppCompatActivity() {
                 job = lifecycleScope.launch(Dispatchers.IO) {
                     while (true) {
                         delay(1000)
-                        if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE || !Injector.activityActive) {
+                        if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE || !this@DPActivity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                             continue
                         }
                         val lm = recyclerView.layoutManager as LinearLayoutManager

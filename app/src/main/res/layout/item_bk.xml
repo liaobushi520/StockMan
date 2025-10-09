@@ -42,6 +42,16 @@
             app:layout_constraintTop_toTopOf="parent" />
 
 
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/hotIv"
+            app:srcCompat="@drawable/ic_hot"
+            app:layout_constraintStart_toEndOf="@+id/bkName"
+            app:layout_constraintEnd_toEndOf="@+id/bkName"
+            app:layout_constraintBottom_toTopOf="@+id/bkName"
+            android:visibility="gone"
+            android:layout_width="16dp"
+            android:layout_height="19.2dp"/>
+
         <LinearLayout
             android:id="@+id/ll"
             android:layout_width="wrap_content"
@@ -76,6 +86,12 @@
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <TextView
+        android:id="@+id/summary"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 
 
     <View

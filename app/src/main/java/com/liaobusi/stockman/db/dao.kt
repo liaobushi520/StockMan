@@ -1,6 +1,20 @@
 package com.liaobusi.stockman.db
 
 import androidx.room.*
+@Dao
+interface ExpectHotDao{
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun  insertAll(expectHots:List<ExpectHot>)
+
+    @Query("select * from expecthot where date>=:date order by date ASC")
+    fun getExpectHotList(date: Long):List<ExpectHot>
+
+
+    @Query("select * from expecthot where bkCode==:bkCode AND date>=:date AND date<=:endTime order by date ASC  limit 5")
+    fun getExpectHotListByCode(bkCode: String,date: Long,endTime: Long):List<ExpectHot>
+
+}
+
 
 @Dao
 interface StockDao {
@@ -13,7 +27,7 @@ interface StockDao {
     @Query("select * from stock where  chg>8.5 order by chg ASC")
     fun getWillZTStocks(): List<Stock>
 
-    @Query("select * from stock where toMarketTime < :endTime AND toMarketTime >:startTime AND circulationMarketValue <= :highMarketValue AND circulationMarketValue >= :lowMarketValue  order by circulationMarketValue desc")
+    @Query("select * from stock where toMarketTime < :endTime AND toMarketTime >:startTime AND circulationMarketValue <= :highMarketValue AND circulationMarketValue >= :lowMarketValue AND name NOT LIKE '%退%'  order by circulationMarketValue desc")
     fun getStock(
         startTime: Int,
         endTime: Int,
@@ -103,6 +117,10 @@ interface BKDao {
     @Query("select * from bk where code=:code")
     fun getBKByCode(code: String): BK?
 
+
+    @Query("select * from bk where name=:name")
+    fun getBKByName(name: String): BK?
+
     @Query("select * from bk where type=0")
     fun getTradeBKs(): List<BK>
 
@@ -150,7 +168,7 @@ interface BKStockDao {
     fun getAll(): List<BKStock>
 
 
-    @Query("select * from stock where code in ( select stockCode  from bkstock where bkCode=:bkCode ) AND  toMarketTime < :endTime AND toMarketTime >:startTime AND circulationMarketValue <= :highMarketValue AND circulationMarketValue >= :lowMarketValue ")
+    @Query("select * from stock where code in ( select stockCode  from bkstock where bkCode=:bkCode ) AND  toMarketTime < :endTime AND toMarketTime >:startTime AND circulationMarketValue <= :highMarketValue AND circulationMarketValue >= :lowMarketValue AND name NOT LIKE '%退%'")
     fun getStocksByBKCode2(
         bkCode: String,
         startTime: Int,
