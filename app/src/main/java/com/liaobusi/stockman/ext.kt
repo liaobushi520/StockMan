@@ -25,7 +25,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Calendar
+import java.util.Date
 
 fun <T> List<T>.split(groupCount: Int = 3): List<List<T>> {
     val result = mutableListOf<List<T>>()
@@ -103,6 +107,14 @@ suspend fun <T, R> handle(input: List<T>, f: suspend (s: T) -> R?): List<R> {
         }
     }
     return list
+}
+
+
+fun Long.toDateTimeString(pattern: String = "yyyy-MM-dd HH:mm:ss"): String {
+    val instant = Instant.ofEpochMilli(this*1000)
+    val formatter = DateTimeFormatter.ofPattern(pattern)
+        .withZone(ZoneId.systemDefault())
+    return formatter.format(instant)
 }
 
 
@@ -241,8 +253,31 @@ fun String.isAfter20220101(): Boolean {
 }
 
 
+/**
+ * 获取指定日期的开始时间戳（00:00:00）
+ */
+fun Date.getStartOfDay(): Long {
+    val calendar = Calendar.getInstance()
+    calendar.setTime(this)
+    calendar.set(Calendar.HOUR_OF_DAY, 0)
+    calendar.set(Calendar.MINUTE, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.MILLISECOND, 0)
+    return calendar.getTimeInMillis()
+}
 
-
+/**
+ * 获取指定日期的结束时间戳（23:59:59.999）
+ */
+fun Date.getEndOfDay(): Long {
+    val calendar = Calendar.getInstance()
+    calendar.setTime(this)
+    calendar.set(Calendar.HOUR_OF_DAY, 23)
+    calendar.set(Calendar.MINUTE, 59)
+    calendar.set(Calendar.SECOND, 59)
+    calendar.set(Calendar.MILLISECOND, 999)
+    return calendar.getTimeInMillis()
+}
 
 
 

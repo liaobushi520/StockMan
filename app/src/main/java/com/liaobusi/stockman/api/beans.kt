@@ -570,3 +570,74 @@ data class ExpectHotParam(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+
+data class StockEventData(val total: Int, val diff: Map<String, EMDiffBean>)
+
+data class StockEventBean(
+    val data: StockEventData?,
+    val dlmkts: String,
+    val full: Int,
+    val lt: Int,
+    val rc: Int,
+    val rt: Int,
+    val svr: Int
+)
+
+
+data class HotTopicParam(
+    val pageUrl: String="https://vipmoney.eastmoney.com/collect/app_ranking/ranking/app.html?hashcode=_1760158430337&market=&appfenxiang=1#/stock",
+    val parm: String="{\"deviceid\":\"C1C1C88D75DF3F58430A09741E1681C5\",\"version\":\"180\",\"product\":\"EastMoney\",\"plat\":\"Android\",\"gubaCode\":\"SZ300260,SH600111,SH601606,SH603690,SH688585,SZ002549,SZ000981,SH603011,SZ002208,SH601727,SZ000969,SZ300059,SZ000021,SH600635,SH601611,SH601212,SH600362,SZ301013,SZ002156,SH603300,SH600519,SZ000006,SH600105,SH688981,SZ002941,SH601899,SH600021,SH601126,SZ301120,SZ300450,SZ002050,SZ000063,SH601011,SH600089,SZ002338,SZ002366,SH600268,SZ002460,SH601127,SH600490,SH603156,SH600010,SZ002475,SZ002600,SZ000831,SH600810,SZ000977,SH601992,SZ002084,SZ002241,SZ002910,SH601138,SZ002298,SZ002291,SH603530,SZ002074,SH600167,SH601669,SZ000045,SZ300750,SZ300748,SH600382,SH603363,SH600078,SZ000685,SH600895,SZ002493,SZ920509,SH603993,SH603799,SH600545,SH600801,SZ002631,SZ002409,SZ002029,SZ002709,SZ000878,SH688256,SH600960,SZ002052,SH600580,SZ300274,SH600403,SZ000559,SZ000058,SH601218,SH603889,SH603986,SH600584,SH601279,SZ002734,SZ002402,SZ300250,SZ000737,SH605169,SH600376,SH601868,SZ000819,SZ002594,SZ300014\"}",
+    val path: String="newtopic/api/Topic/GubaCodeHotTopicNewRead",
+    val track: String="tanzhen_sys_1760159354320"
+)
+
+data class HotTopicParamBean(val gubaCode: String,val deviceid: String="C1C1C88D75DF3F58430A09741E1681C5",val version: String="180",val product: String="EastMoney",val plat: String="Android")
+
+data class HotTopicResponse(val RData: String)
+
+data class RDataBean(val re: Map<String,List<RDataInnerBean>>)
+
+data class RDataInnerBean(val name: String,val summary: String)
+
+data class ZhiBoResponse(
+    val JHJJYD: List<Any>,
+    val List: List<Item0>,
+    val Notice: String,
+    val Status: Int,
+    val Time: Int,
+    val date: String,
+    val errcode: String,
+    val ttag: Double
+)
+
+data class Item0(
+    val BoomReason: String,
+    val Comment: String,
+    val DisStock: List<List<String>>,
+    val ID: String,
+    val Image: String,
+    val Interpretation: String,
+    val IsChart: String,
+    val PlateCode: String,
+    val PlateJE: String,
+    val PlateName: String,
+    val PlateZDF: String,
+    val ShareData: ShareData,
+    val Stock: List<List<Any>>,
+    val ThemeClassInfo: List<Any>,
+    val ThemeInfo: List<Any>,
+    val Time: Int,
+    val Type: String,
+    val UID: String,
+    val UserName: String,
+    val styleIndex: List<StyleIndex>
+)
+
+class ShareData
+
+data class StyleIndex(
+    val type: String,
+    val typeName: String,
+    val typeNum: String
+)
+

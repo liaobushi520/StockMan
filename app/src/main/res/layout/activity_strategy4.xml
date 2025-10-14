@@ -384,6 +384,18 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content" />
 
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="活跃比较" />
+
+                        <androidx.appcompat.widget.AppCompatCheckBox
+                            android:id="@+id/onlyActiveRateCb"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:buttonTint="#ffbd2c2c"
+                            android:checked="true" />
+
 
                     </LinearLayout>
 
@@ -489,17 +501,19 @@
                             android:layout_height="wrap_content" />
 
 
+
+
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="活跃比较" />
+                            android:text="异动模式" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
-                            android:id="@+id/onlyActiveRateCb"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:id="@+id/ydModeCb"
                             android:buttonTint="#ffbd2c2c"
-                            android:checked="true" />
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
 
 
                         <TextView

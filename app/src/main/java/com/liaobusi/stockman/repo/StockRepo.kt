@@ -3,6 +3,7 @@ package com.liaobusi.stockman.repo
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.telephony.ims.SipDetails
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
@@ -12,9 +13,15 @@ import android.widget.Toast
 
 import com.google.gson.Gson
 import com.liaobusi.stockman.*
+import com.liaobusi.stockman.Injector.apiService
+import com.liaobusi.stockman.Injector.appDatabase
 import com.liaobusi.stockman.api.DragonTiger2Item
 import com.liaobusi.stockman.api.ExpectHotParam
 import com.liaobusi.stockman.api.FS
+import com.liaobusi.stockman.api.HotTopicParam
+import com.liaobusi.stockman.api.HotTopicParamBean
+import com.liaobusi.stockman.api.RDataBean
+import com.liaobusi.stockman.api.RDataInnerBean
 import com.liaobusi.stockman.api.Rank
 import com.liaobusi.stockman.api.RankWrapper
 import com.liaobusi.stockman.api.SZ_BZ_FS
@@ -635,12 +642,12 @@ object StockRepo {
                         val id = "${bk.code}${bean.date}${bean.summary}".toUniqueNumberViaMD5()
                             .toString()
 
-                        val dateStr= SimpleDateFormat("yyyy/MM/dd").format(Date(bean.date))
+                        val dateStr = SimpleDateFormat("yyyy/MM/dd").format(Date(bean.date))
                         expectHotList.add(
                             ExpectHot(
                                 id = id,
                                 bk.code,
-                                summary = dateStr+" "+bean.summary,
+                                summary = dateStr + " " + bean.summary,
                                 date = bean.date,
                                 expireTime = bean.expireTime,
                                 themeCode = it.code
@@ -859,6 +866,35 @@ object StockRepo {
             )
         }
 
+    }
+
+    suspend fun getYDData() {
+        try {
+            val rsp = apiService.getZhiBoStock(mutableMapOf<String, String>().apply {
+                put("a", "ZhiBoContent")
+                put("apiv", "w42")
+                put("c", "ConceptionPoint")
+                put("PhoneOSNew", "1")
+                put("DeviceID", "598d905194133b9e")
+                put("VerSion", "5.21.0.2")
+                put("index", "0")
+            })
+            val histories = rsp.List.map {
+                val sb = StringBuilder()
+                it.Stock.forEach {
+                    sb.append(it.first())
+                    sb.append(",")
+                }
+                UnusualActionHistory(
+                    time = it.Time.toLong(),
+                    comment = it.Comment,
+                    stocks = sb.removeSuffix(",").toString()
+                )
+            }
+            appDatabase.unusualActionHistoryDao().insertAll(histories)
+        }catch (e: Throwable){
+            e.printStackTrace()
+        }
     }
 
     suspend fun getRealTimeIndexByCode(codeWithMarket: String) {
@@ -1616,6 +1652,32 @@ object StockRepo {
         return total / count
     }
 
+
+    suspend fun fetchDFCFHotTopic(codes: String): Map<String, List<RDataInnerBean>>? {
+
+        try {
+            val rsp = Injector.apiService.getHotTopicForStock(
+                HotTopicParam(
+                    parm = Gson().toJson(
+                        HotTopicParamBean(gubaCode = codes)
+                    )
+                )
+            )
+            if (rsp.RData.isNotEmpty()) {
+                val s = Gson().fromJson<RDataBean>(rsp.RData, RDataBean::class.java)
+                val map = mutableMapOf<String, List<RDataInnerBean>>()
+                s.re.forEach {
+                    map[it.key.substring(2)] = it.value
+                }
+                return map
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+        return null
+
+    }
+
     suspend fun fetchPopularityRanking() = withContext(Dispatchers.IO) {
         Log.i("股票超人", "从网络获取东方财富股票热度排名")
 
@@ -2240,6 +2302,19 @@ object StockRepo {
         Injector.appDatabase.dragonTigerDao().getDragonTigerByDate(endTime).forEach {
             dragonTigerMap[it.code] = it
         }
+
+        val formatter = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
+        formatter.timeZone = TimeZone.getDefault() // 使用系统时区
+        val date = formatter.parse(endTime.toString())
+        val ydList = Injector.appDatabase.unusualActionHistoryDao()
+            .getHistories(date.getStartOfDay() / 1000, date.getEndOfDay() / 1000)
+        val codes = mutableListOf<String>()
+        val ydMap = mutableMapOf<String, StockResult>()
+        ydList.forEach {
+            codes.addAll(it.stocks.split(","))
+        }
+
+
         // val stocks = listOf(stockDao.getStockByCode("002427"))
         // val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())
         val follows = Injector.appDatabase.followDao().getFollowStocks()
@@ -2248,9 +2323,10 @@ object StockRepo {
                 return@compute null
             }
 
-//            if(it.name.contains("退")){
-//                return@compute null
-//            }
+            if (it.name.contains("退")) {
+                return@compute null
+            }
+
 //            val startTime = endDay.before(averageDay * 2 + range * 2 + 30)
 //            val histories = historyDao.getHistoryRange(
 //                it.code,
@@ -2259,9 +2335,6 @@ object StockRepo {
 //            )
             val histories =
                 historyDao.getHistoryBefore3(it.code, endTime, averageDay * 2 + range * 2)
-
-
-
 
             if (histories.size - averageDay < range) {
                 writeLog(it.code, "${it.name}历史记录不足,共${histories.size}")
@@ -2519,7 +2592,11 @@ object StockRepo {
                 dargonTigerRank = dragonTigerMap.get(it.code),
                 popularity = popularityData
                 //state = state
-            )
+            ).also {
+                if (codes.contains(it.stock.code)) {
+                    ydMap.put(it.stock.code, it)
+                }
+            }
 
         }
 
@@ -2529,10 +2606,31 @@ object StockRepo {
                 return@Comparator v1.signalCount - v0.signalCount
             })
 
+        val fakeItem = stockDao.getStockByCode("600000")
+        val ydPairs=mutableListOf<Pair<StockResult,List<StockResult>>>()
+        ydList.forEachIndexed {index,item->
+            val ydHeader=StockResult(
+                isGroupHeader = true,
+                groupColor = colors[index % colors.size],
+                stock = fakeItem,
+                ydDetails = item
+            )
+            val ydStocks=mutableListOf<StockResult>()
+            val codes = item.stocks.split(",")
+            codes.forEach {
+                val s=ydMap[it]
+                if (s!=null)
+                    ydStocks.add(s)
+            }
+            ydPairs.add(Pair(ydHeader,ydStocks))
+        }
+
+
         return@withContext StrategyResult(
             result,
             stocks.size,
-            popularityRankMap = popularityRankMap
+            popularityRankMap = popularityRankMap,
+            ydPairs = ydPairs
         )
     }
 
@@ -2773,7 +2871,6 @@ object StockRepo {
         val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())!!
         val follows = Injector.appDatabase.followDao().getFollowBks()
         val hides = Injector.appDatabase.hideDao().getHides()
-
 
 
         //&& (it.code == "BK0454" || it.code == "BK0474")
@@ -3514,7 +3611,8 @@ data class StockResult(
     var changeRate: Float = 0f,
     var dargonTigerRank: DragonTigerRank? = null,
     var state: String = "无",
-    var popularity: PopularityRank? = null
+    var popularity: PopularityRank? = null,
+    var ydDetails: UnusualActionHistory? = null
 
 
 )
@@ -3524,7 +3622,8 @@ data class StrategyResult(
     val total: Int,
     var popularityRankMap: Map<String, PopularityRank> = mutableMapOf(),
     var zz2000: HistoryBK? = null,
-    var a500: HistoryBK? = null
+    var a500: HistoryBK? = null,
+    var ydPairs: List<Pair<StockResult,List<StockResult>>>? = null
 
 )
 

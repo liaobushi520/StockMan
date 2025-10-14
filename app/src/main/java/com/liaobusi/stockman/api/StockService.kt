@@ -12,6 +12,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.Field
+import retrofit2.http.FieldMap
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
 import retrofit2.http.Headers
@@ -168,6 +169,12 @@ interface StockService {
     @POST("https://emcfgdata.eastmoney.com/api/themeInvest/getExpectHot")
     suspend fun getExpectHot(@Body param: ExpectHotParam): ExpectHotResponse
 
+    @POST("https://emstockdiag.eastmoney.com/apistock/Tran/GetData")
+    suspend fun getHotTopicForStock(@Body param: HotTopicParam): HotTopicResponse
+
+    @FormUrlEncoded
+    @POST("https://apphwhq.longhuvip.com/w1/api/index.php")
+    suspend fun getZhiBoStock(@FieldMap fields:Map<String, String>): ZhiBoResponse
 
 }
 

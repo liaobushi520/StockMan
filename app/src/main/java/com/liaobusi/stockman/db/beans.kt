@@ -9,6 +9,9 @@ import androidx.room.*
 import com.liaobusi.stockman.Injector
 import com.liaobusi.stockman.STOCK_GREEN
 import com.liaobusi.stockman.isFPSource
+@Entity()
+data class UnusualActionHistory(@PrimaryKey val time: Long, val comment: String, val stocks: String)
+
 
 @Entity(primaryKeys = ["id"])
 data class ExpectHot(val id: String,val bkCode: String, val summary: String, val date: Long, val expireTime: Long, val themeCode: String)
@@ -293,10 +296,10 @@ val HistoryStock.longUpShadow: Boolean
 
 
 @Database(
-    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class, PopularityRank::class, DragonTigerRank::class, ExpectHot::class],
-    version = 30,
+    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class, PopularityRank::class, DragonTigerRank::class, ExpectHot::class, UnusualActionHistory::class],
+    version = 31,
     autoMigrations = [
-        AutoMigration(from = 29, to = 30)
+        AutoMigration(from = 30, to = 31)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -323,6 +326,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun dragonTigerDao(): DragonTigerDao
 
     abstract fun expectHotDao(): ExpectHotDao
+
+    abstract fun unusualActionHistoryDao(): UnusualActionHistoryDao
 
 
 //    @DeleteTable.Entries(value = [DeleteTable(tableName = "BK"),DeleteTable(tableName = "HistoryBK")])

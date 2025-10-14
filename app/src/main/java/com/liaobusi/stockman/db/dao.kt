@@ -1,6 +1,16 @@
 package com.liaobusi.stockman.db
 
 import androidx.room.*
+
+@Dao
+interface UnusualActionHistoryDao{
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertAll(unusualActionHistories: List<UnusualActionHistory>)
+
+    @Query("select * from unusualactionhistory where time>=:start AND time<=:end order by time DESC")
+    fun getHistories(start: Long,end:Long):List<UnusualActionHistory>
+}
+
 @Dao
 interface ExpectHotDao{
     @Insert(onConflict = OnConflictStrategy.REPLACE)

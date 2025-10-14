@@ -614,6 +614,7 @@ class FPActivity : AppCompatActivity() {
                         summary.text = sb.trimEnd().toString()
                     } else {
                         hotIv.visibility = View.GONE
+                        summary.text=""
                     }
 
                     if (result.expandSumary&&summary.text.isNotEmpty()) {

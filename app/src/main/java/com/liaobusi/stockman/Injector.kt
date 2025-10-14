@@ -18,17 +18,25 @@ import android.os.Bundle
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat.startForegroundService
+import androidx.core.content.edit
 import androidx.room.Room
+import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.liaobusi.stockman.api.ExpectHotParam
+import com.liaobusi.stockman.api.HotTopicParam
+import com.liaobusi.stockman.api.HotTopicParamBean
+import com.liaobusi.stockman.api.RDataBean
+import com.liaobusi.stockman.api.StockEventBean
 import com.liaobusi.stockman.api.StockService
 import com.liaobusi.stockman.api.TGBStock
 import com.liaobusi.stockman.api.THSStock
 import com.liaobusi.stockman.api.getOkHttpClientBuilder
 import com.liaobusi.stockman.db.AppDatabase
 import com.liaobusi.stockman.db.BK
+import com.liaobusi.stockman.db.HistoryStock
 import com.liaobusi.stockman.db.PopularityRank
 import com.liaobusi.stockman.db.Stock
+import com.liaobusi.stockman.db.UnusualActionHistory
 import com.liaobusi.stockman.db.marketCode
 import com.liaobusi.stockman.db.specialBK
 import com.liaobusi.stockman.repo.StockRepo
@@ -39,10 +47,18 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.Calendar
 import java.util.Date
+
+
+import okhttp3.Request
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 
 val log = StringBuilder()
@@ -83,6 +99,8 @@ object Injector {
 
     var trackerType = false
 
+    val client = getOkHttpClientBuilder().build()
+
     fun inject(applicationContext: Context) {
         context = applicationContext
 
@@ -99,7 +117,7 @@ object Injector {
                         .create()
                 )
             )
-            .client(getOkHttpClientBuilder().build())
+            .client(client)
             .build()
         apiService = retrofit.create(StockService::class.java)
 
@@ -119,6 +137,8 @@ object Injector {
             ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 if (activity is HomeActivity) {
+
+
                     scope.launch(Dispatchers.IO) {
                         StockRepo.getRealTimeIndexByCode("1.000001")
                         StockRepo.getRealTimeIndexByCode("2.932000")
@@ -127,6 +147,7 @@ object Injector {
                         StockRepo.getRealTimeBKs()
                         StockRepo.fetchDragonTigerRank(today())
                         StockRepo.getExpectHot()
+                        StockRepo.getYDData()
 
                         val sp = activity.getSharedPreferences("app", Context.MODE_PRIVATE)
                         if (System.currentTimeMillis() - sp.getLong(
@@ -135,8 +156,9 @@ object Injector {
                             ) > 1 * 12 * 60 * 60 * 1000
                         ) {
                             StockRepo.getBKStocks()
-                            sp.edit().putLong("fetch_bk_stocks_time", System.currentTimeMillis())
-                                .apply()
+                            sp.edit {
+                                putLong("fetch_bk_stocks_time", System.currentTimeMillis())
+                            }
                         }
 
 
@@ -146,7 +168,7 @@ object Injector {
                             ) > 5 * 24 * 60 * 60 * 1000
                         ) {
                             StockRepo.getHistoryGDRS()
-                            sp.edit().putLong("fetch_gdrs_time", System.currentTimeMillis()).apply()
+                            sp.edit { putLong("fetch_gdrs_time", System.currentTimeMillis()) }
                         }
 
                     }
@@ -221,6 +243,112 @@ object Injector {
         return (hour in 9 until 12 || hour in 13 until 15)
     }
 
+    private fun requestStocks(pn: Int = 1, pz: Int = 2000) {
+        val request = Request.Builder()
+            .url("https://31.push2.eastmoney.com/api/qt/slist/sse?ut=f057cbcbce2a86e2866ab8877db1d059&fltt=1&fields=f1,f2,f3,f4,f7,f8,f12,f13,f14,f15,f16,f17,18,f21,f26,f152,f297,f350,f351,f352,f383&secid=47.800000&invt=2&pz=${pz}&po=1&fid=f3&mpi=1000&spt=11&pn=${pn}") // 替换为你的SSE端点
+            .addHeader("Accept", "text/event-stream") // 设置接受事件流
+            .build()
+
+        try {
+            val response = OkHttpClient.Builder().build().newCall(request).execute()
+            if (!response.isSuccessful) {
+                // 处理非成功响应
+                throw IOException("Unexpected code $response")
+            }
+            // 获取响应体流
+            val responseBody = response.body
+            if (responseBody != null) {
+                // 使用BufferedSource来读取数据
+                val source = responseBody.source()
+                try {
+                    while (!source.exhausted()) {
+                        // 读取一行数据
+                        val line = source.readUtf8Line()
+                        if (line != null) {
+                            // 处理每一行数据，根据SSE协议解析事件
+                            processEventLine(line)
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    responseBody.close()
+                }
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun processEventLine(line: String?) {
+        if (line == null || line.trim().isEmpty() == true) return
+        println("Received: $line")
+
+        val s = line.removePrefix("data: ").replace("\"-\"", "-1")
+        val result = GsonBuilder().setLenient().create()
+            .fromJson<StockEventBean>(s, StockEventBean::class.java)
+        var date = result.data?.diff?.values?.firstOrNull()?.date ?: 0
+        val newList =
+            result.data?.diff?.map { it.value }?.filter { it.highest != -1f && it.price != 0f }
+                ?.map {
+                    val stock = Stock(
+                        code = it.code,
+                        name = it.name,
+                        turnoverRate = it.turnoverRate / 100,
+                        highest = it.highest / 100,
+                        lowest = it.lowest / 100,
+                        price = it.price / 100,
+                        chg = it.chg / 100,
+                        amplitude = it.amplitude / 100,
+                        openPrice = it.openPrice / 100,
+                        yesterdayClosePrice = it.yesterdayClosePrice / 100,
+                        toMarketTime = it.toMarketTime,
+                        circulationMarketValue = it.circulationMarketValue,
+                        ztPrice = it.ztPrice / 100,
+                        dtPrice = it.dtPrice / 100,
+                        averagePrice = it.averagePrice / 100,
+                        bk = it.concept
+                    )
+                    if (!Injector.trackerType)
+                        Injector.trackerMap[stock.code]?.update(stock)
+                    return@map stock
+                }
+
+
+        if (trackerType) {
+            newList?.forEach {
+                realTimeStockMap[it.code] = it
+            }
+        }
+
+        if (newList?.isNotEmpty() == true && date != 0) {
+            val dao = appDatabase.stockDao()
+            dao.insertAll(newList)
+            Log.i("股票超人", "插入股票数据库,数量${newList.size}，来源东方财富")
+            val dao1 = appDatabase.historyStockDao()
+            val historyStocks = newList.filter { it.price != 0f }.map {
+                return@map HistoryStock(
+                    code = it.code,
+                    date = date,
+                    closePrice = it.price,
+                    chg = it.chg,
+                    amplitude = it.amplitude,
+                    turnoverRate = it.turnoverRate,
+                    highest = it.highest,
+                    lowest = it.lowest,
+                    openPrice = it.openPrice,
+                    ztPrice = it.ztPrice,
+                    dtPrice = it.dtPrice,
+                    yesterdayClosePrice = it.yesterdayClosePrice,
+                    averagePrice = it.averagePrice
+                )
+            }
+            dao1.insertHistory(historyStocks)
+            Log.i("股票超人", "插入股票历史数据库${historyStocks.size}，来源东方财富")
+        }
+
+    }
+
 
     fun autoRefresh(enable: Boolean) {
         autoRefreshJob?.cancel()
@@ -239,38 +367,47 @@ object Injector {
                     }
                 }
 
-                async {
-                    while (true) {
-                        if (isTradingTime()) {
-                            if (getNetworkType(context) == NetworkType.WIFI && !isRealTimeDataSource(
-                                    context
-                                )
-                            ) {
-                                StockRepo.getRealTimeStocksSH()
-                            }
-                            delay(6 * 1000)
-                        } else {
-                            delay(1000 * 60 * 6)
+                if (isTradingTime()) {
+                    repeat(3) {
+                        launch(Dispatchers.IO) {
+                            requestStocks(it + 1)
                         }
                     }
                 }
 
-                async {
-                    while (true) {
-                        if (isTradingTime()) {
-                            if (isRealTimeDataSource(context)) {
-                                StockRepo.getRealTimeStocks()
-                                delay(1000)
-                            } else {
-                                if (getNetworkType(context) == NetworkType.WIFI) {
-                                    StockRepo.getRealTimeStocksBD()
-                                }
-                            }
-                        } else {
-                            delay(1000 * 60 * 6)
-                        }
-                    }
-                }
+
+//                async {
+//                    while (true) {
+//                        if (isTradingTime()) {
+//                            if (getNetworkType(context) == NetworkType.WIFI && !isRealTimeDataSource(
+//                                    context
+//                                )
+//                            ) {
+//                                StockRepo.getRealTimeStocksSH()
+//                            }
+//                            delay(6 * 1000)
+//                        } else {
+//                            delay(1000 * 60 * 6)
+//                        }
+//                    }
+//                }
+//
+//                async {
+//                    while (true) {
+//                        if (isTradingTime()) {
+//                            if (isRealTimeDataSource(context)) {
+//                                StockRepo.getRealTimeStocks()
+//                                delay(1000)
+//                            } else {
+//                                if (getNetworkType(context) == NetworkType.WIFI) {
+//                                    StockRepo.getRealTimeStocksBD()
+//                                }
+//                            }
+//                        } else {
+//                            delay(1000 * 60 * 6)
+//                        }
+//                    }
+//                }
             }
         }
     }
@@ -286,6 +423,16 @@ object Injector {
         val dzhList = StockRepo.fetchDZHPopularityRanking()
 
         val clsList = StockRepo.fetchCLSPopularityRanking()
+
+        val codeSB = StringBuilder()
+        list.forEach {
+            if (it.SECUCODE.contains("SZ")) {
+                codeSB.append("SZ${it.SECURITY_CODE},")
+            } else if (it.SECUCODE.contains("SH")) {
+                codeSB.append("SH${it.SECURITY_CODE},")
+            }
+        }
+        val hotTopicMap = StockRepo.fetchDFCFHotTopic(codeSB.removeSuffix(",").toString())
 
         val dzhMap = mutableMapOf<String, Int>()
         dzhList.forEachIndexed { index, item ->
@@ -315,7 +462,12 @@ object Injector {
             val tgb = map2[it.SECURITY_CODE]
             val explainSb = StringBuilder()
 
-            explainSb.append("[东方财富] ${it.POPULARITY_RANK}\n\n")
+            explainSb.append("[东方财富] ${it.POPULARITY_RANK}\n")
+            val hotTopics = hotTopicMap?.get(it.SECURITY_CODE)
+            hotTopics?.forEach {
+                explainSb.append("${it.name}\n${it.summary}\n")
+            }
+            explainSb.append("\n")
 
 
             val ths = map[it.SECURITY_CODE]
