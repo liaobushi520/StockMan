@@ -916,7 +916,7 @@ class FPActivity : AppCompatActivity() {
 
         override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
             super.onAttachedToRecyclerView(recyclerView)
-            if (Injector.isTradingTime()) {
+            if (isTradingTime()) {
                 job = lifecycleScope.launch(Dispatchers.IO) {
                     while (true) {
                         delay(1200)

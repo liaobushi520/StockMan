@@ -23,6 +23,7 @@ import androidx.room.Room
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.liaobusi.stockman.api.ExpectHotParam
+import com.liaobusi.stockman.api.FPRequest
 import com.liaobusi.stockman.api.HotTopicParam
 import com.liaobusi.stockman.api.HotTopicParamBean
 import com.liaobusi.stockman.api.RDataBean
@@ -136,17 +137,24 @@ object Injector {
         (applicationContext as Application).registerActivityLifecycleCallbacks(object :
             ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+                if (activity is FPActivity) {
+                    scope.launch(Dispatchers.IO) {
+                        StockRepo.getExpectHot()
+                    }
+                }
+
                 if (activity is HomeActivity) {
 
 
                     scope.launch(Dispatchers.IO) {
+
                         StockRepo.getRealTimeIndexByCode("1.000001")
                         StockRepo.getRealTimeIndexByCode("2.932000")
                         StockRepo.getRealTimeIndexByCode("1.000905")
                         StockRepo.getRealTimeStocks()
                         StockRepo.getRealTimeBKs()
                         StockRepo.fetchDragonTigerRank(today())
-                        StockRepo.getExpectHot()
+
                         StockRepo.getYDData()
 
                         val sp = activity.getSharedPreferences("app", Context.MODE_PRIVATE)
