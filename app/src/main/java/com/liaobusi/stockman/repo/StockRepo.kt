@@ -12,9 +12,14 @@ import android.util.LruCache
 import android.widget.Toast
 
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.liaobusi.stockman.*
+
 import com.liaobusi.stockman.Injector.apiService
 import com.liaobusi.stockman.Injector.appDatabase
+import com.liaobusi.stockman.Injector.realTimeStockMap
+import com.liaobusi.stockman.Injector.trackerMap
+import com.liaobusi.stockman.Injector.trackerType
 import com.liaobusi.stockman.api.DragonTiger2Item
 import com.liaobusi.stockman.api.ExpectHotParam
 import com.liaobusi.stockman.api.FS
@@ -25,13 +30,17 @@ import com.liaobusi.stockman.api.RDataInnerBean
 import com.liaobusi.stockman.api.Rank
 import com.liaobusi.stockman.api.RankWrapper
 import com.liaobusi.stockman.api.SZ_BZ_FS
+import com.liaobusi.stockman.api.StockEventBean
 import com.liaobusi.stockman.api.StockService
 import com.liaobusi.stockman.api.StockTrend
 import com.liaobusi.stockman.api.TempWrapper
 import com.liaobusi.stockman.api.getDefaultSpecificDataBean
 import com.liaobusi.stockman.db.*
 import kotlinx.coroutines.*
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.BufferedReader
+import java.io.IOException
 import java.io.InputStreamReader
 
 import java.lang.Integer.min
@@ -40,6 +49,7 @@ import java.math.BigInteger
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.set
 import kotlin.math.atan
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -892,7 +902,7 @@ object StockRepo {
                 )
             }
             appDatabase.unusualActionHistoryDao().insertAll(histories)
-        }catch (e: Throwable){
+        } catch (e: Throwable) {
             e.printStackTrace()
         }
     }
@@ -2295,18 +2305,18 @@ object StockRepo {
 
 
         val popularityRankMap = mutableMapOf<String, PopularityRank>()
-        Injector.appDatabase.popularityRankDao().getRanksByDate(endTime).forEach {
+        appDatabase.popularityRankDao().getRanksByDate(endTime).forEach {
             popularityRankMap[it.code] = it
         }
         val dragonTigerMap = mutableMapOf<String, DragonTigerRank>()
-        Injector.appDatabase.dragonTigerDao().getDragonTigerByDate(endTime).forEach {
+        appDatabase.dragonTigerDao().getDragonTigerByDate(endTime).forEach {
             dragonTigerMap[it.code] = it
         }
 
         val formatter = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
         formatter.timeZone = TimeZone.getDefault() // 使用系统时区
         val date = formatter.parse(endTime.toString())
-        val ydList = Injector.appDatabase.unusualActionHistoryDao()
+        val ydList = appDatabase.unusualActionHistoryDao()
             .getHistories(date.getStartOfDay() / 1000, date.getEndOfDay() / 1000)
         val codes = mutableListOf<String>()
         val ydMap = mutableMapOf<String, StockResult>()
@@ -2607,22 +2617,22 @@ object StockRepo {
             })
 
         val fakeItem = stockDao.getStockByCode("600000")
-        val ydPairs=mutableListOf<Pair<StockResult,List<StockResult>>>()
-        ydList.forEachIndexed {index,item->
-            val ydHeader=StockResult(
+        val ydPairs = mutableListOf<Pair<StockResult, List<StockResult>>>()
+        ydList.forEachIndexed { index, item ->
+            val ydHeader = StockResult(
                 isGroupHeader = true,
                 groupColor = colors[index % colors.size],
                 stock = fakeItem,
                 ydDetails = item
             )
-            val ydStocks=mutableListOf<StockResult>()
+            val ydStocks = mutableListOf<StockResult>()
             val codes = item.stocks.split(",")
             codes.forEach {
-                val s=ydMap[it]
-                if (s!=null)
+                val s = ydMap[it]
+                if (s != null)
                     ydStocks.add(s)
             }
-            ydPairs.add(Pair(ydHeader,ydStocks))
+            ydPairs.add(Pair(ydHeader, ydStocks))
         }
 
 
@@ -3453,6 +3463,168 @@ object StockRepo {
 
         return@withContext StrategyResult(result, stocks.size)
     }
+
+
+    //订阅东方财富股票数据
+    private data class CacheData(
+        var date: Int = 0,
+        val map: MutableMap<String, Stock> = mutableMapOf()
+    )
+
+    fun requestStocks(pn: Int = 1, pz: Int = 2000) {
+        val request = Request.Builder()
+            .url("https://31.push2.eastmoney.com/api/qt/slist/sse?ut=f057cbcbce2a86e2866ab8877db1d059&fltt=1&fields=f1,f2,f3,f4,f7,f8,f12,f13,f14,f15,f16,f17,18,f21,f26,f152,f297,f350,f351,f352,f383&secid=47.800000&invt=2&pz=${pz}&po=1&fid=f3&mpi=1000&spt=11&pn=${pn}") // 替换为你的SSE端点
+            .addHeader("Accept", "text/event-stream") // 设置接受事件流
+            .build()
+
+        try {
+            val response = OkHttpClient().newCall(request).execute()
+            if (!response.isSuccessful) {
+                // 处理非成功响应
+                throw IOException("Unexpected code $response")
+            }
+            val cacheData = CacheData()
+            // 获取响应体流
+            val responseBody = response.body
+            var isFirstLine = true
+            if (responseBody != null) {
+                // 使用BufferedSource来读取数据
+                val source = responseBody.source()
+                try {
+                    while (!source.exhausted()) {
+                        // 读取一行数据
+                        val line = source.readUtf8Line()
+                        if (line != null) {
+                            // 处理每一行数据，根据SSE协议解析事件
+                            processEventLine(cacheData, line, isFirstLine)
+                            isFirstLine = false
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    responseBody.close()
+                }
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun processEventLine(
+        cache: CacheData,
+        line: String?,
+        isFirstLine: Boolean = false
+    ) {
+        if (line == null || line.trim().isEmpty() == true) return
+        println("Received: $line")
+
+        val s = line.removePrefix("data: ").replace("\"-\"", "-1")
+        val result = GsonBuilder().setLenient().create()
+            .fromJson<StockEventBean>(s, StockEventBean::class.java)
+
+
+        val newList = if (isFirstLine) {
+            cache.date = result.data?.diff?.values?.firstOrNull()?.date ?: 0
+            result.data?.diff?.map { it.value }?.filter { it.highest != -1f && it.price != 0f }
+                ?.map {
+                    val stock = Stock(
+                        code = it.code,
+                        name = it.name,
+                        turnoverRate = it.turnoverRate / 100,
+                        highest = it.highest / 100,
+                        lowest = it.lowest / 100,
+                        price = it.price / 100,
+                        chg = it.chg / 100,
+                        amplitude = it.amplitude / 100,
+                        openPrice = it.openPrice / 100,
+                        yesterdayClosePrice = it.yesterdayClosePrice / 100,
+                        toMarketTime = it.toMarketTime,
+                        circulationMarketValue = it.circulationMarketValue,
+                        ztPrice = it.ztPrice / 100,
+                        dtPrice = it.dtPrice / 100,
+                        averagePrice = it.averagePrice / 100,
+                        bk = it.concept
+                    )
+                    cache.map[stock.code] = stock
+                    if (!trackerType)
+                        trackerMap[stock.code]?.update(stock)
+                    return@map stock
+                }
+        } else {
+            val list = mutableListOf<Stock>()
+            result.data?.diff?.map { it.value }?.forEach {
+                val cacheStock = cache.map[it.code]
+                if (cacheStock == null) return@forEach
+                val chg = if (it.chg != null) it.chg / 100 else cacheStock.chg
+                val price = if (it.price != null) it.price / 100 else cacheStock.price
+                val averagePrice =
+                    if (it.averagePrice != null) it.averagePrice / 100 else cacheStock.averagePrice
+                val turnoverRate =
+                    if (it.turnoverRate != null) it.turnoverRate / 100 else cacheStock.turnoverRate
+                val highest = if (it.highest != null) it.highest / 100 else cacheStock.highest
+                val lowest = if (it.lowest != null) it.lowest / 100 else cacheStock.lowest
+                val circulationMarketValue =
+                    if (it.circulationMarketValue != null) it.circulationMarketValue else cacheStock.circulationMarketValue
+                val amplitude =
+                    if (it.amplitude != null) it.amplitude / 100 else cacheStock.amplitude
+                val openPrice =
+                    if (it.openPrice != null) it.openPrice / 100 else cacheStock.openPrice
+
+                val newStock = cacheStock.copy(
+                    chg = chg,
+                    price = price,
+                    averagePrice = averagePrice,
+                    turnoverRate = turnoverRate,
+                    highest = highest,
+                    lowest = lowest,
+                    circulationMarketValue = circulationMarketValue,
+                    amplitude = amplitude,
+                    openPrice = openPrice
+                )
+
+                cache.map[it.code] = newStock
+                if (!trackerType)
+                    trackerMap[newStock.code]?.update(newStock)
+
+                list.add(newStock)
+            }
+            list
+        }
+
+        if (trackerType) {
+            newList?.forEach {
+                realTimeStockMap[it.code] = it
+            }
+        }
+
+        if (newList?.isNotEmpty() == true && cache.date != 0) {
+            val dao = appDatabase.stockDao()
+            dao.insertAll(newList)
+            Log.i("股票超人", "插入股票数据库,数量${newList.size}，来源东方财富")
+            val dao1 = appDatabase.historyStockDao()
+            val historyStocks = newList.filter { it.price != 0f }.map {
+                return@map HistoryStock(
+                    code = it.code,
+                    date = cache.date,
+                    closePrice = it.price,
+                    chg = it.chg,
+                    amplitude = it.amplitude,
+                    turnoverRate = it.turnoverRate,
+                    highest = it.highest,
+                    lowest = it.lowest,
+                    openPrice = it.openPrice,
+                    ztPrice = it.ztPrice,
+                    dtPrice = it.dtPrice,
+                    yesterdayClosePrice = it.yesterdayClosePrice,
+                    averagePrice = it.averagePrice
+                )
+            }
+            dao1.insertHistory(historyStocks)
+            Log.i("股票超人", "插入股票历史数据库${historyStocks.size}，来源东方财富")
+        }
+
+    }
 }
 
 val StockResult.signalCount: Int
@@ -3623,7 +3795,7 @@ data class StrategyResult(
     var popularityRankMap: Map<String, PopularityRank> = mutableMapOf(),
     var zz2000: HistoryBK? = null,
     var a500: HistoryBK? = null,
-    var ydPairs: List<Pair<StockResult,List<StockResult>>>? = null
+    var ydPairs: List<Pair<StockResult, List<StockResult>>>? = null
 
 )
 

@@ -36,9 +36,9 @@ class StockService : Service() {
         // 启动前台服务
         startForeground(1, notification)
 
-       // Injector.autoRefreshPopularityRanking()
+        Injector.autoRefreshPopularityRanking()
         Injector.startAutoRefresh()
-       // Injector.startTracking()
+        Injector.startTracking()
     }
 
 

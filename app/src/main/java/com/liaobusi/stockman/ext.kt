@@ -281,4 +281,28 @@ fun Date.getEndOfDay(): Long {
 
 
 
+private val calendar = Calendar.getInstance()
+
+fun isTradingTime(): Boolean {
+    calendar.time = Date()
+    val hour = calendar.get(Calendar.HOUR_OF_DAY)
+    val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+    val minute = calendar.get(Calendar.MINUTE)
+    if (dayOfWeek == Calendar.SUNDAY || dayOfWeek == Calendar.SATURDAY) return false
+
+    if (hour < 9) {
+        return false
+    }
+
+    if (hour == 9 && minute <= 15) {
+        return false
+    }
+
+    if (hour == 11 && minute >= 30) return false
+
+    return (hour in 9 until 12 || hour in 13 until 15)
+}
+
+
+
 

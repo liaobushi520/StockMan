@@ -220,136 +220,6 @@ object Injector {
         autoRefresh(sp.getBoolean("auto_refresh", false))
     }
 
-
-    private val calendar = Calendar.getInstance()
-
-    fun isTradingTime(): Boolean {
-        calendar.time = Date()
-        val hour = calendar.get(Calendar.HOUR_OF_DAY)
-        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-        val minute = calendar.get(Calendar.MINUTE)
-        if (dayOfWeek == Calendar.SUNDAY || dayOfWeek == Calendar.SATURDAY) return false
-
-        if (hour < 9) {
-            return false
-        }
-
-        if (hour == 9 && minute <= 15) {
-            return false
-        }
-
-        if (hour == 11 && minute >= 30) return false
-
-        return (hour in 9 until 12 || hour in 13 until 15)
-    }
-
-    private fun requestStocks(pn: Int = 1, pz: Int = 2000) {
-        val request = Request.Builder()
-            .url("https://31.push2.eastmoney.com/api/qt/slist/sse?ut=f057cbcbce2a86e2866ab8877db1d059&fltt=1&fields=f1,f2,f3,f4,f7,f8,f12,f13,f14,f15,f16,f17,18,f21,f26,f152,f297,f350,f351,f352,f383&secid=47.800000&invt=2&pz=${pz}&po=1&fid=f3&mpi=1000&spt=11&pn=${pn}") // 替换为你的SSE端点
-            .addHeader("Accept", "text/event-stream") // 设置接受事件流
-            .build()
-
-        try {
-            val response = OkHttpClient.Builder().build().newCall(request).execute()
-            if (!response.isSuccessful) {
-                // 处理非成功响应
-                throw IOException("Unexpected code $response")
-            }
-            // 获取响应体流
-            val responseBody = response.body
-            if (responseBody != null) {
-                // 使用BufferedSource来读取数据
-                val source = responseBody.source()
-                try {
-                    while (!source.exhausted()) {
-                        // 读取一行数据
-                        val line = source.readUtf8Line()
-                        if (line != null) {
-                            // 处理每一行数据，根据SSE协议解析事件
-                            processEventLine(line)
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                } finally {
-                    responseBody.close()
-                }
-            }
-        } catch (e: Throwable) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun processEventLine(line: String?) {
-        if (line == null || line.trim().isEmpty() == true) return
-        println("Received: $line")
-
-        val s = line.removePrefix("data: ").replace("\"-\"", "-1")
-        val result = GsonBuilder().setLenient().create()
-            .fromJson<StockEventBean>(s, StockEventBean::class.java)
-        var date = result.data?.diff?.values?.firstOrNull()?.date ?: 0
-        val newList =
-            result.data?.diff?.map { it.value }?.filter { it.highest != -1f && it.price != 0f }
-                ?.map {
-                    val stock = Stock(
-                        code = it.code,
-                        name = it.name,
-                        turnoverRate = it.turnoverRate / 100,
-                        highest = it.highest / 100,
-                        lowest = it.lowest / 100,
-                        price = it.price / 100,
-                        chg = it.chg / 100,
-                        amplitude = it.amplitude / 100,
-                        openPrice = it.openPrice / 100,
-                        yesterdayClosePrice = it.yesterdayClosePrice / 100,
-                        toMarketTime = it.toMarketTime,
-                        circulationMarketValue = it.circulationMarketValue,
-                        ztPrice = it.ztPrice / 100,
-                        dtPrice = it.dtPrice / 100,
-                        averagePrice = it.averagePrice / 100,
-                        bk = it.concept
-                    )
-                    if (!Injector.trackerType)
-                        Injector.trackerMap[stock.code]?.update(stock)
-                    return@map stock
-                }
-
-
-        if (trackerType) {
-            newList?.forEach {
-                realTimeStockMap[it.code] = it
-            }
-        }
-
-        if (newList?.isNotEmpty() == true && date != 0) {
-            val dao = appDatabase.stockDao()
-            dao.insertAll(newList)
-            Log.i("股票超人", "插入股票数据库,数量${newList.size}，来源东方财富")
-            val dao1 = appDatabase.historyStockDao()
-            val historyStocks = newList.filter { it.price != 0f }.map {
-                return@map HistoryStock(
-                    code = it.code,
-                    date = date,
-                    closePrice = it.price,
-                    chg = it.chg,
-                    amplitude = it.amplitude,
-                    turnoverRate = it.turnoverRate,
-                    highest = it.highest,
-                    lowest = it.lowest,
-                    openPrice = it.openPrice,
-                    ztPrice = it.ztPrice,
-                    dtPrice = it.dtPrice,
-                    yesterdayClosePrice = it.yesterdayClosePrice,
-                    averagePrice = it.averagePrice
-                )
-            }
-            dao1.insertHistory(historyStocks)
-            Log.i("股票超人", "插入股票历史数据库${historyStocks.size}，来源东方财富")
-        }
-
-    }
-
-
     fun autoRefresh(enable: Boolean) {
         autoRefreshJob?.cancel()
         if (enable) {
@@ -367,47 +237,50 @@ object Injector {
                     }
                 }
 
-                if (isTradingTime()) {
+                if (isTradingTime() && isRealTimeDataSource(context)) {
                     repeat(3) {
                         launch(Dispatchers.IO) {
-                            requestStocks(it + 1)
+                            StockRepo.requestStocks(it + 1)
+                        }
+                    }
+                }
+
+                if (!isRealTimeDataSource(context)) {
+                    async {
+                        while (true) {
+                            if (isTradingTime()) {
+                                StockRepo.getRealTimeStocksSH()
+                                delay(4000)
+                            } else {
+                                delay(1000 * 60 * 6)
+                            }
+                        }
+                    }
+
+                    async {
+                        while (true) {
+                            if (isTradingTime()) {
+                                StockRepo.getRealTimeStocks()
+                                delay(2500)
+                            } else {
+                                delay(1000 * 60 * 6)
+                            }
+                        }
+                    }
+
+                    async {
+                        while (true) {
+                            if (isTradingTime()) {
+                                StockRepo.getRealTimeStocksBD()
+                                delay(1200)
+                            } else {
+                                delay(1000 * 60 * 6)
+                            }
                         }
                     }
                 }
 
 
-//                async {
-//                    while (true) {
-//                        if (isTradingTime()) {
-//                            if (getNetworkType(context) == NetworkType.WIFI && !isRealTimeDataSource(
-//                                    context
-//                                )
-//                            ) {
-//                                StockRepo.getRealTimeStocksSH()
-//                            }
-//                            delay(6 * 1000)
-//                        } else {
-//                            delay(1000 * 60 * 6)
-//                        }
-//                    }
-//                }
-//
-//                async {
-//                    while (true) {
-//                        if (isTradingTime()) {
-//                            if (isRealTimeDataSource(context)) {
-//                                StockRepo.getRealTimeStocks()
-//                                delay(1000)
-//                            } else {
-//                                if (getNetworkType(context) == NetworkType.WIFI) {
-//                                    StockRepo.getRealTimeStocksBD()
-//                                }
-//                            }
-//                        } else {
-//                            delay(1000 * 60 * 6)
-//                        }
-//                    }
-//                }
             }
         }
     }

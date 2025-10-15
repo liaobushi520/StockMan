@@ -96,7 +96,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="实时数据来源(东方财富/百度)" />
+                        android:text="实时数据来源(东方财富/其他)" />
 
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/realTimeSource"
