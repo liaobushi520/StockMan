@@ -2274,9 +2274,9 @@ object StockRepo {
         bkList: List<String>? = null,
         stockList: List<Stock>? = null
     ) = withContext(Dispatchers.IO) {
-        val stockDao = Injector.appDatabase.stockDao()
-        val historyDao = Injector.appDatabase.historyStockDao()
-        val bkStockDao = Injector.appDatabase.bkStockDao()
+        val stockDao = appDatabase.stockDao()
+        val historyDao = appDatabase.historyStockDao()
+        val bkStockDao = appDatabase.bkStockDao()
 
         val list = stockList?.filter {
             (it.toMarketTime in startMarketTime..endMarketTime) && (it.circulationMarketValue in lowMarketValue..highMarketValue)
@@ -2327,7 +2327,7 @@ object StockRepo {
 
         // val stocks = listOf(stockDao.getStockByCode("002427"))
         // val endDay = SimpleDateFormat("yyyyMMdd").parse(endTime.toString())
-        val follows = Injector.appDatabase.followDao().getFollowStocks()
+        val follows = appDatabase.followDao().getFollowStocks()
         val result = stocks.compute(4) {
             if (!isActive) {
                 return@compute null
@@ -2554,7 +2554,7 @@ object StockRepo {
 
             //******牛回头***********//
             //牛回头
-            val cowBack = cowBack(histories)
+            val cowBack =cowBack(histories)
 
 
             val list =
@@ -2567,7 +2567,7 @@ object StockRepo {
             }
 
             val ztReplay = if (zt) {
-                val ztReplayDao = Injector.appDatabase.ztReplayDao()
+                val ztReplayDao = appDatabase.ztReplayDao()
                 ztReplayDao.getZTReplay(date = histories[0].date, histories[0].code)
             } else null
 
