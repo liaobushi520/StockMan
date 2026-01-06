@@ -176,5 +176,14 @@ interface StockService {
     @POST("https://apphwhq.longhuvip.com/w1/api/index.php")
     suspend fun getZhiBoStock(@FieldMap fields:Map<String, String>): ZhiBoResponse
 
+    @GET("https://www.cls.cn/v3/transaction/articles?app=CailianpressWeb&os=web&sv=8.4.6")
+    suspend fun getDPLive(@Query("CTime") time:Long,@Query("sign") sign: String):CLSLiveResponse
+
+    @GET("https://data.10jqka.com.cn/dataapi/limit_up/limit_up_pool?field=199112%2C10%2C9001%2C330323%2C330324%2C330325%2C9002%2C330329%2C133971%2C133970%2C1968584%2C3475914%2C9003&filter=HS%2CGEM2STAR&order_field=330324&order_type=0")
+    suspend fun getLimitUpPool(@Query("date") date: Int,@Query("page") page:Int=1,@Query("limit") limit:Int=200): LimitUpPoolResponse
+
+    @GET("https://data.10jqka.com.cn/dataapi/limit_up/lower_limit_pool?field=199112%2C10%2C330333%2C330334%2C1968584%2C3475914&filter=HS%2CGEM2STAR&order_field=330334&order_type=0")
+    suspend fun getLimitDownPool(@Query("date") date: Int,@Query("page") page:Int=1,@Query("limit") limit:Int=200):LimitDownPoolResponse
+
 }
 

@@ -27,6 +27,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Lifecycle
@@ -53,6 +54,8 @@ import java.util.*
 import kotlin.math.abs
 import kotlin.math.min
 import androidx.core.graphics.toColorInt
+import androidx.core.view.ViewCompat
+import com.google.android.material.appbar.AppBarLayout
 
 val colors = listOf(
     "#1565c0".toColorInt(),
@@ -113,6 +116,9 @@ class Strategy4Activity : AppCompatActivity() {
                     StockRepo.getRealTimeIndexByCode("2.932000")
                     StockRepo.getRealTimeIndexByCode("1.000905")
                     StockRepo.getYDData()
+                    StockRepo.getDPLive()
+                    StockRepo.getLimitUpPool(today())
+                    StockRepo.getLimitDownPool(today())
                     Injector.refreshPopularityRanking()
                     launch(Dispatchers.Main) {
                         delay(2000)
@@ -627,8 +633,49 @@ class Strategy4Activity : AppCompatActivity() {
         binding.line5Btn.callOnClick()
 
 
-    }
 
+        binding.fab.setOnClickListener {
+            val firstVisiblePos = (binding.rv.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
+            if (firstVisiblePos > (binding.rv.adapter as ResultAdapter).itemCount / 2) {
+                binding.rv.scrollToPosition(0)
+                binding.fab.rotation = 0f
+            } else {
+                binding.rv.scrollToPosition((binding.rv.adapter as ResultAdapter).itemCount - 1)
+                binding.fab.rotation = 180f
+                scrollUp()
+            }
+        }
+
+        binding.rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                val firstVisiblePos = (binding.rv.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
+                if (firstVisiblePos > (binding.rv.adapter as ResultAdapter).itemCount / 2) {
+                    binding.fab.rotation = 180f
+                } else {
+                    binding.fab.rotation = 0f
+                }
+            }
+        })
+
+
+    }
+    // 向上滚动（折叠AppBar）
+    private fun scrollUp() {
+        val layoutParams = binding.appbar.layoutParams as CoordinatorLayout.LayoutParams
+        val behavior = layoutParams.behavior as AppBarLayout.Behavior
+
+
+        // 通过设置偏移量来滚动
+        behavior.onNestedPreScroll(
+            binding.coordinatorLayout,
+            binding.appbar,
+            binding.coordinatorLayout,
+            0,
+            3000,  // dy > 0 表示向上滚动
+            intArrayOf(0, 0), ViewCompat.TYPE_NON_TOUCH
+        )
+    }
 
     private fun updateUI(param: Strategy4Param) {
         binding.apply {
@@ -1140,6 +1187,7 @@ class Strategy4Activity : AppCompatActivity() {
             if (binding.ydModeCb.isChecked) {
                 val rList = mutableListOf<StockResult>()
                 strategyResult.ydPairs?.forEach {
+                    if (it.second.isEmpty()&&binding.conceptAndBKTv.editableText.toString()!="ALL") return@forEach
                     rList.add(it.first)
                     it.second.forEach {
                         it.groupColor = Color.BLACK
@@ -1325,6 +1373,14 @@ class Strategy4Activity : AppCompatActivity() {
                 strategyResult2.stockResults.toMutableList(),
                 if (binding.popularitySortCb.isChecked) 1 else if (binding.thsPopularitySortCb.isChecked) 2 else if (binding.tgbPopularitySortCb.isChecked) 3 else if (binding.dzhPopularitySortCb.isChecked) 4 else 0
             )
+
+
+            if (strategyResult2.stockResults.size<10){
+                binding.fab.visibility=View.GONE
+            }else{
+                binding.fab.visibility=View.VISIBLE
+                binding.fab.rotation=0f
+            }
         }
     }
 

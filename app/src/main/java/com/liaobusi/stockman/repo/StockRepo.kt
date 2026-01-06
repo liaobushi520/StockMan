@@ -907,11 +907,119 @@ object StockRepo {
         }
     }
 
+
+
+    suspend fun getDPLive() {
+        try {
+            if (clsSign(Injector.context).isEmpty()) {
+                return
+            }
+            val response =
+                apiService.getDPLive(Date().getStartOfDay() / 1000, clsSign(Injector.context))
+            if (response.errno == 0) {
+                val histories = response.data.map {
+                    val sb = StringBuilder()
+                    it.stock_list.forEach {
+                        sb.append(it.StockID.removePrefix("sz").removePrefix("sh"))
+                        sb.append(",")
+                    }
+                    UnusualActionHistory(
+                        time = it.ctime.toLong(),
+                        comment = it.title + "\n" + it.brief,
+                        stocks = sb.removeSuffix(",").toString()
+                    )
+                }
+                appDatabase.unusualActionHistoryDao().insertAll(histories)
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+
+    }
+
+    suspend fun getLimitUpPool(date: Int) {
+        try {
+            var end = false
+            var page = 1
+            while (!end) {
+                val rsp = apiService.getLimitUpPool(date, page)
+                if (rsp.data != null && rsp.data.info.isNotEmpty()) {
+                    val list = rsp.data.info.map {
+                        UnusualActionHistory(
+                            time = it.first_limit_up_time.toLong(),
+                            comment = "${it.high_days} ${it.limit_up_type} ${it.reason_type}",
+                            stocks = it.code
+                        )
+                    }
+                    Log.i("股票超人", "从网络获取${date}涨停池${list.size}")
+                    appDatabase.unusualActionHistoryDao().insertAll(list)
+                    page = rsp.data.page.page + 1
+                    if (rsp.data.page.count < rsp.data.page.limit) end = true
+                } else {
+                    end = true
+                }
+            }
+
+
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun getLimitDownPool(date: Int) {
+        try {
+            var end = false
+            var page = 1
+            while (!end) {
+                val rsp = apiService.getLimitDownPool(date, page)
+                if (rsp.data != null && rsp.data.info.isNotEmpty()) {
+                    val list = mutableListOf<UnusualActionHistory>()
+                    rsp.data.info.forEach {
+                        list.add(
+                            UnusualActionHistory(
+                                time = it.first_limit_down_time.toLong(),
+                                comment = "跌停",
+                                stocks = it.code
+                            )
+                        )
+                        if (it.last_limit_down_time != it.first_limit_down_time) {
+                            list.add(
+                                UnusualActionHistory(
+                                    time = it.last_limit_down_time.toLong(),
+                                    comment = "翘板后再次跌停",
+                                    stocks = it.code
+                                )
+                            )
+                        }
+                    }
+
+                    Log.i("股票超人", "从网络获取${date}跌停池${list.size}")
+                    appDatabase.unusualActionHistoryDao().insertAll(list)
+                    page = rsp.data.page.page + 1
+                    if (rsp.data.page.count < rsp.data.page.limit) end = true
+                } else {
+                    end = true
+                }
+            }
+
+
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+    }
+
+
+
+
+
+
+
+
     suspend fun getRealTimeIndexByCode(codeWithMarket: String) {
 
         try {
-            val dao = Injector.appDatabase.bkDao()
-            val dao1 = Injector.appDatabase.historyBKDao()
+            val dao = appDatabase.bkDao()
+            val dao1 = appDatabase.historyBKDao()
             val api = Injector.retrofit.create(StockService::class.java)
             val url =
                 "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${codeWithMarket}&klt=101&fqt=1&lmt=1&end=20500000&iscca=1&fields1=f1,f2,f3,f4,f5,f6,f7,f8&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64&forcect=1"
@@ -976,8 +1084,8 @@ object StockRepo {
             val bks = mutableListOf<BK>()
             val bkHistories = mutableListOf<HistoryBK>()
 
-            val dao = Injector.appDatabase.bkDao()
-            val dao1 = Injector.appDatabase.historyBKDao()
+            val dao = appDatabase.bkDao()
+            val dao1 = appDatabase.historyBKDao()
             val api = Injector.retrofit.create(StockService::class.java)
 
             listOf(0, 1, 2, 3, 4, 5, 6, 7).forEach { type ->

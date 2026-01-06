@@ -297,6 +297,30 @@
 
                 </LinearLayout>
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="财联社签名" />
+
+                    <androidx.appcompat.widget.AppCompatEditText
+                        android:id="@+id/clsSignEt"
+                        android:layout_width="100dp"
+                        android:layout_height="wrap_content" />
+
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/clsSignConfirmBtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="确定" />
+
+                </LinearLayout>
+
 
                 <LinearLayout
                     android:layout_width="match_parent"

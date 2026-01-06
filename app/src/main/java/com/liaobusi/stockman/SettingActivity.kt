@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
+import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -44,7 +45,10 @@ fun isRealTimeDataSource(context: Context): Boolean {
     return sp.getBoolean("realtime_data_source", true)
 }
 
-
+fun clsSign(context: Context): String  {
+    val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
+    return sp.getString("cls_sign", "").toString()
+}
 
 
 fun howDayShowZTFlag(context: Context): Int {
@@ -150,7 +154,12 @@ class SettingActivity : AppCompatActivity() {
 
 
 
-
+        val clsSign = sp.getString("cls_sign","")
+        binding.clsSignEt.setText(clsSign, TextView.BufferType.EDITABLE)
+        binding.clsSignConfirmBtn.setOnClickListener {
+            val s=binding.clsSignEt.editableText.toString()
+            sp.edit().putString("cls_sign",s).apply()
+        }
 
 
         val focusLB = sp.getBoolean("focusLB", false)

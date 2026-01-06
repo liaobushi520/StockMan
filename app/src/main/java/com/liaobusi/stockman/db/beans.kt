@@ -298,9 +298,9 @@ val HistoryStock.longUpShadow: Boolean
 @Database(
     entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class, PopularityRank::class, DragonTigerRank::class, ExpectHot::class, UnusualActionHistory::class],
     version = 31,
-    autoMigrations = [
-        AutoMigration(from = 30, to = 31)
-    ]
+//    autoMigrations = [
+//        AutoMigration(from = 30, to = 31)
+//    ]
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun stockDao(): StockDao

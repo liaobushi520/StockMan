@@ -599,6 +599,9 @@ data class RDataBean(val re: Map<String,List<RDataInnerBean>>)
 
 data class RDataInnerBean(val name: String,val summary: String)
 
+
+
+
 data class ZhiBoResponse(
     val JHJJYD: List<Any>,
     val List: List<Item0>,
@@ -639,5 +642,149 @@ data class StyleIndex(
     val type: String,
     val typeName: String,
     val typeNum: String
+)
+
+data class CLSLiveResponse(
+    val data: List<CLSLiveData>,
+    val errno: Int,
+    val msg: String
+)
+
+data class CLSLiveData(
+    val article_id: Int,
+    val audio: String,
+    val brief: String,
+    val comment_num: Int,
+    val ctime: Int,
+    val float: String,
+    val gray_share: Int,
+    val guide_text: String,
+    val images: List<String>,
+    val img: String,
+    val plate_change: Double,
+    val plate_code: String,
+    val plate_name: String,
+    val reading_num: Int,
+    val rec_vip_article_title: String,
+    val rec_vip_icon: String,
+    val rec_vip_id: Int,
+    val rec_vip_type: Int,
+    val share_img: String,
+    val share_num: Int,
+    val share_url: String,
+    val stock_list: List<CLSStock>,
+    val title: String,
+    val type: Int
+)
+data class LimitUpPoolResponse(
+    val data: LimitUpPoolData?,
+    val status_code: Int,
+    val status_msg: String
+)
+
+data class LimitUpPoolData(
+    val date: String,
+    val info: List<Info>,
+    val limit_down_count: LimitDownCount,
+    val limit_up_count: LimitUpCount,
+    val msg: Any,
+    val page: Page,
+    val trade_status: TradeStatus
+)
+
+data class Info(
+    val change_rate: Double,
+    val change_tag: String,
+    val code: String,
+    val currency_value: Double,
+    val first_limit_up_time: String,
+    val high_days: String,
+    val high_days_value: Int,
+    val is_again_limit: Int,
+    val is_new: Int,
+    val last_limit_up_time: String,
+    val latest: Double,
+    val limit_up_suc_rate: Double,
+    val limit_up_type: String,
+    val market_id: Int,
+    val market_type: String,
+    val name: String,
+    val open_num: Int,
+    val order_amount: Double,
+    val order_volume: Double,
+    val reason_type: String,
+    val time_preview: List<Double>,
+    val turnover_rate: Double
+)
+
+data class LimitDownCount(
+    val today: Today,
+    val yesterday: Yesterday
+)
+
+data class LimitUpCount(
+    val today: Today,
+    val yesterday: Yesterday
+)
+
+data class Page(
+    val count: Int,
+    val limit: Int,
+    val page: Int,
+    val total: Int
+)
+
+data class TradeStatus(
+    val end_time: String,
+    val id: String,
+    val name: String,
+    val start_time: String
+)
+
+data class Today(
+    val history_num: Int,
+    val num: Int,
+    val open_num: Int,
+    val rate: Double
+)
+
+data class Yesterday(
+    val history_num: Int,
+    val num: Int,
+    val open_num: Int,
+    val rate: Double
+)
+
+data class LimitDownPoolResponse(
+    val data: LimitDownPoolData?,
+    val status_code: Int,
+    val status_msg: String
+)
+
+data class LimitDownPoolData(
+    val date: String,
+    val info: List<LimitDownPoolInfo>,
+    val limit_down_count: LimitDownCount,
+    val limit_up_count: LimitUpCount,
+    val msg: Any,
+    val page: Page,
+    val trade_status: TradeStatus
+)
+
+data class LimitDownPoolInfo(
+    val change_rate: Double,
+    val change_tag: String,
+    val code: String,
+    val currency_value: Double,
+    val first_limit_down_time: String,
+    val high_days_value: Any,
+    val is_again_limit: Int,
+    val is_new: Int,
+    val last_limit_down_time: String,
+    val latest: Double,
+    val market_id: Int,
+    val market_type: String,
+    val name: String,
+    val turnover_rate: Double
 )
 

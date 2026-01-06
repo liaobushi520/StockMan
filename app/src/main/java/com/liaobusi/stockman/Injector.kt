@@ -156,6 +156,9 @@ object Injector {
                         StockRepo.fetchDragonTigerRank(today())
 
                         StockRepo.getYDData()
+                        StockRepo.getDPLive()
+                        StockRepo.getLimitUpPool(today())
+                        StockRepo.getLimitDownPool(today())
 
                         val sp = activity.getSharedPreferences("app", Context.MODE_PRIVATE)
                         if (System.currentTimeMillis() - sp.getLong(
