@@ -1,0 +1,893 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 33,
+    "identityHash": "d3c0393eee82baa44775adc7dacc45b8",
+    "entities": [
+      {
+        "tableName": "Stock",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `name` TEXT NOT NULL, `price` REAL NOT NULL, `chg` REAL NOT NULL, `amplitude` REAL NOT NULL, `turnoverRate` REAL NOT NULL, `highest` REAL NOT NULL, `lowest` REAL NOT NULL, `circulationMarketValue` REAL NOT NULL, `toMarketTime` INTEGER NOT NULL, `openPrice` REAL NOT NULL, `yesterdayClosePrice` REAL NOT NULL, `ztPrice` REAL NOT NULL DEFAULT -1.0, `dtPrice` REAL NOT NULL DEFAULT -1.0, `averagePrice` REAL NOT NULL DEFAULT -1.0, `bk` TEXT NOT NULL DEFAULT '', PRIMARY KEY(`code`))",
+        "fields": [
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "price",
+            "columnName": "price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chg",
+            "columnName": "chg",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amplitude",
+            "columnName": "amplitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "turnoverRate",
+            "columnName": "turnoverRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "highest",
+            "columnName": "highest",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lowest",
+            "columnName": "lowest",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "circulationMarketValue",
+            "columnName": "circulationMarketValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "toMarketTime",
+            "columnName": "toMarketTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "openPrice",
+            "columnName": "openPrice",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "yesterdayClosePrice",
+            "columnName": "yesterdayClosePrice",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ztPrice",
+            "columnName": "ztPrice",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "-1.0"
+          },
+          {
+            "fieldPath": "dtPrice",
+            "columnName": "dtPrice",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "-1.0"
+          },
+          {
+            "fieldPath": "averagePrice",
+            "columnName": "averagePrice",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "-1.0"
+          },
+          {
+            "fieldPath": "bk",
+            "columnName": "bk",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "code"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "HistoryStock",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `date` INTEGER NOT NULL, `closePrice` REAL NOT NULL, `openPrice` REAL NOT NULL, `highest` REAL NOT NULL, `lowest` REAL NOT NULL, `chg` REAL NOT NULL, `amplitude` REAL NOT NULL, `turnoverRate` REAL NOT NULL, `ztPrice` REAL NOT NULL DEFAULT -1.0, `dtPrice` REAL NOT NULL DEFAULT -1.0, `yesterdayClosePrice` REAL NOT NULL DEFAULT -1.0, `averagePrice` REAL NOT NULL DEFAULT -1.0, PRIMARY KEY(`code`, `date`))",
+        "fields": [
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "closePrice",
+            "columnName": "closePrice",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "openPrice",
+            "columnName": "openPrice",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "highest",
+            "columnName": "highest",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lowest",
+            "columnName": "lowest",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chg",
+            "columnName": "chg",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amplitude",
+            "columnName": "amplitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "turnoverRate",
+            "columnName": "turnoverRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ztPrice",
+            "columnName": "ztPrice",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "-1.0"
+          },
+          {
+            "fieldPath": "dtPrice",
+            "columnName": "dtPrice",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "-1.0"
+          },
+          {
+            "fieldPath": "yesterdayClosePrice",
+            "columnName": "yesterdayClosePrice",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "-1.0"
+          },
+          {
+            "fieldPath": "averagePrice",
+            "columnName": "averagePrice",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "-1.0"
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "code",
+            "date"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "BK",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `name` TEXT NOT NULL, `price` REAL NOT NULL, `chg` REAL NOT NULL, `amplitude` REAL NOT NULL, `turnoverRate` REAL NOT NULL, `highest` REAL NOT NULL, `lowest` REAL NOT NULL, `circulationMarketValue` REAL NOT NULL, `openPrice` REAL NOT NULL, `yesterdayClosePrice` REAL NOT NULL, `type` INTEGER NOT NULL DEFAULT -1, PRIMARY KEY(`code`))",
+        "fields": [
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "price",
+            "columnName": "price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chg",
+            "columnName": "chg",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amplitude",
+            "columnName": "amplitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "turnoverRate",
+            "columnName": "turnoverRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "highest",
+            "columnName": "highest",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lowest",
+            "columnName": "lowest",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "circulationMarketValue",
+            "columnName": "circulationMarketValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "openPrice",
+            "columnName": "openPrice",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "yesterdayClosePrice",
+            "columnName": "yesterdayClosePrice",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "-1"
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "code"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "HistoryBK",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `date` INTEGER NOT NULL, `closePrice` REAL NOT NULL, `openPrice` REAL NOT NULL, `highest` REAL NOT NULL, `lowest` REAL NOT NULL, `chg` REAL NOT NULL, `amplitude` REAL NOT NULL, `turnoverRate` REAL NOT NULL, `yesterdayClosePrice` REAL NOT NULL DEFAULT -1.0, PRIMARY KEY(`code`, `date`))",
+        "fields": [
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "closePrice",
+            "columnName": "closePrice",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "openPrice",
+            "columnName": "openPrice",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "highest",
+            "columnName": "highest",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lowest",
+            "columnName": "lowest",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chg",
+            "columnName": "chg",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amplitude",
+            "columnName": "amplitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "turnoverRate",
+            "columnName": "turnoverRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "yesterdayClosePrice",
+            "columnName": "yesterdayClosePrice",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "-1.0"
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "code",
+            "date"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "BKStock",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`bkCode` TEXT NOT NULL, `stockCode` TEXT NOT NULL, PRIMARY KEY(`bkCode`, `stockCode`))",
+        "fields": [
+          {
+            "fieldPath": "bkCode",
+            "columnName": "bkCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockCode",
+            "columnName": "stockCode",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "bkCode",
+            "stockCode"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Follow",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `type` INTEGER NOT NULL, `stickyOnTop` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`code`))",
+        "fields": [
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stickyOnTop",
+            "columnName": "stickyOnTop",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "code"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "GDRS",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `endDate` INTEGER NOT NULL, `totalNumRatio` REAL NOT NULL, `holderTotalNum` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`code`, `endDate`))",
+        "fields": [
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endDate",
+            "columnName": "endDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalNumRatio",
+            "columnName": "totalNumRatio",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "holderTotalNum",
+            "columnName": "holderTotalNum",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "code",
+            "endDate"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Hide",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `type` INTEGER NOT NULL, PRIMARY KEY(`code`))",
+        "fields": [
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "code"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "AnalysisBean",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` INTEGER NOT NULL, `ztCount` INTEGER NOT NULL DEFAULT 0, `dtCount` INTEGER NOT NULL DEFAULT 0, `highestLianBanCount` INTEGER NOT NULL DEFAULT 0, `stZTCount` INTEGER NOT NULL DEFAULT 0, `stDTCount` INTEGER NOT NULL DEFAULT 0, `stHighestLianBanCount` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`date`))",
+        "fields": [
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ztCount",
+            "columnName": "ztCount",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "dtCount",
+            "columnName": "dtCount",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "highestLianBanCount",
+            "columnName": "highestLianBanCount",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "stZTCount",
+            "columnName": "stZTCount",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "stDTCount",
+            "columnName": "stDTCount",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "stHighestLianBanCount",
+            "columnName": "stHighestLianBanCount",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "date"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "ZTReplayBean",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` INTEGER NOT NULL, `code` TEXT NOT NULL, `reason` TEXT NOT NULL, `groupName` TEXT NOT NULL, `expound` TEXT NOT NULL, `time` TEXT NOT NULL DEFAULT '--:--:--', `groupName2` TEXT NOT NULL DEFAULT '', `reason2` TEXT NOT NULL DEFAULT '', `expound2` TEXT NOT NULL DEFAULT '', PRIMARY KEY(`date`, `code`))",
+        "fields": [
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reason",
+            "columnName": "reason",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "groupName",
+            "columnName": "groupName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expound",
+            "columnName": "expound",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'--:--:--'"
+          },
+          {
+            "fieldPath": "groupName2",
+            "columnName": "groupName2",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "reason2",
+            "columnName": "reason2",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "expound2",
+            "columnName": "expound2",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "date",
+            "code"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "DIYBk",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `name` TEXT NOT NULL, `bkCodes` TEXT NOT NULL, `dsp` TEXT NOT NULL DEFAULT '', `stockCodes` TEXT NOT NULL DEFAULT '', PRIMARY KEY(`code`))",
+        "fields": [
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bkCodes",
+            "columnName": "bkCodes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dsp",
+            "columnName": "dsp",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "stockCodes",
+            "columnName": "stockCodes",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "code"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "PopularityRank",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `date` INTEGER NOT NULL, `rank` INTEGER NOT NULL, `thsRank` INTEGER NOT NULL DEFAULT -1, `tgbRank` INTEGER NOT NULL DEFAULT -1, `explain` TEXT NOT NULL DEFAULT '无', `dzhRank` INTEGER NOT NULL DEFAULT -1, `clsRank` INTEGER NOT NULL DEFAULT -1, PRIMARY KEY(`date`, `code`))",
+        "fields": [
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rank",
+            "columnName": "rank",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thsRank",
+            "columnName": "thsRank",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "-1"
+          },
+          {
+            "fieldPath": "tgbRank",
+            "columnName": "tgbRank",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "-1"
+          },
+          {
+            "fieldPath": "explain",
+            "columnName": "explain",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'无'"
+          },
+          {
+            "fieldPath": "dzhRank",
+            "columnName": "dzhRank",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "-1"
+          },
+          {
+            "fieldPath": "clsRank",
+            "columnName": "clsRank",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "-1"
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "date",
+            "code"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "DragonTigerRank",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `date` INTEGER NOT NULL, `explanation` TEXT NOT NULL, `tags` TEXT NOT NULL DEFAULT '', PRIMARY KEY(`date`, `code`))",
+        "fields": [
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "explanation",
+            "columnName": "explanation",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tags",
+            "columnName": "tags",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "date",
+            "code"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "ExpectHot",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `bkCode` TEXT NOT NULL, `summary` TEXT NOT NULL, `date` INTEGER NOT NULL, `expireTime` INTEGER NOT NULL, `themeCode` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bkCode",
+            "columnName": "bkCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "summary",
+            "columnName": "summary",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expireTime",
+            "columnName": "expireTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "themeCode",
+            "columnName": "themeCode",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "UnusualActionHistory",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`time` INTEGER NOT NULL, `comment` TEXT NOT NULL, `stocks` TEXT NOT NULL, `type` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`time`, `type`))",
+        "fields": [
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "comment",
+            "columnName": "comment",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stocks",
+            "columnName": "stocks",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "time",
+            "type"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd3c0393eee82baa44775adc7dacc45b8')"
+    ]
+  }
+}

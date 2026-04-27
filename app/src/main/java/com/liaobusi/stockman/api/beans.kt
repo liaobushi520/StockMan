@@ -541,6 +541,30 @@ data class Item8(
 
 data class StockResponse(val date: Int, val list: List<List<Any>>)
 
+/**
+ * 新浪 [Market_Center.getHQNodeDataSimple](https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeDataSimple)
+ * 单条成份股（如 `node=zhishu_399106` 创业板指）。
+ */
+data class SinaHQNodeItem(
+    val symbol: String? = null,
+    val name: String? = null,
+    val trade: String? = null,
+    val pricechange: String? = null,
+    val changepercent: String? = null,
+    val buy: String? = null,
+    val sell: String? = null,
+    val settlement: String? = null,
+    val open: String? = null,
+    val high: String? = null,
+    val low: String? = null,
+    /** 成交量（股） */
+    val volume: Number? = null,
+    /** 成交额（元） */
+    val amount: Number? = null,
+    val code: String? = null,
+    val ticktime: String? = null,
+)
+
 data class ExpectHotResponse(
     val code: Int,
     val costTime: Int,

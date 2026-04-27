@@ -45,7 +45,9 @@ import com.liaobusi.stockman.databinding.ItemStockBinding
 import com.liaobusi.stockman.databinding.ItemStockInfoBkBinding
 import com.liaobusi.stockman.databinding.LayoutPopupWindow2Binding
 import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
+import com.liaobusi.stockman.db.BK
 import com.liaobusi.stockman.db.DIYBk
+import com.liaobusi.stockman.db.HistoryBK
 import com.liaobusi.stockman.db.Follow
 import com.liaobusi.stockman.db.Stock
 import com.liaobusi.stockman.db.ZTReplayBean
@@ -76,6 +78,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.Collections
@@ -1039,7 +1042,7 @@ class Strategy4Activity : AppCompatActivity() {
             }
 
             if (binding.zhongjunCb.isChecked) {
-                r = r.filter { it.stock.circulationMarketValue >= 8000000000 }
+                r = r.filter { it.stock.circulationMarketValue >= 20000000000 }
             }
 
             if (binding.xiaopiaoCb.isChecked) {
@@ -1970,8 +1973,9 @@ class Strategy4Activity : AppCompatActivity() {
 
 class StockInfoFragment(private val stock: Stock, private val date: String) : DialogFragment() {
 
-
     private lateinit var binding: FragmentStockInfoBinding
+
+    private val resultList = mutableListOf<String>()
 
     override fun onStart() {
         super.onStart()
@@ -1983,80 +1987,67 @@ class StockInfoFragment(private val stock: Stock, private val date: String) : Di
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?,
     ): View {
         binding = FragmentStockInfoBinding.inflate(inflater)
         binding.stockHeaderStock.text = "${stock.code}-${stock.name}"
 
-        val resultList = mutableListOf<String>()
+        binding.cancelBtn.setOnClickListener { dismiss() }
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            val list = stock.bk.split(",").map {
-                Pair(
-                    Injector.appDatabase.bkDao().getBKByCode(it),
-                    Injector.appDatabase.historyBKDao().getHistoryByDate3(it, date.toInt())
-                )
-            }.filter { it.first != null && !it.first!!.specialBK && it.second != null }
-                .sortedByDescending { it.second!!.chg }
-            launch(Dispatchers.Main) {
-                list.forEach { pair ->
-                    val bk = pair.first
-                    val historyBK = pair.second
-                    val b = ItemStockInfoBkBinding.inflate(inflater).apply {
-                        bkCodeName.text = "${bk!!.code}-${bk.name}"
-                        chgTv.text = historyBK!!.chg.toString()
-                        chgTv.setTextColor(historyBK.color)
-                        bkCodeName.setOnClickListener {
-                            bk.openWeb(requireContext())
-                        }
-                        bkCodeName.setOnLongClickListener {
-                            this@StockInfoFragment.parentFragmentManager
-                            DIYBKDialogFragment(bk).show(
-                                this@StockInfoFragment.parentFragmentManager, "diy_bk"
-                            )
-                            return@setOnLongClickListener true
-                        }
-                        bkCb.setOnCheckedChangeListener { buttonView, isChecked ->
-                            if (isChecked) {
-                                if (!resultList.contains(bk.code)) {
-                                    resultList.add(bk.code)
-                                }
-                            } else {
-                                resultList.remove(bk.code)
-                            }
-
-                        }
-                    }
-                    binding.bkLL.addView(b.root)
-
-                }
+        binding.jumpBtn.setOnClickListener {
+            if (resultList.isEmpty()) {
+                Toast.makeText(requireContext(), "请至少勾选一个板块", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
-
-        }
-
-
-
-
-        binding.cancelBtn.setOnClickListener {
+            openJXQSStrategy(requireContext(), resultList.joinToString(","), date)
             dismiss()
         }
 
-
-        binding.jumpBtn.setOnClickListener {
-            val sb = StringBuilder()
-            resultList.forEach {
-                sb.append(it).append(',')
+        viewLifecycleOwner.lifecycleScope.launch {
+            val rows: List<Pair<BK, HistoryBK>> = withContext(Dispatchers.IO) {
+                val dateInt = date.toIntOrNull() ?: return@withContext emptyList()
+                val bkDao = Injector.appDatabase.bkDao()
+                val histDao = Injector.appDatabase.historyBKDao()
+                stock.bk.split(',')
+                    .mapNotNull { code ->
+                        val bk = bkDao.getBKByCode(code) ?: return@mapNotNull null
+                        if (bk.specialBK) return@mapNotNull null
+                        val h = histDao.getHistoryByDate3(code, dateInt) ?: return@mapNotNull null
+                        Triple(bk, h, h.chg)
+                    }
+                    .sortedByDescending { it.third }
+                    .map { Pair(it.first, it.second) }
             }
-            openJXQSStrategy(
-                this.requireContext(), sb.removeSuffix(",").toString(), date
-            )
-        }
 
+            if (!isAdded) return@launch
+
+            binding.bkLL.removeAllViews()
+            for ((bk, historyBK) in rows) {
+                val itemBinding = ItemStockInfoBkBinding.inflate(inflater, binding.bkLL, false)
+                itemBinding.bkCodeName.text = "${bk.code}-${bk.name}"
+                itemBinding.chgTv.text = historyBK.chg.toString()
+                itemBinding.chgTv.setTextColor(historyBK.color)
+                itemBinding.bkCodeName.setOnClickListener {
+                    bk.openWeb(requireContext())
+                }
+                itemBinding.bkCodeName.setOnLongClickListener {
+                    DIYBKDialogFragment(bk).show(parentFragmentManager, "diy_bk")
+                    true
+                }
+                itemBinding.bkCb.setOnCheckedChangeListener { _, isChecked ->
+                    if (isChecked) {
+                        if (bk.code !in resultList) resultList.add(bk.code)
+                    } else {
+                        resultList.remove(bk.code)
+                    }
+                }
+                itemBinding.bkCb.isChecked = bk.code in resultList
+                binding.bkLL.addView(itemBinding.root)
+            }
+        }
 
         return binding.root
     }
-
-
 }
 
 

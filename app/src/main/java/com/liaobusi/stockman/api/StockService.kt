@@ -98,6 +98,10 @@ interface StockService {
     @GET
     suspend fun getStockListForBK(@Url url: String): EMResponse
 
+    /** 新浪指数成份行情 JSON 数组，需传入完整 URL（含 query）。 */
+    @GET
+    suspend fun getSinaHQNodeDataSimple(@Url url: String): List<SinaHQNodeItem>
+
     @GET("http://q.stock.sohu.com/hisHq")
     suspend fun getStockHistory(
         @Query("code") code: String,

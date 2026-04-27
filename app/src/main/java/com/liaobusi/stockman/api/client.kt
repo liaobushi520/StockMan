@@ -77,7 +77,10 @@ fun getOkHttpClientBuilder() = OkHttpClient.Builder().apply {
     addNetworkInterceptor { chain ->
 
         val request = chain.request().newBuilder().also {
-            if (chain.request().url.host == "www.cls.cn" || "finance.pae.baidu.com" == chain.request().url.host) {
+            if (chain.request().url.host == "www.cls.cn" ||
+                "finance.pae.baidu.com" == chain.request().url.host ||
+                chain.request().url.host.endsWith("finance.sina.com.cn")
+            ) {
                 it.header(
                     "User-Agent",
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"

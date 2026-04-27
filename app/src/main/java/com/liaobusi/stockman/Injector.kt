@@ -247,13 +247,22 @@ object Injector {
 //                        StockRepo.getRealTimeStocksBD2()
 //                    }
 
-
-
                     async {
                         while (true) {
                             if (isTradingTime()) {
                                 delay(1000)
+                                StockRepo.getRealTimeSinaSZ()
+                            } else {
+                                delay(1000 * 60 * 6)
+                            }
+                        }
+                    }
+
+                    async {
+                        while (true) {
+                            if (isTradingTime()) {
                                 StockRepo.getRealTimeStocksSH()
+                                delay(1000)
                             } else {
                                 delay(1000 * 60 * 6)
                             }
