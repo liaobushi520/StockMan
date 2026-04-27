@@ -14,3 +14,11 @@
 .cxx
 local.properties
 /.idea/
+/stockman-monitor/.kotlin/
+/stockman-monitor/.idea/
+/stockman-monitor/.gradle/
+/stockman-monitor/build/
+/stockman-monitor/server/build/
+/stockman-monitor/web/build/
+/stockman-monitor/server/data/
+/stockman-monitor/server/server
