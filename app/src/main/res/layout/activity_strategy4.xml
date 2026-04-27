@@ -6,14 +6,17 @@
     android:layout_width="match_parent"
     android:orientation="vertical"
     android:id="@+id/root"
+    android:background="@color/yd_page_bg"
     android:fitsSystemWindows="true"
     android:layout_height="match_parent">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
-        android:background="#eebd2c2c"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:background="@color/yd_accent"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -25,32 +28,46 @@
         <androidx.coordinatorlayout.widget.CoordinatorLayout
             android:id="@+id/coordinatorLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:background="@color/yd_page_bg">
 
             <com.google.android.material.appbar.AppBarLayout
                 android:id="@+id/appbar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/white">
+                android:background="@color/white"
+                app:elevation="4dp"
+                app:liftOnScroll="true">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
+                    android:paddingHorizontal="12dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="0dp"
                     app:layout_scrollFlags="scroll">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="上市时间" />
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/startMarketTime"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -61,11 +78,18 @@
                             android:text="19900101" />
 
                         <TextView
-                            android:layout_width="10dp"
-                            android:layout_height="2dp"
-                            android:background="#66000000" />
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="6dp"
+                            android:text="—"
+                            android:textColor="@color/yd_caption"
+                            android:textSize="14sp" />
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/endMarketTime"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -79,16 +103,24 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="流通市值(亿)" />
 
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/lowMarketValue"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -98,11 +130,18 @@
                             android:text="1" />
 
                         <TextView
-                            android:layout_width="10dp"
-                            android:layout_height="2dp"
-                            android:background="#66000000" />
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="6dp"
+                            android:text="—"
+                            android:textColor="@color/yd_caption"
+                            android:textSize="14sp" />
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/highMarketValue"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -119,17 +158,25 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="查找时间范围" />
 
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/timeRangeTv"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -141,15 +188,23 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="天" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text=" , 在" />
 
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/averageDayTv"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -161,6 +216,8 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="日均线上方运行" />
 
 
@@ -170,17 +227,25 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="收盘价不能偏离均线价" />
 
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/divergeRateTv"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -191,14 +256,22 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="%" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text=" , 在均线下方调整最多" />
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/allowBelowCountTv"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -210,6 +283,8 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="日" />
 
                     </LinearLayout>
@@ -218,15 +293,23 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="异动检测范围为" />
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/abnormalRangeTv"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -238,14 +321,22 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="天" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text=" , 放量换手率是平均换手率" />
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/abnormalRateTv"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -256,6 +347,8 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="倍" />
 
 
@@ -265,15 +358,23 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="截止时间" />
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/endTimeTv"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -286,9 +387,15 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="股东人数连续" />
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/gdrsCountTv"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -300,30 +407,40 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="期下降" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/gdrsCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
-                            xmlns:app="http://schemas.android.com/apk/res-auto"
-                            android:checked="false" />
+                            android:checked="false"
+                            app:buttonTint="@color/yd_accent" />
 
                     </LinearLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="概念板块" />
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/conceptAndBKTv"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -336,11 +453,14 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="关注的板块" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/followBkCb"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:checked="false" />
@@ -350,9 +470,13 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="10dp"
-                            android:background="#ffbd2c2c"
+                            android:background="@drawable/bg_diy_btn_primary"
+                            android:minHeight="40dp"
+                            android:paddingHorizontal="14dp"
                             android:text="保存当前快照"
-                            android:textColor="#fff" />
+                            android:textAllCaps="false"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp" />
 
                     </LinearLayout>
 
@@ -360,42 +484,67 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="牛回头" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/cowBackCb"
-                            android:padding="0dp"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="区间无涨停" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/noZTInRangeCb"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="活跃比较" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/onlyActiveRateCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
+                            android:checked="true" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
+                            android:text="同/韭" />
+
+                        <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
+                            android:id="@+id/ztSourceCb"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="true" />
 
 
@@ -404,69 +553,86 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="主板" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/mainBoardCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="true" />
 
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="创业板" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/changyebanCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="true" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="北交所" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/bjsCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="false" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="科创板" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/starCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="false" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="ST" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/stCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="false" />
 
 
@@ -476,44 +642,52 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="连板模式" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/ztPromotionCb"
                             android:layout_width="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:layout_height="wrap_content" />
 
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="涨停分组" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/groupCb"
                             android:layout_width="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:layout_height="wrap_content" />
-
-
-
 
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="异动模式" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/ydModeCb"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content" />
 
@@ -521,13 +695,16 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="活跃度" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/activityLevelCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="false" />
 
                     </LinearLayout>
@@ -535,68 +712,85 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="涨幅" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/zfSortCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="false" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="东热" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/popularitySortCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="true" />
 
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="同热" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/thsPopularitySortCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="false" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="淘热" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/tgbPopularitySortCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="false" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="大热" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/dzhPopularitySortCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="false" />
 
 
@@ -605,67 +799,84 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="涨停" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/onlyZTCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="false" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="跌停" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/onlyDTCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="false" />
 
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="中军" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/zhongjunCb"
                             android:layout_width="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:layout_height="wrap_content" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="小票" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/xiaopiaoCb"
                             android:layout_width="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:layout_height="wrap_content" />
 
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text=" 龙虎榜" />
 
                         <androidx.appcompat.widget.AppCompatCheckBox
+                            style="@style/Widget.StockMan.Strategy4.InlineCheckBox"
                             android:id="@+id/dragonTigerCb"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:buttonTint="#ffbd2c2c"
+                            app:buttonTint="@color/yd_accent"
                             android:checked="false" />
 
 
@@ -674,15 +885,23 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="统计近" />
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/abnormalDayTv"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -693,9 +912,15 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="日异动数并排序，取前" />
 
                         <EditText
+                            android:background="@drawable/bg_diy_et_field"
+                            android:paddingHorizontal="8dp"
+                            android:textColor="@color/yd_body"
+                            android:textColorHint="@color/yd_caption"
                             android:id="@+id/rankCountTv"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -706,17 +931,23 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:textColor="@color/yd_body"
+                            android:textSize="14sp"
                             android:text="名" />
 
 
                         <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/startBtn"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="10dp"
-                            android:background="#ffbd2c2c"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_diy_btn_primary"
+                            android:minHeight="44dp"
                             android:text="开始"
-                            android:textColor="#fff" />
+                            android:textAllCaps="false"
+                            android:textColor="@android:color/white"
+                            android:textSize="15sp" />
 
                     </LinearLayout>
 
@@ -724,113 +955,140 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
                         <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/preBtn"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
                             android:layout_weight="1"
-                            android:background="#f44336"
+                            android:background="@drawable/bg_diy_btn_secondary"
+                            android:minHeight="44dp"
                             android:text="前一天"
-                            android:textColor="#fff" />
+                            android:textAllCaps="false"
+                            android:textColor="@color/yd_accent"
+                            android:textSize="14sp" />
 
                         <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/chooseStockBtn"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="10dp"
-                            android:layout_marginTop="10dp"
                             android:layout_weight="1"
-                            android:background="#ffbd2c2c"
-                            android:text="选    股"
-                            android:textColor="#fff" />
+                            android:background="@drawable/bg_diy_btn_primary"
+                            android:minHeight="44dp"
+                            android:text="选股"
+                            android:textAllCaps="false"
+                            android:textColor="@android:color/white"
+                            android:textSize="14sp" />
 
                         <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/postBtn"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="10dp"
-                            android:layout_marginTop="10dp"
                             android:layout_weight="1"
-                            android:background="#f44336"
+                            android:background="@drawable/bg_diy_btn_secondary"
+                            android:minHeight="44dp"
                             android:text="后一天"
-                            android:textColor="#fff" />
+                            android:textAllCaps="false"
+                            android:textColor="@color/yd_accent"
+                            android:textSize="14sp" />
                     </LinearLayout>
 
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:layout_marginBottom="@dimen/strategy4_form_row_spacing"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingVertical="@dimen/strategy4_form_row_padding_vertical">
 
                         <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/line5Btn"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
                             android:layout_weight="1"
-                            android:background="#4a148c"
+                            android:background="@drawable/bg_strategy_ma_tintable"
+                            android:backgroundTint="@color/strategy_ma_5"
+                            android:minHeight="40dp"
                             android:text="5日线"
-                            android:textColor="#fff" />
+                            android:textAllCaps="false"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp" />
 
                         <View
-                            android:layout_width="20dp"
+                            android:layout_width="8dp"
                             android:layout_height="match_parent" />
 
                         <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/line10Btn"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
                             android:layout_weight="1"
-                            android:background="#ff4081"
+                            android:background="@drawable/bg_strategy_ma_tintable"
+                            android:backgroundTint="@color/strategy_ma_10"
+                            android:minHeight="40dp"
                             android:text="10日线"
-                            android:textColor="#fff" />
+                            android:textAllCaps="false"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp" />
 
                         <View
-                            android:layout_width="20dp"
+                            android:layout_width="8dp"
                             android:layout_height="match_parent" />
 
                         <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/line20Btn"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
                             android:layout_weight="1"
-                            android:background="#0d47a1"
+                            android:background="@drawable/bg_strategy_ma_tintable"
+                            android:backgroundTint="@color/strategy_ma_20"
+                            android:minHeight="40dp"
                             android:text="20日线"
-                            android:textColor="#fff" />
+                            android:textAllCaps="false"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp" />
 
 
                         <View
-                            android:layout_width="20dp"
+                            android:layout_width="8dp"
                             android:layout_height="match_parent" />
 
                         <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/line30Btn"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
                             android:layout_weight="1"
-                            android:background="#f000ff"
+                            android:background="@drawable/bg_strategy_ma_tintable"
+                            android:backgroundTint="@color/strategy_ma_30"
+                            android:minHeight="40dp"
                             android:text="30日线"
-                            android:textColor="#fff" />
+                            android:textAllCaps="false"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp" />
 
                         <View
-                            android:layout_width="20dp"
+                            android:layout_width="8dp"
                             android:layout_height="match_parent" />
 
                         <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/line60Btn"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
                             android:layout_weight="1"
-                            android:background="#006064"
+                            android:background="@drawable/bg_strategy_ma_tintable"
+                            android:backgroundTint="@color/strategy_ma_60"
+                            android:minHeight="40dp"
                             android:text="60日线"
-                            android:textColor="#fff" />
+                            android:textAllCaps="false"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -838,51 +1096,50 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="@color/yd_time_chip_bg"
                     android:gravity="center_vertical|start"
-                    android:layout_marginTop="10dp"
-                    android:layout_marginBottom="16dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp">
+
                     <TextView
                         android:id="@+id/resultCount"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="选股结果"
-                        android:textColor="#000"
-                        android:textSize="18sp"
+                        android:textColor="@color/yd_body"
+                        android:textSize="17sp"
                         android:textStyle="bold" />
-
 
                     <TextView
                         android:id="@+id/a500Tv"
-                        android:textSize="18sp"
-                        android:visibility="gone"
-                        android:textStyle="bold"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/yd_body"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
 
                     <TextView
                         android:id="@+id/dotTv"
                         android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:text=":"
-                        android:textColor="#000"
-                        android:visibility="gone"
-                        android:textSize="18sp"
-                        android:layout_height="wrap_content"/>
-
+                        android:textColor="@color/yd_caption"
+                        android:textSize="17sp"
+                        android:visibility="gone" />
 
                     <TextView
                         android:id="@+id/zz2000Tv"
-                        android:textSize="18sp"
-                        android:visibility="gone"
-                        android:textStyle="bold"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/yd_body"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
 
                 </LinearLayout>
-
-
-
 
 
             </com.google.android.material.appbar.AppBarLayout>
@@ -892,16 +1149,28 @@
                 android:id="@+id/rv"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:background="@color/yd_page_bg"
+                android:clipToPadding="false"
+                android:paddingBottom="8dp"
                 app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior" />
-
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fab"
                 android:layout_width="wrap_content"
-                android:layout_gravity="bottom|end"
-                android:layout_margin="16dp"
                 android:layout_height="wrap_content"
-                android:src="@drawable/ic_arrow_down" />
+                android:layout_gravity="bottom|end"
+                android:layout_marginEnd="14dp"
+                android:layout_marginBottom="14dp"
+                android:contentDescription="@string/yd_expand_toggle"
+                android:src="@drawable/ic_arrow_down"
+                app:backgroundTint="@color/yd_accent"
+                app:borderWidth="0dp"
+                app:elevation="3dp"
+                app:fabSize="normal"
+                app:pressedTranslationZ="6dp"
+                app:rippleColor="#40FFFFFF"
+                app:tint="@android:color/white" />
+
 
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

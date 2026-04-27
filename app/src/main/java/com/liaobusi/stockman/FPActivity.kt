@@ -77,20 +77,22 @@ class FPActivity : AppCompatActivity() {
         return true
     }
 
+    private suspend fun refresh() {
+        val endTime = binding.endTimeTv.editableText.toString().toIntOrNull() ?: today()
+        StockRepo.refreshData()
+        StockRepo.fetchZTReplay2(date = endTime)
+        StockRepo.getExpectHot()
+        Injector.refreshPopularityRanking()
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.refresh -> {
                 lifecycleScope.launch(Dispatchers.IO) {
-                    StockRepo.refreshData()
+                    refresh()
                     launch(Dispatchers.Main) {
                         binding.chooseStockBtn.callOnClick()
                     }
-                    val endTime = binding.endTimeTv.editableText.toString().toIntOrNull() ?: today()
-                    StockRepo.fetchZTReplay2(date = endTime)
-                    StockRepo.fetchDragonTigerRank(endTime)
-                    StockRepo.getExpectHot()
-                    Injector.refreshPopularityRanking()
-
                 }
                 return true
             }
@@ -162,6 +164,9 @@ class FPActivity : AppCompatActivity() {
         binding.bksRV.adapter = BKsAdapter()
 
         binding.chooseStockBtn.callOnClick()
+        lifecycleScope.launch(Dispatchers.IO) {
+            refresh()
+        }
     }
 
     fun selectBK(bk: String) {
@@ -578,7 +583,7 @@ class FPActivity : AppCompatActivity() {
                                         result.bk.code,
                                         result.nextDayHistory!!.date
                                     ) else null
-                            if (cur.chg != result.currentDayHistory!!.chg || next?.chg != result.nextDayHistory?.chg) {
+                            if (cur?.chg != result.currentDayHistory!!.chg || next?.chg != result.nextDayHistory?.chg) {
                                 data[i] = result.copy(
                                     bk = s!!,
                                     currentDayHistory = cur,
@@ -614,10 +619,10 @@ class FPActivity : AppCompatActivity() {
                         summary.text = sb.trimEnd().toString()
                     } else {
                         hotIv.visibility = View.GONE
-                        summary.text=""
+                        summary.text = ""
                     }
 
-                    if (result.expandSumary&&summary.text.isNotEmpty()) {
+                    if (result.expandSumary && summary.text.isNotEmpty()) {
                         summary.visibility = View.VISIBLE
                     } else {
                         summary.visibility = View.GONE

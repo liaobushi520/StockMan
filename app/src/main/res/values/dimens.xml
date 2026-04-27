@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Strategy4 表单：行距（行与行之间）与行内上下留白 -->
+    <dimen name="strategy4_form_row_spacing">4dp</dimen>
+    <dimen name="strategy4_form_row_padding_vertical">2dp</dimen>
+
     <dimen name="et_padding_height">5dp</dimen>
     <dimen name="dp_rv_height">417dp</dimen>
     <dimen name="dp_rv_width">200dp</dimen>

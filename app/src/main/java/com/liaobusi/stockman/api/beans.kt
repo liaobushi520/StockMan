@@ -407,6 +407,8 @@ data class DragonTiger2Tag(
 )
 
 
+
+
 data class BDStockResponse(
     val QueryID: String,
     val Result: ResultBD,
@@ -599,9 +601,6 @@ data class RDataBean(val re: Map<String,List<RDataInnerBean>>)
 
 data class RDataInnerBean(val name: String,val summary: String)
 
-
-
-
 data class ZhiBoResponse(
     val JHJJYD: List<Any>,
     val List: List<Item0>,
@@ -787,4 +786,195 @@ data class LimitDownPoolInfo(
     val name: String,
     val turnover_rate: Double
 )
+
+
+data class CXStockDataResponse(
+    val data : CXData,
+    val status: Boolean
+)
+
+data class CXData(
+    val list: List<CXItem>,
+    val page: Int,
+    val pages: Int,
+    val timestamp: Long
+)
+
+data class CXItem(
+    val amplitude: Double,
+    val avgPrice: Double,
+    val changeRate: Float,
+    val curPrice: Float,
+    val downLimit: Double,
+    val floatValue: Double,
+    val hasCollected: Boolean,
+    val highPrice: Double,
+    val isDelisted: Boolean,
+    val logoUrl: String,
+    val lowPrice: Double,
+    val openPrice: Double,
+    val preClosePrice: Double,
+    val priceBookRatio: Double,
+    val priceEarningRatio: Double,
+    val priceUpdown1: Double,
+    val sortIndex: Int,
+    val stkCode: String,
+    val stkShortName: String,
+    val stkUniCode: Int,
+    val todayIsTrade: Boolean,
+    val totValue: Double,
+    val tradeAmut: Double,
+    val tradeDate: Long,
+    val tradeVol: Int,
+    val turnoverRate: Double,
+    val upLimit: Double,
+    val volRatio: Double
+)
+
+
+
+
+
+
+
+data class BDResponse(
+    val QueryID: String,
+    val Result: BDResult,
+    val ResultCode: Int
+)
+
+data class BDResult(
+    val list: BDList
+)
+
+data class BDList(
+    val body: List<BDBody>,
+    val headers: List<BDHeader>
+)
+
+data class BDBody(
+    val amount: String,
+    val amplitude: String,
+    val code: String,
+    val exchange: String,
+    val financeType: String,
+    val followStatus: Int,
+    val lastPx: String,
+    val logo: Logo,
+    val market: String,
+    val marketValue: String,
+    val name: String,
+    val pxChange: String,
+    val pxChangeRate: String,
+    val rawData: RawData,
+    val turnoverRatio: String,
+    val volume: String
+)
+
+data class BDHeader(
+    val canSort: Int,
+    val key: String,
+    val name: String
+)
+
+data class Logo(
+    val logo: String,
+    val type: String
+)
+
+data class RawData(
+    val amount: Long,
+    val amplitude: Double,
+    val lastPx: Float,
+    val marketValue: Long,
+    val pxChange: Double,
+    val pxChangeRate: Float,
+    val turnoverRatio: Double,
+    val volume: Double
+)
+
+
+
+
+
+data class CallWarnParam(
+    val filter: Filter = Filter(),
+    val page_num: Int = 1,
+    val page_size: Int = 20,
+    val sort: Int = 0,
+    val sort_field: String = ""
+)
+
+data class Filter(
+    val market: String = "1",
+    val optionals: Any?=null,
+    val st: Int = 0,
+    val warn_types: String = ""
+)
+
+data class CallWarnResponse(
+    val data : CallWarnData,
+    val status_code: Int,
+    val status_msg: String
+)
+
+data class CallWarnData(
+    val current_page: Int,
+    val data_list: List<List<Any>>,
+    val header_list: List<Header>,
+    val total: Int
+)
+
+data class Header(
+    val code: String,
+    val name: String,
+    val type: String
+)
+
+
+class THSYDResponse : ArrayList<THSYDResponseItem>()
+
+data class THSYDResponseItem(
+    val ctime: Int,
+    val info: List<THSInfo>,
+    val isdraw: Int
+)
+
+data class THSInfo(
+    val analysisContent: String?=null,
+    val analysisUrl: String,
+    val bkname: String,
+    val id: String,
+    val importantPoint: ImportantPoint,
+    val isdraw: Int,
+    val newsurl: Any,
+    val sentiment: Int,
+    val seq: String,
+    val stocklist: List<Stocklist>,
+    val time: Int,
+    val title: String
+)
+
+data class ImportantPoint(
+    val capital: Long,
+    val cate: String,
+    val change: Double,
+    val isShow: Int,
+    val limitCnt: Int
+)
+
+data class Stocklist(
+    val capitalFlow: String,
+    val dzf: String,
+    val marketId: String,
+    val recdzf: String,
+    val stockCode: String,
+    val stockName: String
+)
+
+
+
+
+
+
 

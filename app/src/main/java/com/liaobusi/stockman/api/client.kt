@@ -1,5 +1,6 @@
 package com.liaobusi.stockman.api
 
+import android.util.Log
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -73,8 +74,21 @@ fun getOkHttpClientBuilder() = OkHttpClient.Builder().apply {
         e.printStackTrace()
     }
 
+    addNetworkInterceptor { chain ->
+
+        val request = chain.request().newBuilder().also {
+            if (chain.request().url.host == "www.cls.cn" || "finance.pae.baidu.com" == chain.request().url.host) {
+                it.header(
+                    "User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+                )
+                it.header("Acs-Token","1776924005702_1777000636050_4o3VJYYsyA4qN8l+stYo0jjWvAK+X1y3U3cKUoqEyhmLSz2bV/9rQMOK1mI4zbgkxgSPLfoQuRxDsCHf+Qv2fccfTyDRMLlDjQ1SssttIgrTV3ZNJvjOJg7biD/Hc/bJMg1tLdj2nMw7mRAs7rEb/2hGTkUvJIXHNeTnAyf9VXu9vnllNMUgs6txbweqiNSnosdk3rwmp8mNdmt9L64heXK9jBACDuk5ubRve4xeiF2a9B6jeBK1WP9akUUtH9+77/OaRxDP7PnwFAN/NsjjSyv+m1FJ7q3IaoCvaj1eQeCl7fa+0jijw8MVZOq6P6jtqvw4NQeatvccR6czVizBlqAtp+Bug1apjvw6nhkzP91iVQtVxbNVkX6286yMDRuL")
+            }
+        }.build()
+        chain.proceed(request)
+    }
     //启用Log日志
-   addInterceptor(logging)
+    addInterceptor(logging)
 
 }
 

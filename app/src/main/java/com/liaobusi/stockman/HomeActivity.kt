@@ -1,11 +1,7 @@
 package com.liaobusi.stockman
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.graphics.Color
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -15,18 +11,19 @@ import android.view.View
 import android.view.Window
 import android.view.WindowManager
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.liaobusi.stockman.api.CallWarnParam
+import com.liaobusi.stockman.api.Filter
 import com.liaobusi.stockman.databinding.ActivityHomeBinding
+import com.liaobusi.stockman.db.UnusualActionHistory
+import com.liaobusi.stockman.db.WARN_TYPE_MAP
 import com.liaobusi.stockman.repo.StockRepo
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.*
-import androidx.core.graphics.toColorInt
-import java.net.HttpURLConnection
-import java.net.URL
-import java.nio.charset.StandardCharsets
 
 fun setStatusBarColor(activity: Activity, color: Int) {
     val window: Window = activity.window
@@ -120,10 +117,9 @@ class HomeActivity : AppCompatActivity() {
             val s = "https://www.jiuyangongshe.com/action"
 //            val uri: Uri = Uri.parse(s)
 //            val intent = Intent(Intent.ACTION_VIEW, uri)
-            val intent = Intent(this, WebViewActivity::class.java).apply {
-                putExtra("url", s)
-            }
-            startActivity(intent)
+
+            WebViewActivity.start(this, s)
+
         }
 
         binding.s5.setOnClickListener {
@@ -158,7 +154,7 @@ class HomeActivity : AppCompatActivity() {
         binding.initBtn.multiClick(3) {
             binding.ll.visibility = View.VISIBLE
             lifecycleScope.launch(Dispatchers.IO) {
-                StockRepo.getRealTimeStocks()
+                StockRepo.getRealTimeStocksDFCF()
                 StockRepo.getRealTimeBKs()
                 StockRepo.getHistoryBks()
                 StockRepo.getBKStocks()
@@ -183,66 +179,16 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
+        lifecycleScope.launch(Dispatchers.IO) {
+
+
+        }
+
     }
-
-
 }
 
 
-//
-//  fun fetch(){
-//
-//    try {
-//        // 1. 创建 URL 对象
-//        val url = URL("https://app.jiuyangongshe.com/jystock-app/api/v1/action/field")
-//        val connection = url.openConnection() as HttpURLConnection
-//
-//        // 2. 设置请求方法为 POST
-//        connection.setRequestMethod("POST")
-//        connection.setDoOutput(true)
-//
-//        // 3. 设置请求头
-//        connection.setRequestProperty("accept", "application/json, text/plain, */*")
-//        connection.setRequestProperty("accept-language", "zh-CN,zh;q=0.9,en;q=0.8")
-//        connection.setRequestProperty("content-type", "application/json")
-//        connection.setRequestProperty("origin", "https://www.jiuyangongshe.com")
-//        connection.setRequestProperty("platform", "3")
-//        connection.setRequestProperty("priority", "u=1, i")
-//        connection.setRequestProperty("referer", "https://www.jiuyangongshe.com/")
-//        connection.setRequestProperty("timestamp", "1744196090522")
-//        connection.setRequestProperty("token", "162a548372a030495d4bd677b1d675f5")
-//        connection.setRequestProperty(
-//            "user-agent",
-//            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
-//        )
-//
-//
-//        // 设置 Cookie（注意分号后的空格要去掉）
-//        val cookies =
-//            "SESSION=YzE2MjVjYzAtYjI3Ni00MzdjLTk0ZDctZDZlM2MxMTI5Nj30;Hm_lvt_58aa18061df7855800f2a1b32d6da7f4=1744000777;Hm_lpvt_58aa18061df7855800f2a1b32d6da7f4=1744196078"
-//        connection.setRequestProperty("Cookie", cookies)
-//
-//        // 4. 写入 JSON 请求体
-//        val jsonBody = "{\"date\":\"2025-04-08\",\"pc\":1}"
-//        connection.getOutputStream().use { os ->
-//            val input = jsonBody.toByteArray(StandardCharsets.UTF_8)
-//            os.write(input, 0, input.size)
-//        }
-//        // 5. 获取响应状态码（可选）
-//        val responseCode = connection.getResponseCode()
-//        val inputStream = connection.inputStream
-//        val content = inputStream.bufferedReader().use { it.readText() }
-//        println("Response Code: " + responseCode+" "+content)
-//
-//        // 6. 关闭连接
-//        connection.disconnect()
-//    } catch (e: Exception) {
-//        e.printStackTrace()
-//    }
-//
-//
-//
-//}
+
 
 
 

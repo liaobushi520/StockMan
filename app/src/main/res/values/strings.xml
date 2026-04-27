@@ -1,3 +1,22 @@
 <resources>
     <string name="app_name">股票超人5.0</string>
+    <string name="yd_expand_toggle">展开或折叠详情</string>
+    <string name="yd_label_expand">展开</string>
+    <string name="yd_label_collapse">收起</string>
+    <string name="yd_unusual_section_title">盘口异动资讯</string>
+    <string name="yd_unusual_count_suffix">条</string>
+    <string name="yd_popularity_heat">热度排名 %1$s</string>
+    <string name="webview_activity_title">网页</string>
+
+    <string name="debug_db_hint">可选 %1$d 张表；每页 %2$d 行，可翻页浏览。</string>
+    <string name="debug_db_loading">加载中…</string>
+    <string name="debug_db_rows">显示 %1$d 行</string>
+    <string name="debug_db_truncated">（已超过 %1$d 行上限，其余未读出）</string>
+    <string name="debug_db_entry">数据库调试</string>
+    <string name="debug_db_prev">上一页</string>
+    <string name="debug_db_next">下一页</string>
+    <string name="debug_db_page_info">第 %1$d 页 · 本页 %2$d 行</string>
+    <string name="debug_filter_date_hint">date，如 20240422</string>
+    <string name="debug_filter_code_hint">code，模糊匹配</string>
+    <string name="debug_filter_apply">应用筛选</string>
 </resources>

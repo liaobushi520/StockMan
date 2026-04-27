@@ -1,59 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:orientation="vertical"
-    android:layout_height="wrap_content">
-
-    <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="400dp">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="400dp"
-
-            android:orientation="vertical"
-            android:id="@+id/bkLL"
-            />
-    </androidx.core.widget.NestedScrollView>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:background="#663f51b5"
-        android:layout_marginBottom="8dp"
-        />
+    android:layout_height="wrap_content"
+    android:background="@color/yd_page_bg"
+    android:minWidth="300dp"
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:layout_marginVertical="8dp"
-        android:layout_marginHorizontal="8dp"
-        android:orientation="horizontal">
+        android:background="@color/yd_accent"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:letterSpacing="0.02"
+            android:text="关联板块"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/stockHeaderStock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:alpha="0.95"
+            android:lineSpacingExtra="2dp"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            tools:text="000001 - 平安银行" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:alpha="0.88"
+            android:lineSpacingExtra="2dp"
+            android:text="勾选板块后点击「跳转」打开竞价策略"
+            android:textColor="@android:color/white"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="420dp"
+        android:clipToPadding="false"
+        android:fillViewport="false"
+        android:overScrollMode="ifContentScrolls"
+        android:paddingHorizontal="12dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="4dp"
+        android:scrollbars="vertical">
+
+        <LinearLayout
+            android:id="@+id/bkLL"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </androidx.core.widget.NestedScrollView>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginHorizontal="12dp"
+        android:background="@color/yd_divider" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="12dp">
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/cancelBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="#ff4081"
+            android:background="@drawable/bg_diy_btn_secondary"
+            android:minHeight="42dp"
+            android:minWidth="96dp"
+            android:paddingHorizontal="18dp"
             android:text="取消"
-            android:textColor="#fff" />
-
-        <View
-            android:layout_width="16dp"
-            android:layout_height="match_parent" />
+            android:textAllCaps="false"
+            android:textColor="@color/yd_accent"
+            android:textSize="14sp" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/jumpBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="#3f51b5"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/bg_diy_btn_primary"
+            android:minHeight="42dp"
+            android:minWidth="96dp"
+            android:paddingHorizontal="18dp"
             android:text="跳转"
-            android:textColor="#fff" />
-
-
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="14sp" />
     </LinearLayout>
 
 </LinearLayout>

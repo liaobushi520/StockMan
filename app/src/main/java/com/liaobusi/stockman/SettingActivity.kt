@@ -45,15 +45,17 @@ fun isRealTimeDataSource(context: Context): Boolean {
     return sp.getBoolean("realtime_data_source", true)
 }
 
-fun clsSign(context: Context): String  {
-    val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
-    return sp.getString("cls_sign", "").toString()
-}
+
 
 
 fun howDayShowZTFlag(context: Context): Int {
     val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
     return sp.getInt("how_day_show_zt_flag", 1)
+}
+
+fun clsSign(context: Context): String  {
+    val sp = context.getSharedPreferences("app", Context.MODE_PRIVATE)
+    return sp.getString("cls_sign", "").toString()
 }
 
 
@@ -108,6 +110,10 @@ class SettingActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.title = "设置"
 
+        binding.debugDbBtn.setOnClickListener {
+            DebugActivity.start(this)
+        }
+
         val sp = getSharedPreferences("app", Context.MODE_PRIVATE)
 
         val show = sp.getBoolean("show_hidden_stock_bk", false)
@@ -153,13 +159,13 @@ class SettingActivity : AppCompatActivity() {
         }
 
 
-
         val clsSign = sp.getString("cls_sign","")
         binding.clsSignEt.setText(clsSign, TextView.BufferType.EDITABLE)
         binding.clsSignConfirmBtn.setOnClickListener {
             val s=binding.clsSignEt.editableText.toString()
             sp.edit().putString("cls_sign",s).apply()
         }
+
 
 
         val focusLB = sp.getBoolean("focusLB", false)

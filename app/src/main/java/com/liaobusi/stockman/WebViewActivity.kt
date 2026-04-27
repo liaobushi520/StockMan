@@ -1,171 +1,191 @@
 package com.liaobusi.stockman
 
+import android.annotation.SuppressLint
 import android.content.Context
-import android.net.Uri
+import android.content.Intent
 import android.os.Bundle
-import android.util.AttributeSet
+import android.util.Base64
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.webkit.CookieManager
+import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
-import android.webkit.WebResourceError
-import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
-import com.liaobusi.stockman.api.FPRequest
+import com.liaobusi.stockman.SettingActivity
 import com.liaobusi.stockman.databinding.ActivityWebviewBinding
 import com.liaobusi.stockman.db.FPResponse
 import com.liaobusi.stockman.db.ZTReplayBean
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import java.io.ByteArrayInputStream
-import java.net.HttpURLConnection
-import java.net.URL
-import java.nio.charset.StandardCharsets
-import androidx.core.net.toUri
+import kotlin.text.removeSurrounding
 
+/**
+ * 内置 WebView，通过注入脚本拦截页面内 **XMLHttpRequest** 与 **fetch** 返回的 JSON 文本，
+ * 在 [onJsonIntercepted] 中处理（默认打日志）。
+ *
+ * 启动：[start] 传入初始 URL；仅用于你信任的页面，避免向不可信站点暴露 JS Bridge。
+ */
+open class WebViewActivity : AppCompatActivity() {
 
-class WebViewActivity : AppCompatActivity() {
+    companion object {
+        private const val TAG = "WebViewActivity"
+        const val EXTRA_URL = "url"
+
+        fun start(context: Context, url: String) {
+            context.startActivity(
+                Intent(context, WebViewActivity::class.java).putExtra(EXTRA_URL, url),
+            )
+        }
+
+        /**
+         * 仅安装一次 hook；JSON 经 Base64 传给 Native，避免转义问题。
+         * 依赖 `JsonBridge.onJsonBase64`。
+         */
+        private val JSON_HOOK_SCRIPT = """
+            (function(){
+              if(window.__SM_JSON_HOOK__)return;
+              window.__SM_JSON_HOOK__=true;
+              var B=window.JsonBridge;
+              if(!B||!B.onJsonBase64)return;
+              function absUrl(u){
+                try{return new URL(u,document.baseURI).href;}catch(e){return u||'';}
+              }
+              function looksJson(t){
+                if(!t||typeof t!=='string')return false;
+                var s=t.trim();
+                if(s.length<2)return false;
+                var c0=s.charAt(0),c1=s.charAt(s.length-1);
+                if(!((c0==='{'&&c1==='}')||(c0==='['&&c1===']')))return false;
+                try{JSON.parse(s);return true;}catch(e){return false;}
+              }
+              function notify(url,text){
+                if(!looksJson(text))return;
+                try{
+                  var b=btoa(unescape(encodeURIComponent(text)));
+                  B.onJsonBase64(url,b);
+                }catch(e){}
+              }
+              var XPO=XMLHttpRequest.prototype;
+              var oOpen=XPO.open;
+              var oSend=XPO.send;
+              XPO.open=function(method,url){
+                this.__sm_url=absUrl(url);
+                return oOpen.apply(this,arguments);
+              };
+              XPO.send=function(body){
+                this.addEventListener('load',function(){
+                  var u=this.__sm_url||'';
+                  var ct=(this.getResponseHeader('Content-Type')||'').toLowerCase();
+                  if(ct.indexOf('json')>=0||ct.indexOf('javascript')>=0){
+                    notify(u,this.responseText);
+                  }else if(this.responseText){
+                    notify(u,this.responseText);
+                  }
+                });
+                return oSend.apply(this,arguments);
+              };
+              if(window.fetch){
+                var nf=window.fetch;
+                window.fetch=function(input,init){
+                  var raw=typeof input==='string'?input:(input&&input.url);
+                  var u=absUrl(raw||'');
+                  return nf.apply(this,arguments).then(function(resp){
+                    try{
+                      var ct=(resp.headers.get('content-type')||'').toLowerCase();
+                      if(ct.indexOf('json')>=0){
+                        return resp.clone().text().then(function(txt){
+                          notify(u,txt);
+                          return resp;
+                        });
+                      }
+                    }catch(e){}
+                    return resp;
+                  });
+                };
+              }
+            })();
+        """.trimIndent()
+    }
 
     private lateinit var binding: ActivityWebviewBinding
 
-    override fun onSupportNavigateUp(): Boolean {
-        this.finish()
-        return true
-    }
+    private val jsonBridge = JsonBridge()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityWebviewBinding.inflate(LayoutInflater.from(this))
+        binding = ActivityWebviewBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        binding.toolbar.setNavigationOnClickListener { finish() }
+        binding.toolbar.title = getString(R.string.webview_activity_title)
 
-        val url = intent.getStringExtra("url") ?: "https://www.example.com"
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (binding.customWebView.canGoBack()) {
+                        binding.customWebView.goBack()
+                    } else {
+                        finish()
+                    }
+                }
+            },
+        )
 
         binding.customWebView.apply {
-            setProgressListener { progress ->
-                // 更新进度条
-                binding.progressBar.progress = progress
-                if (progress == 100) {
-                    binding.progressBar.visibility = View.GONE
-                } else {
-                    binding.progressBar.visibility = View.VISIBLE
+            webChromeClient = object : WebChromeClient() {
+                override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                    binding.progressBar.progress = newProgress
                 }
             }
-
-            setErrorListener { error ->
-                // 显示错误信息
-                Toast.makeText(context, "加载错误: $error", Toast.LENGTH_SHORT).show()
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView, url: String) {
+                    injectJsonInterceptScript(view)
+                }
             }
-
-            setPageLoadedListener {
-                // 页面加载完成
-                Toast.makeText(context, "页面加载完成", Toast.LENGTH_SHORT).show()
-            }
-
-            safeLoadUrl(url)
+            addJavascriptInterface(jsonBridge, "JsonBridge")
         }
-    }
 
-    override fun onBackPressed() {
-        if (binding.customWebView.canGoBack()) {
-            binding.customWebView.goBack()
+        val url = intent.getStringExtra(EXTRA_URL)?.trim().orEmpty()
+        if (url.isNotEmpty()) {
+            binding.customWebView.loadUrl(url)
         } else {
-            super.onBackPressed()
+            binding.customWebView.loadUrl("about:blank")
         }
     }
 
     override fun onDestroy() {
-        binding.customWebView.cleanUp()
+        if (::binding.isInitialized) {
+            binding.customWebView.apply {
+                stopLoading()
+                loadUrl("about:blank")
+                removeJavascriptInterface("JsonBridge")
+                destroy()
+            }
+        }
         super.onDestroy()
     }
-}
 
+    /**
+     * 当页面脚本识别到合法 JSON 字符串（`{…}` / `[…]` 且可被 `JSON.parse`）时回调；运行在 UI 线程。
+     */
+    protected open fun onJsonIntercepted(url: String, json: String) {
+        Log.d(TAG, "JSON url=$url len=${json.length} preview=${json.take(200)}")
 
-class CustomWebView @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
-) : WebView(context, attrs, defStyleAttr) {
-
-    private var progressListener: ((Int) -> Unit)? = null
-    private var errorListener: ((String?) -> Unit)? = null
-    private var pageLoadedListener: (() -> Unit)? = null
-
-    init {
-        setupWebView()
-    }
-
-
-
-    private fun interceptResponse(request: WebResourceRequest) {
-
-
-        Injector.scope.launch(Dispatchers.IO) {
-            try {
-
-
-                val pageUrl = async(Dispatchers.Main) {
-                    this@CustomWebView.url
-                }.await()
-
-                val date = pageUrl?.toUri()?.pathSegments?.lastOrNull()
-                if (date == null || date.contains("-")==false) {
-                    return@launch
-                }
-
-
-                val url = "https://app.jiuyangongshe.com/jystock-app/api/v1/action/field"//request.url.toString()
-                val connection = URL(url).openConnection() as HttpURLConnection
-                connection.requestMethod = request.method
-                request.requestHeaders.forEach { (key, value) ->
-                    connection.setRequestProperty(key, value)
-                }
-                val cookie = CookieManager.getInstance().getCookie("https://www.jiuyangongshe.com")
-                connection.setRequestProperty("Cookie", "SESSION=YzE2MjVjYzAtYjI3Ni00MzdjLTk0ZDctZDZlM2MxMTI5NjMw; Hm_lvt_58aa18061df7855800f2a1b32d6da7f4=1744000777; Hm_lpvt_58aa18061df7855800f2a1b32d6da7f4=1744196078")
-                connection.setRequestProperty("Sec-Fetch-Site","same-site")
-                connection.setRequestProperty("sec-Fetch-mode","cors")
-                connection.setRequestProperty("sec-Fetch-dest","empty")
-                connection.setRequestProperty("priority","u=1, i")
-                connection.setRequestProperty("accept-encoding","gzip, deflate, br, zstd")
-                connection.setRequestProperty("accept-language","zh-CN,zh;q=0.9,en;q=0.8")
-
-                connection.setRequestProperty("timestamp","1744196090522")
-                connection.setRequestProperty("token","162a548372a030495d4bd677b1d675f5")
-
-                connection.requestProperties.forEach {
-                    Log.e("XXXXXX",it.key+" "+it.value)
-                }
-
-                connection.setDoOutput(true);
-                connection.connectTimeout = 5000
-                connection.readTimeout = 8000
-                Log.e("股票超人","从韭研获取复盘信息${date}")
-                val jsonInputString = Gson().toJson(FPRequest(date))
-                connection.outputStream.use { os ->
-                    val input =
-                        jsonInputString.toByteArray(StandardCharsets.UTF_8)
-                    os.write(input, 0, input.size)
-                }
-                val inputStream = connection.inputStream
-                val content = inputStream.bufferedReader().use { it.readText() }
-                val rsp = Gson().fromJson<FPResponse>(content, FPResponse::class.java)
+        if (url == "https://app.jiuyangongshe.com/jystock-app/api/v1/action/field") {
+            lifecycleScope.launch(Dispatchers.IO) {
+                val rsp = Gson().fromJson(json, FPResponse::class.java)
                 val list = mutableListOf<ZTReplayBean>()
-
                 rsp.data.forEach {
-
-                    if (it.date==null)
-                        return@forEach
-
                     val groupName = it.name
-                    val reason = it.reason?:""
-                    val date = it.date.replace("-", "").toInt()
+                    val reason = it.reason ?: ""
+                    val date = it.date!!.replace("-", "").toInt()
                     it.list?.forEach {
                         val code = it.code.removeSurrounding("\"", "\"").removePrefix("sz")
                             .removePrefix("sh")
@@ -196,112 +216,27 @@ class CustomWebView @JvmOverloads constructor(
                     }
                 }
                 Injector.appDatabase.ztReplayDao().insertAll(list)
-            } catch (e: Throwable) {
-                e.printStackTrace()
-            }
-
-        }
-
-
-    }
-
-    var count = 0
-    private fun setupWebView() {
-        // 基础设置
-        settings.javaScriptEnabled = true
-        settings.domStorageEnabled = true
-        settings.databaseEnabled = true
-
-        settings.loadWithOverviewMode = true
-        settings.useWideViewPort = true
-        settings.setSupportZoom(true)
-        settings.builtInZoomControls = true
-        settings.displayZoomControls = false
-
-        // WebViewClient 处理页面加载
-        webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: WebView?, url: String?) {
-                super.onPageFinished(view, url)
-                pageLoadedListener?.invoke()
-            }
-
-            override fun shouldInterceptRequest(
-                view: WebView?,
-                request: WebResourceRequest?
-            ): WebResourceResponse? {
-
-                if (request?.url.toString().contains("jystock-app/api/v1/action/field")) {
-
-                    if (count % 2 == 1) {
-                        interceptResponse(request!!)
-                    }
-
-                    count++
-
-
+                launch(Dispatchers.Main) {
+                    Toast.makeText(this@WebViewActivity, "解析完成并保存", Toast.LENGTH_LONG).show()
                 }
-
-
-                return super.shouldInterceptRequest(view, request)
-            }
-
-            override fun onLoadResource(view: WebView?, url: String?) {
-                super.onLoadResource(view, url)
-
-
-            }
-
-
-            override fun onReceivedError(
-                view: WebView?,
-                request: WebResourceRequest?,
-                error: WebResourceError?
-            ) {
-                super.onReceivedError(view, request, error)
-                errorListener?.invoke(error?.description?.toString())
             }
         }
 
-        // WebChromeClient 处理进度等
-        webChromeClient = object : WebChromeClient() {
+    }
 
+    private fun injectJsonInterceptScript(wv: WebView) {
+        wv.evaluateJavascript(JSON_HOOK_SCRIPT, null)
+    }
 
-            override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                super.onProgressChanged(view, newProgress)
-                progressListener?.invoke(newProgress)
-            }
+    @SuppressLint("JavascriptInterface")
+    private inner class JsonBridge {
+        @JavascriptInterface
+        fun onJsonBase64(url: String, b64: String) {
+            if (b64.isEmpty()) return
+            val json = runCatching {
+                String(Base64.decode(b64, Base64.DEFAULT), Charsets.UTF_8)
+            }.getOrNull() ?: return
+            runOnUiThread { onJsonIntercepted(url, json) }
         }
-    }
-
-    // 设置进度监听
-    fun setProgressListener(listener: (Int) -> Unit) {
-        this.progressListener = listener
-    }
-
-    // 设置错误监听
-    fun setErrorListener(listener: (String?) -> Unit) {
-        this.errorListener = listener
-    }
-
-    // 设置页面加载完成监听
-    fun setPageLoadedListener(listener: () -> Unit) {
-        this.pageLoadedListener = listener
-    }
-
-    // 安全加载URL
-    fun safeLoadUrl(url: String) {
-        if (url.startsWith("http://") || url.startsWith("https://")) {
-            loadUrl(url)
-        } else {
-            errorListener?.invoke("不支持的URL协议")
-        }
-    }
-
-    // 清理WebView资源
-    fun cleanUp() {
-        progressListener = null
-        errorListener = null
-        pageLoadedListener = null
-        webChromeClient = null
     }
 }

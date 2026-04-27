@@ -1,4 +1,13 @@
 <resources>
 
+    <!-- Strategy4 表单内联勾选：去掉系统默认 48dp 触摸留白与不对称 padding，避免行高不齐 -->
+    <style name="Widget.StockMan.Strategy4.InlineCheckBox" parent="Widget.AppCompat.CompoundButton.CheckBox">
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingEnd">4dp</item>
+        <item name="android:paddingTop">0dp</item>
+        <item name="android:paddingBottom">0dp</item>
+    </style>
 
 </resources>

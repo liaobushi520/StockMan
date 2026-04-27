@@ -12,4 +12,30 @@
     <color name="gray_400">#FFBDBDBD</color>
     <color name="gray_600">#FF757575</color>
 
+    <color name="yd_page_bg">#FFF4F5F7</color>
+    <color name="yd_time_chip_bg">#FFE8EAEF</color>
+    <color name="yd_accent">#FFBD2C2C</color>
+    <color name="yd_caption">#FF6B7280</color>
+    <color name="yd_divider">#FFE5E7EB</color>
+    <color name="yd_body">#FF1F2937</color>
+    <color name="yd_secondary">#FF4B5563</color>
+
+    <color name="yd_unusual_section_bg">#FEF2F2</color>
+    <color name="yd_unusual_section_stroke">#59BD2C2C</color>
+    <!-- 异动历史热度排名 · 球形底（径向渐变主色） -->
+    <color name="yd_popularity_flame">#FFFF6B6B</color>
+    <color name="yd_popularity_sphere_highlight">#FFFFB4B4</color>
+    <color name="yd_popularity_sphere_shade">#FFFF5252</color>
+
+    <color name="debug_table_header_bg">#22000000</color>
+    <color name="debug_table_cell_bg">#14000000</color>
+    <color name="debug_table_row_selected">#55FF9800</color>
+
+    <!-- Strategy4 均线快捷按钮（可着色圆角底） -->
+    <color name="strategy_ma_5">#FF5E35B1</color>
+    <color name="strategy_ma_10">#FF00695C</color>
+    <color name="strategy_ma_20">#FF1565C0</color>
+    <color name="strategy_ma_30">#FFC2185B</color>
+    <color name="strategy_ma_60">#FF37474F</color>
+
 </resources>

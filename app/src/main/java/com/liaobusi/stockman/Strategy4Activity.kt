@@ -11,10 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.SpannableStringBuilder
-import android.text.method.LinkMovementMethod
-import android.text.style.ClickableSpan
 import android.text.style.ForegroundColorSpan
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -28,14 +25,17 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.graphics.toColorInt
+import androidx.core.view.ViewCompat
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.appbar.AppBarLayout
 import com.google.gson.Gson
-import com.liaobusi.stockman.BKStrategyActivity
+import com.liaobusi.stockman.Injector.sp
 import com.liaobusi.stockman.Strategy4Activity.Companion.openJXQSStrategy
 import com.liaobusi.stockman.databinding.ActivityStrategy4Binding
 import com.liaobusi.stockman.databinding.FragmentDiyBkBinding
@@ -45,17 +45,45 @@ import com.liaobusi.stockman.databinding.ItemStockBinding
 import com.liaobusi.stockman.databinding.ItemStockInfoBkBinding
 import com.liaobusi.stockman.databinding.LayoutPopupWindow2Binding
 import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
-import com.liaobusi.stockman.db.*
-import com.liaobusi.stockman.repo.*
-import kotlinx.coroutines.*
+import com.liaobusi.stockman.db.DIYBk
+import com.liaobusi.stockman.db.Follow
+import com.liaobusi.stockman.db.Stock
+import com.liaobusi.stockman.db.ZTReplayBean
+import com.liaobusi.stockman.db.color
+import com.liaobusi.stockman.db.expoundV
+import com.liaobusi.stockman.db.groupNameV
+import com.liaobusi.stockman.db.isBJStockExchange
+import com.liaobusi.stockman.db.isChiNext
+import com.liaobusi.stockman.db.isMainBoard
+import com.liaobusi.stockman.db.isST
+import com.liaobusi.stockman.db.isSTARMarket
+import com.liaobusi.stockman.db.isYiZIBan
+import com.liaobusi.stockman.db.openDragonTigerRank
+import com.liaobusi.stockman.db.openWeb
+import com.liaobusi.stockman.db.reasonV
+import com.liaobusi.stockman.db.specialBK
+import com.liaobusi.stockman.repo.StockRepo
+import com.liaobusi.stockman.repo.StockResult
+import com.liaobusi.stockman.repo.Strategy4Param
+import com.liaobusi.stockman.repo.StrategyResult
+import com.liaobusi.stockman.repo.signalCount
+import com.liaobusi.stockman.repo.toFormatText
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Collections
+import java.util.Date
 import kotlin.math.abs
 import kotlin.math.min
-import androidx.core.graphics.toColorInt
-import androidx.core.view.ViewCompat
-import com.google.android.material.appbar.AppBarLayout
+import androidx.core.content.edit
+import com.liaobusi.stockman.db.source
 
 val colors = listOf(
     "#1565c0".toColorInt(),
@@ -105,26 +133,30 @@ class Strategy4Activity : AppCompatActivity() {
         return true
     }
 
+    private suspend fun refresh() {
+        StockRepo.refreshData()
+        val endTime = binding.endTimeTv.editableText.toString().toIntOrNull() ?: today()
+        StockRepo.getRealTimeIndexByCode("2.932000")
+        StockRepo.getRealTimeIndexByCode("1.000905")
+        StockRepo.getKPLLive()
+        StockRepo.getCLSLive()
+        StockRepo.getLimitUpPool(endTime)
+        StockRepo.getLimitDownPool(endTime)
+        Injector.refreshPopularityRanking()
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.refresh -> {
                 lifecycleScope.launch(Dispatchers.IO) {
-                    StockRepo.refreshData()
                     val endTime = binding.endTimeTv.editableText.toString().toIntOrNull() ?: today()
-                    StockRepo.fetchZTReplay2(date = endTime)
+                    StockRepo.fetchZTReplay2(endTime)
                     StockRepo.fetchDragonTigerRank(endTime)
-                    StockRepo.getRealTimeIndexByCode("2.932000")
-                    StockRepo.getRealTimeIndexByCode("1.000905")
-                    StockRepo.getYDData()
-                    StockRepo.getDPLive()
-                    StockRepo.getLimitUpPool(today())
-                    StockRepo.getLimitDownPool(today())
-                    Injector.refreshPopularityRanking()
+                    refresh()
                     launch(Dispatchers.Main) {
                         delay(2000)
                         binding.chooseStockBtn.callOnClick()
                     }
-
                 }
                 return true
             }
@@ -141,8 +173,9 @@ class Strategy4Activity : AppCompatActivity() {
         binding.rv.layoutManager = LinearLayoutManager(this@Strategy4Activity)
         binding.rv.adapter = ResultAdapter()
         supportActionBar?.title = "均线强势"
-
-
+        lifecycleScope.launch(Dispatchers.IO) {
+            refresh()
+        }
         var fromBKStrategyActivity = false
         if (intent.hasExtra("bk")) {
             val bk = intent.getStringExtra("bk")?.ifEmpty { "ALL" }
@@ -167,9 +200,9 @@ class Strategy4Activity : AppCompatActivity() {
             binding.endTimeTv.setText(intent.getStringExtra("endTime"))
         } else {
             binding.endTimeTv.setText(SimpleDateFormat("yyyyMMdd").format(Date(System.currentTimeMillis())))
-            lifecycleScope.launch(Dispatchers.IO) {
-                StockRepo.dpAnalysis(today())
-            }
+//            lifecycleScope.launch(Dispatchers.IO) {
+//                StockRepo.dpAnalysis(today())
+//            }
         }
 
 
@@ -630,12 +663,11 @@ class Strategy4Activity : AppCompatActivity() {
 
         }
 
+
         binding.line5Btn.callOnClick()
-
-
-
         binding.fab.setOnClickListener {
-            val firstVisiblePos = (binding.rv.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
+            val firstVisiblePos =
+                (binding.rv.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
             if (firstVisiblePos > (binding.rv.adapter as ResultAdapter).itemCount / 2) {
                 binding.rv.scrollToPosition(0)
                 binding.fab.rotation = 0f
@@ -649,7 +681,8 @@ class Strategy4Activity : AppCompatActivity() {
         binding.rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
-                val firstVisiblePos = (binding.rv.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
+                val firstVisiblePos =
+                    (binding.rv.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
                 if (firstVisiblePos > (binding.rv.adapter as ResultAdapter).itemCount / 2) {
                     binding.fab.rotation = 180f
                 } else {
@@ -658,8 +691,11 @@ class Strategy4Activity : AppCompatActivity() {
             }
         })
 
+        binding.ztSourceCb.isChecked = isFPSource(this)
 
     }
+
+
     // 向上滚动（折叠AppBar）
     private fun scrollUp() {
         val layoutParams = binding.appbar.layoutParams as CoordinatorLayout.LayoutParams
@@ -676,6 +712,7 @@ class Strategy4Activity : AppCompatActivity() {
             intArrayOf(0, 0), ViewCompat.TYPE_NON_TOUCH
         )
     }
+
 
     private fun updateUI(param: Strategy4Param) {
         binding.apply {
@@ -931,6 +968,11 @@ class Strategy4Activity : AppCompatActivity() {
                 output(strategyResult)
             }
 
+            binding.ztSourceCb.setOnCheckedChangeListener { buttonView, isChecked ->
+                sp.edit { putBoolean("fp_source", isChecked) }
+                output(strategyResult)
+            }
+
 
             var r = list
             r = mutableListOf<StockResult>().apply { addAll(r) }
@@ -1013,7 +1055,7 @@ class Strategy4Activity : AppCompatActivity() {
                     }
                     r = newList
                 } else {
-                    Collections.sort(r, kotlin.Comparator { v0, v1 ->
+                    Collections.sort(r, Comparator { v0, v1 ->
                         return@Comparator v1.activeRate.compareTo(v0.activeRate)
                     })
                 }
@@ -1028,14 +1070,14 @@ class Strategy4Activity : AppCompatActivity() {
                     }
                     r = newList
                 } else {
-                    Collections.sort(r, kotlin.Comparator { v0, v1 ->
+                    Collections.sort(r, Comparator { v0, v1 ->
                         return@Comparator v1.currentDayHistory!!.chg.compareTo(v0.currentDayHistory!!.chg)
                     })
                 }
 
 
                 strategyResult.ydPairs?.forEach {
-                    Collections.sort(it.second, kotlin.Comparator { v0, v1 ->
+                    Collections.sort(it.second, Comparator { v0, v1 ->
                         return@Comparator v1.currentDayHistory!!.chg.compareTo(
                             v0.currentDayHistory!!.chg
                         )
@@ -1060,7 +1102,7 @@ class Strategy4Activity : AppCompatActivity() {
                 }
 
                 strategyResult.ydPairs?.forEach {
-                    Collections.sort(it.second, kotlin.Comparator { v0, v1 ->
+                    Collections.sort(it.second, Comparator { v0, v1 ->
 
                         var v0Value = 10000
                         if (v0.popularity != null && v0.popularity!!.rank > 0) {
@@ -1097,7 +1139,7 @@ class Strategy4Activity : AppCompatActivity() {
 
 
                 strategyResult.ydPairs?.forEach {
-                    Collections.sort(it.second, kotlin.Comparator { v0, v1 ->
+                    Collections.sort(it.second, Comparator { v0, v1 ->
                         var v0Value = 10000
                         if (v0.popularity != null && v0.popularity!!.thsRank > 0) {
                             v0Value = v0.popularity!!.thsRank
@@ -1131,7 +1173,7 @@ class Strategy4Activity : AppCompatActivity() {
 
 
                 strategyResult.ydPairs?.forEach {
-                    Collections.sort(it.second, kotlin.Comparator { v0, v1 ->
+                    Collections.sort(it.second, Comparator { v0, v1 ->
                         var v0Value = 10000
                         if (v0.popularity != null && v0.popularity!!.tgbRank > 0) {
                             v0Value = v0.popularity!!.tgbRank
@@ -1165,7 +1207,7 @@ class Strategy4Activity : AppCompatActivity() {
 
                 strategyResult.ydPairs?.forEach {
 
-                    Collections.sort(it.second, kotlin.Comparator { v0, v1 ->
+                    Collections.sort(it.second, Comparator { v0, v1 ->
                         var v0Value = 10000
                         if (v0.popularity != null && v0.popularity!!.tgbRank > 0) {
                             v0Value = v0.popularity!!.dzhRank
@@ -1187,7 +1229,7 @@ class Strategy4Activity : AppCompatActivity() {
             if (binding.ydModeCb.isChecked) {
                 val rList = mutableListOf<StockResult>()
                 strategyResult.ydPairs?.forEach {
-                    if (it.second.isEmpty()&&binding.conceptAndBKTv.editableText.toString()!="ALL") return@forEach
+                    if (it.second.isEmpty() && binding.conceptAndBKTv.editableText.toString() != "ALL") return@forEach
                     rList.add(it.first)
                     it.second.forEach {
                         it.groupColor = Color.BLACK
@@ -1213,7 +1255,7 @@ class Strategy4Activity : AppCompatActivity() {
                         }
                         Pair(h * 100 + it.size, it)
                     }
-                Collections.sort(listPair, kotlin.Comparator { v0, v1 ->
+                Collections.sort(listPair, Comparator { v0, v1 ->
                     return@Comparator v1.first.compareTo(
                         v0.first
                     )
@@ -1221,9 +1263,9 @@ class Strategy4Activity : AppCompatActivity() {
 
 
                 listPair.forEach { pair ->
-                    val value = pair.second
 
-                    Collections.sort(value, kotlin.Comparator { v0, v1 ->
+                    val value = pair.second
+                    Collections.sort(value, Comparator { v0, v1 ->
                         val x1 =
                             if (binding.tgbPopularitySortCb.isChecked) (100f - (v1.popularity?.tgbRank
                                 ?: 100))
@@ -1374,13 +1416,13 @@ class Strategy4Activity : AppCompatActivity() {
                 if (binding.popularitySortCb.isChecked) 1 else if (binding.thsPopularitySortCb.isChecked) 2 else if (binding.tgbPopularitySortCb.isChecked) 3 else if (binding.dzhPopularitySortCb.isChecked) 4 else 0
             )
 
-
-            if (strategyResult2.stockResults.size<10){
-                binding.fab.visibility=View.GONE
-            }else{
-                binding.fab.visibility=View.VISIBLE
-                binding.fab.rotation=0f
+            if (strategyResult2.stockResults.size < 10) {
+                binding.fab.visibility = View.GONE
+            } else {
+                binding.fab.visibility = View.VISIBLE
+                binding.fab.rotation = 0f
             }
+
         }
     }
 
@@ -1416,13 +1458,14 @@ class Strategy4Activity : AppCompatActivity() {
             if (isTradingTime()) {
                 job = lifecycleScope.launch(Dispatchers.IO) {
                     while (true) {
-                        delay(1200)
+                        delay(1000)
                         if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE || !this@Strategy4Activity.lifecycle.currentState.isAtLeast(
                                 Lifecycle.State.RESUMED
                             )
                         ) {
                             continue
                         }
+
                         val lm = recyclerView.layoutManager as LinearLayoutManager
                         val firstPos = lm.findFirstVisibleItemPosition()
                         val lastPos = lm.findLastVisibleItemPosition()
@@ -1432,7 +1475,6 @@ class Strategy4Activity : AppCompatActivity() {
 
                         if (data.size > 0) {
                             for (i in firstPos until lastPos + 1) {
-
                                 val result = data[i]
                                 if (result.currentDayHistory != null && !result.isGroupHeader) {
                                     val s = Injector.appDatabase.stockDao()
@@ -1475,6 +1517,7 @@ class Strategy4Activity : AppCompatActivity() {
 
             var anim: ValueAnimator? = null
 
+            @SuppressLint("SetTextI18n")
             @RequiresApi(Build.VERSION_CODES.O)
             fun bind(result: StockResult, position: Int) {
 
@@ -1510,7 +1553,7 @@ class Strategy4Activity : AppCompatActivity() {
                         binding.ydHeaderTv.visibility = View.VISIBLE
                         binding.ydHeaderTv.text = "${
                             result.ydDetails!!.time.toLong().toDateTimeString()
-                        }\n${result.ydDetails!!.comment}"
+                        }\n${result.ydDetails!!.comment}  ${result.ydDetails!!.source}"
                     } else {
                         binding.ydHeaderTv.visibility = View.GONE
                     }
@@ -1824,6 +1867,9 @@ class Strategy4Activity : AppCompatActivity() {
                             pw.dismiss()
                             result.stock.openDragonTigerRank(this@Strategy4Activity)
                         }
+                        b.ydHistoryBtn.setOnClickListener {
+                            YDHistoryActivity.start(this@Strategy4Activity, result.stock.code)
+                        }
 
                         //仅关注不置顶
                         b.followBtn.setOnClickListener {
@@ -1927,11 +1973,20 @@ class StockInfoFragment(private val stock: Stock, private val date: String) : Di
 
     private lateinit var binding: FragmentStockInfoBinding
 
+    override fun onStart() {
+        super.onStart()
+        val dm = resources.displayMetrics
+        dialog?.window?.setLayout(
+            (dm.widthPixels * 0.92f).toInt(),
+            LayoutParams.WRAP_CONTENT
+        )
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         binding = FragmentStockInfoBinding.inflate(inflater)
-
+        binding.stockHeaderStock.text = "${stock.code}-${stock.name}"
 
         val resultList = mutableListOf<String>()
 
@@ -1941,15 +1996,15 @@ class StockInfoFragment(private val stock: Stock, private val date: String) : Di
                     Injector.appDatabase.bkDao().getBKByCode(it),
                     Injector.appDatabase.historyBKDao().getHistoryByDate3(it, date.toInt())
                 )
-            }.filter { it.first != null && !it.first!!.specialBK }
-                .sortedByDescending { it.second.chg }
+            }.filter { it.first != null && !it.first!!.specialBK && it.second != null }
+                .sortedByDescending { it.second!!.chg }
             launch(Dispatchers.Main) {
                 list.forEach { pair ->
                     val bk = pair.first
                     val historyBK = pair.second
                     val b = ItemStockInfoBkBinding.inflate(inflater).apply {
                         bkCodeName.text = "${bk!!.code}-${bk.name}"
-                        chgTv.text = historyBK.chg.toString()
+                        chgTv.text = historyBK!!.chg.toString()
                         chgTv.setTextColor(historyBK.color)
                         bkCodeName.setOnClickListener {
                             bk.openWeb(requireContext())
@@ -2011,6 +2066,13 @@ class DIYBKDialogFragment2(
 
     private lateinit var binding: FragmentDiyBkBinding
 
+    override fun onStart() {
+        super.onStart()
+        val dm = resources.displayMetrics
+        val w = (dm.widthPixels * 0.94f).toInt()
+        val h = (dm.heightPixels * 0.93f).toInt()
+        dialog?.window?.setLayout(w, h)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -2024,6 +2086,7 @@ class DIYBKDialogFragment2(
                 binding.rv.adapter = DIYBKAdapter2(list.map {
                     SelectableItem(it, it.stockCodes.contains(stock.code, true))
                 }.toMutableList())
+                binding.rv.post { binding.rv.requestLayout() }
             }
 
         }
@@ -2049,7 +2112,7 @@ class DIYBKDialogFragment2(
                 return@setOnClickListener
             }
             val codes = stock.code
-            val code = Injector.sp.getInt("diy_bk_code", 10000) + 1
+            val code = sp.getInt("diy_bk_code", 10000) + 1
             val dsp = stock.code + "(${stock.name})"
             binding.diyBkName.setText("")
             val item = DIYBk("BK$code", name, "", dsp, codes)

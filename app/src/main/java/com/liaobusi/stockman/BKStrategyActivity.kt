@@ -483,7 +483,7 @@ class BKStrategyActivity : AppCompatActivity() {
                                         result.bk.code,
                                         result.nextDayHistory!!.date
                                     ) else null
-                            if (cur.chg != result.currentDayHistory!!.chg || next?.chg != result.nextDayHistory?.chg) {
+                            if (cur?.chg != result.currentDayHistory!!.chg || next?.chg != result.nextDayHistory?.chg) {
                                 data[i] = result.copy(
                                     bk = s!!,
                                     currentDayHistory = cur,

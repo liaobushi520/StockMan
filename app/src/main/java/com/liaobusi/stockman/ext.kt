@@ -30,6 +30,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 fun <T> List<T>.split(groupCount: Int = 3): List<List<T>> {
     val result = mutableListOf<List<T>>()
@@ -111,7 +113,7 @@ suspend fun <T, R> handle(input: List<T>, f: suspend (s: T) -> R?): List<R> {
 
 
 fun Long.toDateTimeString(pattern: String = "yyyy-MM-dd HH:mm:ss"): String {
-    val instant = Instant.ofEpochMilli(this*1000)
+    val instant = Instant.ofEpochMilli(this * 1000)
     val formatter = DateTimeFormatter.ofPattern(pattern)
         .withZone(ZoneId.systemDefault())
     return formatter.format(instant)
@@ -120,13 +122,18 @@ fun Long.toDateTimeString(pattern: String = "yyyy-MM-dd HH:mm:ss"): String {
 
 fun Date.before(before: Int): Int {
     val sdf = SimpleDateFormat("yyyyMMdd");
-
     val c = Calendar.getInstance()
     c.time = this
     c.add(Calendar.DATE, -before);
     val time = c.time;
     val preDay = sdf.format(time);
     return preDay.toInt()
+}
+
+fun Long.toDate(formatStr: String = "yyyyMMdd"): Date {
+    val formatter = SimpleDateFormat(formatStr, Locale.getDefault())
+    formatter.timeZone = TimeZone.getDefault() // 使用系统时区
+    return formatter.parse(this.toString())
 }
 
 
@@ -197,44 +204,26 @@ fun getNetworkType(context: Context): NetworkType {
     }
 
     // 处理Android 6.0（API 23）及以上版本
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        val network = cm.getActiveNetwork()
-        if (network == null) {
-            return NetworkType.UNKNOWN
-        }
-        val nc = cm.getNetworkCapabilities(network)
-        if (nc == null) {
-            return NetworkType.UNKNOWN
-        }
+    val network = cm.getActiveNetwork()
+    if (network == null) {
+        return NetworkType.UNKNOWN
+    }
+    val nc = cm.getNetworkCapabilities(network)
+    if (nc == null) {
+        return NetworkType.UNKNOWN
+    }
 
-        // 检测传输类型
-        if (nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-            return NetworkType.WIFI
-        } else if (nc.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
-            return NetworkType.CELLULAR
-        } else if (nc.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
-            return NetworkType.ETHERNET
-        } else if (nc.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
-            return NetworkType.VPN
-        } else {
-            return NetworkType.UNKNOWN
-        }
+    // 检测传输类型
+    if (nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+        return NetworkType.WIFI
+    } else if (nc.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+        return NetworkType.CELLULAR
+    } else if (nc.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
+        return NetworkType.ETHERNET
+    } else if (nc.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+        return NetworkType.VPN
     } else {
-        // 兼容旧版本（API 23以下）
-        val activeNetwork = cm.getActiveNetworkInfo()
-        if (activeNetwork == null || !activeNetwork.isConnected()) {
-            return NetworkType.UNKNOWN
-        }
-        val type = activeNetwork.getType()
-        if (type == ConnectivityManager.TYPE_WIFI) {
-            return NetworkType.WIFI
-        } else if (type == ConnectivityManager.TYPE_MOBILE) {
-            return NetworkType.CELLULAR
-        } else if (type == ConnectivityManager.TYPE_ETHERNET) {
-            return NetworkType.ETHERNET
-        } else {
-            return NetworkType.UNKNOWN
-        }
+        return NetworkType.UNKNOWN
     }
 }
 
@@ -248,7 +237,8 @@ enum class NetworkType {
 
 
 fun String.isAfter20220101(): Boolean {
-    val regex = """^(20220[1-9]\d{2}|2022(0[2-9]|1[0-2])\d{2}|202[3-9]\d{4}|20[3-9]\d{5}|2[1-9]\d{6}|[3-9]\d{7})$""".toRegex()
+    val regex =
+        """^(20220[1-9]\d{2}|2022(0[2-9]|1[0-2])\d{2}|202[3-9]\d{4}|20[3-9]\d{5}|2[1-9]\d{6}|[3-9]\d{7})$""".toRegex()
     return regex.matches(this)
 }
 
@@ -276,9 +266,8 @@ fun Date.getEndOfDay(): Long {
     calendar.set(Calendar.MINUTE, 59)
     calendar.set(Calendar.SECOND, 59)
     calendar.set(Calendar.MILLISECOND, 999)
-    return calendar.getTimeInMillis()
+    return calendar.timeInMillis
 }
-
 
 
 private val calendar = Calendar.getInstance()
@@ -289,20 +278,32 @@ fun isTradingTime(): Boolean {
     val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
     val minute = calendar.get(Calendar.MINUTE)
     if (dayOfWeek == Calendar.SUNDAY || dayOfWeek == Calendar.SATURDAY) return false
-
-    if (hour < 9) {
+    if (hour < 9 || hour > 15) {
         return false
     }
-
-    if (hour == 9 && minute <= 15) {
+    if (hour == 9 && minute <= 30) {
         return false
     }
-
     if (hour == 11 && minute >= 30) return false
-
     return (hour in 9 until 12 || hour in 13 until 15)
 }
 
+fun isCallAuctionTime(): Boolean {
+    calendar.time = Date()
+    val hour = calendar.get(Calendar.HOUR_OF_DAY)
+    val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+    val minute = calendar.get(Calendar.MINUTE)
+    if (dayOfWeek == Calendar.SUNDAY || dayOfWeek == Calendar.SATURDAY) return false
+    if (hour == 9 && minute >= 15 && minute <= 30) {
+        return true
+    }
+    return false
+}
 
-
-
+fun isAfterThreePM(): Boolean {
+    val now = Calendar.getInstance()
+    val hour = now.get(Calendar.HOUR_OF_DAY)
+    val minute = now.get(Calendar.MINUTE)
+    val totalMinutes = hour * 60 + minute
+    return totalMinutes >= 900 // 15:00 = 900 分钟
+}

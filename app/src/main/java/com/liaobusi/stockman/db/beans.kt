@@ -9,12 +9,38 @@ import androidx.room.*
 import com.liaobusi.stockman.Injector
 import com.liaobusi.stockman.STOCK_GREEN
 import com.liaobusi.stockman.isFPSource
-@Entity()
-data class UnusualActionHistory(@PrimaryKey val time: Long, val comment: String, val stocks: String)
+val WARN_TYPE_MAP = mapOf<String, String>(
+    "68715" to "大幅高开",
+    "68713" to "竞价抢筹",
+    "68716" to "大幅低开"
+)
+@Entity(primaryKeys = ["time","type"])
+data class UnusualActionHistory(
+    val time: Long,
+    val comment: String,
+    val stocks: String,
+    @ColumnInfo(defaultValue = "1") val type: Int = 1 //type =  4 同花顺  3 开盘啦 2 财联社   5 涨停  6 跌停
+)
+
+val UnusualActionHistory.source : String get() {
+   return when(type){
+        4 -> "【同花顺】"
+        3 -> "【开盘啦】"
+        2 -> "【财联社】"
+       else -> ""
+   }
+}
 
 
 @Entity(primaryKeys = ["id"])
-data class ExpectHot(val id: String,val bkCode: String, val summary: String, val date: Long, val expireTime: Long, val themeCode: String)
+data class ExpectHot(
+    val id: String,
+    val bkCode: String,
+    val summary: String,
+    val date: Long,
+    val expireTime: Long,
+    val themeCode: String
+)
 
 
 @Entity(primaryKeys = ["date"])
@@ -148,9 +174,8 @@ data class Stock(
     @ColumnInfo(defaultValue = "-1.0")
     val averagePrice: Float,
     @ColumnInfo(defaultValue = "")
-    val bk: String,
-
-    )
+    val bk: String
+)
 
 
 fun Stock.openWeb(context: Context) {
@@ -242,26 +267,29 @@ val HistoryStock.color: Int
 
 val HistoryStock.ZT: Boolean
     get() {
-        if (this.ztPrice == -1f) {
+        if (this.ztPrice <= 0f) {
             if (this.code.startsWith("300") || this.code.startsWith("688") || this.code.startsWith("301")) {
                 return this.chg > 19
             } else {
                 return this.chg > 9.65
             }
         }
-        return this.ztPrice > 0 && this.closePrice == this.ztPrice &&this.chg>0
+        return this.ztPrice > 0 && this.closePrice == this.ztPrice && this.chg > 0
     }
 
 val HistoryStock.DT: Boolean
     get() {
-        if (this.dtPrice == -1f) {
-            if (this.code.startsWith("300") || this.code.startsWith("688") || this.code.startsWith("301")) {
-                return this.chg < -19
+        if (this.dtPrice <= 0f) {
+            return if (this.code.startsWith("300") || this.code.startsWith("688") || this.code.startsWith(
+                    "301"
+                )
+            ) {
+                this.chg < -19
             } else {
-                return this.chg < -9.6
+                this.chg < -9.6
             }
         }
-        return this.closePrice == this.dtPrice&&chg<0
+        return this.closePrice == this.dtPrice && chg < 0
     }
 
 val HistoryStock.DY: Boolean
@@ -297,10 +325,10 @@ val HistoryStock.longUpShadow: Boolean
 
 @Database(
     entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class, PopularityRank::class, DragonTigerRank::class, ExpectHot::class, UnusualActionHistory::class],
-    version = 31,
-//    autoMigrations = [
-//        AutoMigration(from = 30, to = 31)
-//    ]
+    version = 33,
+    autoMigrations = [
+        AutoMigration(from = 32, to = 33)
+    ]
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun stockDao(): StockDao
@@ -308,25 +336,15 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun bkDao(): BKDao
     abstract fun historyBKDao(): HistoryBKDao
     abstract fun bkStockDao(): BKStockDao
-
     abstract fun followDao(): FollowDao
-
     abstract fun gdrsDao(): GDRSDao
-
     abstract fun hideDao(): HideDao
-
     abstract fun analysisBeanDao(): AnalysisBeanDao
-
     abstract fun ztReplayDao(): ZTReplayDao
-
     abstract fun diyBkDao(): DIYBkDao
-
     abstract fun popularityRankDao(): PopularityRankDao
-
     abstract fun dragonTigerDao(): DragonTigerDao
-
     abstract fun expectHotDao(): ExpectHotDao
-
     abstract fun unusualActionHistoryDao(): UnusualActionHistoryDao
 
 
@@ -366,8 +384,8 @@ val ZTReplayBean.isYiZIBan: Boolean
 val ZTReplayBean.groupNameV: String
     get() {
         if (isFPSource(Injector.context)) {
-            if (groupName.isEmpty()){
-                return  groupName2
+            if (groupName.isEmpty()) {
+                return groupName2
             }
             return groupName
         } else {
@@ -383,7 +401,7 @@ val ZTReplayBean.groupNameV: String
 val ZTReplayBean.reasonV: String
     get() {
         if (isFPSource(Injector.context)) {
-            if (groupName.isEmpty()){
+            if (groupName.isEmpty()) {
                 return reason2
             }
             return reason
@@ -420,7 +438,7 @@ data class DIYBk(
     val name: String,
     val bkCodes: String,
     @ColumnInfo(defaultValue = "") val dsp: String,
-    @ColumnInfo(defaultValue = "") val stockCodes: String=""
+    @ColumnInfo(defaultValue = "") val stockCodes: String = ""
 )
 
 
@@ -440,7 +458,7 @@ data class Data2(
     val is_delete: String,
     val list: List<ArticleWrap>?,
     val name: String,
-    val reason: String?=null,
+    val reason: String? = null,
     val sort_no: Int,
     val status: Int,
     val update_time: Any

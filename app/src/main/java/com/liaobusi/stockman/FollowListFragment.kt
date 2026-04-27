@@ -46,7 +46,7 @@ class FollowListFragment : Fragment() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             while (true) {
-                StockRepo.getRealTimeStocks()
+                StockRepo.getRealTimeStocksDFCF()
                 StockRepo.getRealTimeBKs()
                 val followedStocks = Injector.appDatabase.stockDao().getFollowedStocks()
                 val followBKs = Injector.appDatabase.bkDao().getFollowedBKS()

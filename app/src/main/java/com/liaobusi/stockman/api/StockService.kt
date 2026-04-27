@@ -35,9 +35,9 @@ import javax.net.ssl.X509TrustManager
 const val FILED =
     "f2,f3,f7,f8,f12,f14,f15,f16,f17,f18,f21,f26,f297,f350,f351,f352,f383"
 
-const val FS="m:1+t:2,m:0+t:6,m:0+t:13,m:0+t:80,m:1+t:23,t:81+s:2048"
+const val FS = "m:1+t:2,m:0+t:6,m:0+t:13,m:0+t:80,m:1+t:23,t:81+s:2048"
 
-const val SZ_BZ_FS="m:0+t:6,m:0+t:13,m:0+t:80,m:0+t:81+s:2048"
+const val SZ_BZ_FS = "m:0+t:6,m:0+t:13,m:0+t:80,m:0+t:81+s:2048"
 
 interface StockService {
 
@@ -51,12 +51,11 @@ interface StockService {
 //    b:MK0021,b:MK0022,b:MK0023,b:MK0024 ETF
 
     @GET("http://20.push2.eastmoney.com/api/qt/clist/get?pz=200&np=1&fid=f3&fields=${FILED}")
-    suspend fun getRealTimeStocks(@Query("pn") pn: Int,@Query("fs") fs: String=FS): EMResponse
+    suspend fun getRealTimeStocks(@Query("pn") pn: Int, @Query("fs") fs: String = FS): EMResponse
 
 
-
-
-
+    @GET("https://stock.caixin.com/cgi/StockRankEx?mar=all&type=changeRate&page=1&size=6000&isAsc=false")
+    suspend fun getRealTimeStocksCX(): CXStockDataResponse
 
 
 //    @Streaming
@@ -64,13 +63,19 @@ interface StockService {
 //    suspend fun getRealTimeStockData(@Query("secid") secid:String ):ResponseBody
 
     @GET("https://finance.pae.baidu.com/selfselect/getmarketrank")
-    suspend fun getRealTimeStocks2(
+    suspend fun getRealTimeStocksBD(
         @Query("pn") pn: Int,
         @Query("rn") rn: Int = 200,
         @Query("group") group: String = "ranklist",
         @Query("type") type: String = "ab",
         @Query("finClientType") finClientType: String = "pc"
     ): BDStockResponse
+
+    @GET("https://finance.pae.baidu.com/sapi/v1/ranks?bizType=stock_rank&category=undefined&sortKey=&sortType=&market=ab&style=tablelist&finClientType=pc")
+    suspend fun getRealTimeStocksBD2(
+        @Query("pn") pn: Int = 0,
+        @Query("rn") rn: Int = 1000
+    ): BDResponse
 
 
     @GET("https://yunhq.sse.com.cn:32042/v1/sh1/list/exchange/equity?select=code%2Cname%2Copen%2Chigh%2Clow%2Clast%2Cprev_close%2Cchg_rate%2Cvolume%2Camount%2Ctradephase%2Cchange%2Camp_rate%2Ccpxxsubtype%2Ccpxxprodusta%2C&order=&begin=0&end=2500&_=1746766742886")
@@ -101,11 +106,11 @@ interface StockService {
     ): List<HistoryBean>
 
     //行业m:90+t:2+f:!50  概念 m:90+t:3+f:!50,
-    @GET("https://43.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&wbp2u=|0|0|0|web&fid=f3&fs=m:90+t:2+f:!50,m:90+t:3+f:!50&fields=f1,f2,f3,f4,f5,f6,f7,f8,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f24,f25,f22,f33,f11,f62,f152,f124,f107,f104,f105,f297")
+    @GET("https://43.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&wbp2u=|0|0|0|web&fid=f3&fs=m:90+t:2+f:!50,m:90+t:3+f:!50&fields=f1,f2,f3,f4,f5,f6,f7,f8,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f24,f25,f22,f33,f11,f62,f152,f124,f107,f104,f105,f297&pn=1")
     suspend fun getRealTimeBK(): EMResponse
 
-    @GET("https://43.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&wbp2u=|0|0|0|web&fid=f3&fs=m:90+t:2+f:!50&fields=f2,f3,f7,f8,f12,f14,f15,f16,f17,f18,f20,f21,f297")
-    suspend fun getRealTimeTradeBK(): EMResponse
+    @GET("https://43.push2.eastmoney.com/api/qt/clist/get?pz=10000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&wbp2u=|0|0|0|web&fid=f3&fs=m:90+t:2+f:!50&fields=f2,f3,f7,f8,f12,f14,f15,f16,f17,f18,f20,f21,f297")
+    suspend fun getRealTimeTradeBK(@Query("pn") pn: Int = 1): EMResponse
 
 
     @GET("https://43.push2.eastmoney.com/api/qt/clist/get?pz=200&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&wbp2u=|0|0|0|web&fid=f3&fs=m:90+t:3+f:!50&fields=f2,f3,f7,f8,f12,f14,f15,f16,f17,f18,f20,f21,f297")
@@ -160,7 +165,7 @@ interface StockService {
     @GET
     suspend fun getDragonTigerRank(@Url url: String): DragonTigerRankResponse
 
-    @GET("https://www.taoguba.com.cn/new/nrnt/getNoticeStock?type=D")
+    @GET("https://www.tgb.cn/new/nrnt/getNoticeStock?type=D")
     suspend fun getTGBRanking(): TGBResponse
 
     @GET
@@ -174,16 +179,31 @@ interface StockService {
 
     @FormUrlEncoded
     @POST("https://apphwhq.longhuvip.com/w1/api/index.php")
-    suspend fun getZhiBoStock(@FieldMap fields:Map<String, String>): ZhiBoResponse
+    suspend fun getZhiBoStock(@FieldMap fields: Map<String, String>): ZhiBoResponse
 
     @GET("https://www.cls.cn/v3/transaction/articles?app=CailianpressWeb&os=web&sv=8.4.6")
-    suspend fun getDPLive(@Query("CTime") time:Long,@Query("sign") sign: String):CLSLiveResponse
+    suspend fun getDPLive(@Query("sign") sign: String): CLSLiveResponse
+
+    @GET
+    suspend fun getTHSYDLive(@Url url: String): THSYDResponse
 
     @GET("https://data.10jqka.com.cn/dataapi/limit_up/limit_up_pool?field=199112%2C10%2C9001%2C330323%2C330324%2C330325%2C9002%2C330329%2C133971%2C133970%2C1968584%2C3475914%2C9003&filter=HS%2CGEM2STAR&order_field=330324&order_type=0")
-    suspend fun getLimitUpPool(@Query("date") date: Int,@Query("page") page:Int=1,@Query("limit") limit:Int=200): LimitUpPoolResponse
+    suspend fun getLimitUpPool(
+        @Query("date") date: Int,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 200
+    ): LimitUpPoolResponse
 
     @GET("https://data.10jqka.com.cn/dataapi/limit_up/lower_limit_pool?field=199112%2C10%2C330333%2C330334%2C1968584%2C3475914&filter=HS%2CGEM2STAR&order_field=330334&order_type=0")
-    suspend fun getLimitDownPool(@Query("date") date: Int,@Query("page") page:Int=1,@Query("limit") limit:Int=200):LimitDownPoolResponse
+    suspend fun getLimitDownPool(
+        @Query("date") date: Int,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 200
+    ): LimitDownPoolResponse
+
+    @POST("https://eq.10jqka.com.cn/call_auction_v2/stock_chance/v1/real_time_list/call_warn")
+    suspend fun getCallWarn(@Body param: CallWarnParam = CallWarnParam()): CallWarnResponse
+
 
 }
 

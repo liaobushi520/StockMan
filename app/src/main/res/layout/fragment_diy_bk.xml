@@ -1,95 +1,149 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="400dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:minHeight="500dp"
+    android:background="@color/yd_page_bg"
+    android:minWidth="300dp"
     android:orientation="vertical">
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv"
-        android:layout_width="400dp"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:background="#663f51b5"
-        android:layout_marginBottom="8dp"
-        />
-
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:orientation="horizontal"
-        android:layout_marginHorizontal="8dp"
-        android:layout_marginBottom="8dp"
-        android:layout_height="wrap_content">
-
-        <TextView
-            android:id="@+id/bkCodeName"
-            android:textColor="#333"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-
-        <EditText
-            android:id="@+id/diyBkName"
-            android:hint="输入新板块名称"
-            android:gravity="center"
-            android:background="@drawable/edittext_bg"
-            android:layout_marginHorizontal="8dp"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:paddingVertical="8dp"
-            android:textColorHint="#66888888"
-            android:textSize="14sp"
-            android:layout_height="wrap_content"/>
-
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/createBkBtn"
-            android:text="新建"
-            android:textColor="#fff"
-            android:background="#3f51b5"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-
-
-
-    </LinearLayout>
-
-
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:layout_marginVertical="8dp"
-        android:layout_marginHorizontal="8dp"
-        android:orientation="horizontal">
+        android:background="@color/yd_accent"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:letterSpacing="0.02"
+            android:text="自选板块"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/bkCodeName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:alpha="0.92"
+            android:lineSpacingExtra="2dp"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            tools:text="000001 - 平安银行" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:minHeight="120dp"
+        android:overScrollMode="ifContentScrolls"
+        android:paddingHorizontal="6dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:scrollbars="vertical" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginHorizontal="12dp"
+        android:background="@color/yd_divider" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="2dp"
+        app:cardBackgroundColor="@android:color/white"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="1dp"
+        app:strokeColor="#12000000"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="10dp">
+
+            <EditText
+                android:id="@+id/diyBkName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/bg_diy_et_field"
+                android:hint="输入新板块名称"
+                android:imeOptions="actionDone"
+                android:inputType="text"
+                android:minHeight="40dp"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:textColor="@color/yd_body"
+                android:textColorHint="@color/yd_caption"
+                android:textSize="14sp" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/createBkBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/bg_diy_btn_primary"
+                android:minHeight="40dp"
+                android:minWidth="68dp"
+                android:paddingHorizontal="16dp"
+                android:text="新建"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="10dp">
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/cancelBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="#ff4081"
+            android:background="@drawable/bg_diy_btn_secondary"
+            android:minHeight="40dp"
+            android:minWidth="96dp"
+            android:paddingHorizontal="18dp"
             android:text="取消"
-            android:textColor="#fff" />
-
-        <View
-            android:layout_width="16dp"
-            android:layout_height="match_parent" />
+            android:textAllCaps="false"
+            android:textColor="@color/yd_accent"
+            android:textSize="14sp" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/okBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="#3f51b5"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/bg_diy_btn_primary"
+            android:minHeight="40dp"
+            android:minWidth="96dp"
+            android:paddingHorizontal="18dp"
             android:text="确定"
-            android:textColor="#fff" />
-
-
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="14sp" />
     </LinearLayout>
 
 </LinearLayout>

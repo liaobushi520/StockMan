@@ -3,25 +3,37 @@ package com.liaobusi.stockman.db
 import androidx.room.*
 
 @Dao
-interface UnusualActionHistoryDao{
+interface UnusualActionHistoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(unusualActionHistories: List<UnusualActionHistory>)
 
     @Query("select * from unusualactionhistory where time>=:start AND time<=:end order by time DESC")
-    fun getHistories(start: Long,end:Long):List<UnusualActionHistory>
+    fun getHistories(start: Long, end: Long): List<UnusualActionHistory>
+
+    @Query("select * from unusualactionhistory where time>=:start AND time<=:end AND type ==:type order by time DESC")
+    fun getHistories(start: Long, end: Long, type: Int): List<UnusualActionHistory>
+
+    @Delete
+    fun delete(list: List<UnusualActionHistory>)
+
+    /** stocks 为逗号分隔或为单码；用首尾逗号包裹避免子串误匹配（如 600 命中 600519） */
+    @Query(
+        "select * from unusualactionhistory where (',' || stocks || ',') like '%,' || :code || ',%' order by time desc"
+    )
+    fun listContainingStockCode(code: String): List<UnusualActionHistory>
 }
 
 @Dao
-interface ExpectHotDao{
+interface ExpectHotDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun  insertAll(expectHots:List<ExpectHot>)
+    fun insertAll(expectHots: List<ExpectHot>)
 
     @Query("select * from expecthot where date>=:date order by date ASC")
-    fun getExpectHotList(date: Long):List<ExpectHot>
+    fun getExpectHotList(date: Long): List<ExpectHot>
 
 
     @Query("select * from expecthot where bkCode==:bkCode AND date>=:date AND date<=:endTime order by date ASC  limit 5")
-    fun getExpectHotListByCode(bkCode: String,date: Long,endTime: Long):List<ExpectHot>
+    fun getExpectHotListByCode(bkCode: String, date: Long, endTime: Long): List<ExpectHot>
 
 }
 
@@ -64,22 +76,25 @@ interface StockDao {
     fun getSTStock(): List<Stock>
 
 }
+
 @Dao
-interface PopularityRankDao{
+interface PopularityRankDao {
 
     @Query("select * from popularityrank where date=:date order by rank DESC ")
-    fun getRanksByDate(date: Int):List<PopularityRank>
+    fun getRanksByDate(date: Int): List<PopularityRank>
 
+    @Query("select * from popularityrank where code = :code and date >= :minDate and date <= :maxDate")
+    fun getByCodeAndDateRange(code: String, minDate: Int, maxDate: Int): List<PopularityRank>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(list:List<PopularityRank>)
+    fun insert(list: List<PopularityRank>)
 
     @Delete
-    fun delete(list:List<PopularityRank>)
+    fun delete(list: List<PopularityRank>)
 
 
     @Transaction
-    fun insertTransaction(date: Int,newList:List<PopularityRank>) {
+    fun insertTransaction(date: Int, newList: List<PopularityRank>) {
         val list = getRanksByDate(date)
         delete(list)
         insert(newList)
@@ -87,20 +102,21 @@ interface PopularityRankDao{
 
 
 }
+
 @Dao
-interface DragonTigerDao{
+interface DragonTigerDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(list:List<DragonTigerRank>)
+    fun insert(list: List<DragonTigerRank>)
 
     @Delete
-    fun delete(list:List<DragonTigerRank>)
+    fun delete(list: List<DragonTigerRank>)
 
     @Query("select * from dragontigerrank where date=:date")
-    fun getDragonTigerByDate(date: Int):List<DragonTigerRank>
+    fun getDragonTigerByDate(date: Int): List<DragonTigerRank>
 
 
     @Transaction
-    fun insertTransaction(date: Int,newList:List<DragonTigerRank>) {
+    fun insertTransaction(date: Int, newList: List<DragonTigerRank>) {
         val list = getDragonTigerByDate(date)
         delete(list)
         insert(newList)
@@ -203,7 +219,6 @@ interface HistoryBKDao {
     fun getHistoryByDate(code: String, date: Int): HistoryBK
 
 
-
     @Query("select * from historybk where code=:code AND date > :date order by date asc limit :limit")
     fun getHistoryAfter(code: String, date: Int, limit: Int = 5): List<HistoryBK>
 
@@ -215,9 +230,8 @@ interface HistoryBKDao {
     fun getHistoryByDate2(code: String, date: Int): HistoryBK?
 
 
-
     @Query("select * from historybk where code=:code AND date<=:date   order by date desc limit 1")
-    fun getHistoryByDate3(code: String, date: Int): HistoryBK
+    fun getHistoryByDate3(code: String, date: Int): HistoryBK?
 
     @Query("select max(closePrice) from historybk where code=:code AND date <= :end AND date>= :start ")
     fun getHistoryHighestPrice(code: String, start: Int, end: Int): Float
@@ -270,15 +284,16 @@ interface DIYBkDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(bean: DIYBk)
+
     @Query("select * from diybk")
-    fun getDIYBks():List<DIYBk>
+    fun getDIYBks(): List<DIYBk>
 
     @Query("select * from diybk where code in (:codes)")
-    fun getDIYBksByCodes(codes:List<String>):List<DIYBk>
+    fun getDIYBksByCodes(codes: List<String>): List<DIYBk>
 
 
     @Delete
-    fun delete(item:DIYBk)
+    fun delete(item: DIYBk)
 
 
 }
@@ -303,7 +318,7 @@ interface HistoryStockDao {
     fun getHistoryBefore3(code: String, date: Int, limit: Int = 5): List<HistoryStock>
 
     @Query("select * from historystock where date=:date AND chg>9.6")
-    fun getZTHistoryByDate(date: Int):List<HistoryStock>
+    fun getZTHistoryByDate(date: Int): List<HistoryStock>
 
     @Query("select * from historystock where code=:code AND date > :date order by date asc limit :limit")
     fun getHistoryAfter3(code: String, date: Int, limit: Int = 5): List<HistoryStock>
@@ -329,9 +344,9 @@ interface HistoryStockDao {
     fun getHistoryByDate2(code: String, start: Int, end: Int): List<HistoryStock>
 
     @Query("select * from historystock where code=:code AND date =:date")
-    fun getHistoryByDate3(code: String, date: Int ): HistoryStock
+    fun getHistoryByDate3(code: String, date: Int): HistoryStock
 
-    @Query("select * from historystock where closePrice=0.0 or date<=20110504")
+    @Query("select * from historystock where closePrice=0.0 or date<=20110504  or date>21001010")
     fun getErrorHistory(): List<HistoryStock>
 
     @Transaction
@@ -351,6 +366,19 @@ interface ZTReplayDao {
 
     @Query("select * from ztreplaybean where date=:date AND code=:code limit 1")
     fun getZTReplay(date: Int, code: String): ZTReplayBean?
+
+    @Query("select * from ztreplaybean where code = :code order by date desc")
+    fun listByCodeOrderByDateDesc(code: String): List<ZTReplayBean>
+
+    @Query(
+        """
+        DELETE FROM ztreplaybean
+        WHERE (expound IS NULL OR expound = '')
+        AND (expound2 IS NULL OR expound2 = '')
+        AND (reason2 IS NULL OR reason2 = '')
+        """
+    )
+    fun deleteWhereExpoundExpound2Reason2AllEmpty(): Int
 
 }
 

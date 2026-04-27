@@ -6,10 +6,8 @@ import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.PopupWindow
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
@@ -17,13 +15,8 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.liaobusi.stockman.databinding.FragmentFollowListBinding
 import com.liaobusi.stockman.databinding.FragmentWillZtBinding
-import com.liaobusi.stockman.databinding.ItemFollowBinding
 import com.liaobusi.stockman.databinding.ItemWillZtBinding
-import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
-import com.liaobusi.stockman.db.BK
-import com.liaobusi.stockman.db.Follow
 import com.liaobusi.stockman.db.Stock
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.repo.StockRepo
@@ -66,7 +59,7 @@ class WillZTFragment : Fragment() {
         }
         lifecycleScope.launch(Dispatchers.IO) {
             while (true) {
-                StockRepo.getRealTimeStocks()
+                StockRepo.getRealTimeStocksDFCF()
                 val willZtStocks = Injector.appDatabase.stockDao().getWillZTStocks()
                 launch(Dispatchers.Main) {
                     (binding.rv.adapter as WillZTAdapter).submitList((willZtStocks) as MutableList<Stock>)

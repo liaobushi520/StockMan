@@ -20,24 +20,15 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.core.content.edit
 import androidx.room.Room
-import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.liaobusi.stockman.api.ExpectHotParam
-import com.liaobusi.stockman.api.FPRequest
-import com.liaobusi.stockman.api.HotTopicParam
-import com.liaobusi.stockman.api.HotTopicParamBean
-import com.liaobusi.stockman.api.RDataBean
-import com.liaobusi.stockman.api.StockEventBean
 import com.liaobusi.stockman.api.StockService
 import com.liaobusi.stockman.api.TGBStock
 import com.liaobusi.stockman.api.THSStock
 import com.liaobusi.stockman.api.getOkHttpClientBuilder
 import com.liaobusi.stockman.db.AppDatabase
 import com.liaobusi.stockman.db.BK
-import com.liaobusi.stockman.db.HistoryStock
 import com.liaobusi.stockman.db.PopularityRank
 import com.liaobusi.stockman.db.Stock
-import com.liaobusi.stockman.db.UnusualActionHistory
 import com.liaobusi.stockman.db.marketCode
 import com.liaobusi.stockman.db.specialBK
 import com.liaobusi.stockman.repo.StockRepo
@@ -48,18 +39,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.util.Calendar
-import java.util.Date
-
-
-import okhttp3.Request
-import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.TimeZone
 
 
 val log = StringBuilder()
@@ -134,29 +115,30 @@ object Injector {
 
         trackerType = trackingType(context)
 
+
+        val serviceIntent =
+            Intent(applicationContext, com.liaobusi.stockman.StockService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(applicationContext, serviceIntent)
+        } else {
+            context.startService(serviceIntent)
+        }
+
         (applicationContext as Application).registerActivityLifecycleCallbacks(object :
             ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-                if (activity is FPActivity) {
-                    scope.launch(Dispatchers.IO) {
-                        StockRepo.getExpectHot()
-                    }
-                }
-
                 if (activity is HomeActivity) {
-
-
                     scope.launch(Dispatchers.IO) {
-
                         StockRepo.getRealTimeIndexByCode("1.000001")
                         StockRepo.getRealTimeIndexByCode("2.932000")
                         StockRepo.getRealTimeIndexByCode("1.000905")
-                        StockRepo.getRealTimeStocks()
+                        StockRepo.getRealTimeStocksDFCF()
                         StockRepo.getRealTimeBKs()
-                        StockRepo.fetchDragonTigerRank(today())
 
-                        StockRepo.getYDData()
-                        StockRepo.getDPLive()
+                        StockRepo.fetchDragonTigerRank(today())
+                        StockRepo.getKPLLive()
+                        StockRepo.getCLSLive()
+                        StockRepo.getTHSLive(today())
                         StockRepo.getLimitUpPool(today())
                         StockRepo.getLimitDownPool(today())
 
@@ -182,15 +164,6 @@ object Injector {
                             sp.edit { putLong("fetch_gdrs_time", System.currentTimeMillis()) }
                         }
 
-                    }
-
-
-                    val serviceIntent =
-                        Intent(applicationContext, com.liaobusi.stockman.StockService::class.java)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(applicationContext, serviceIntent)
-                    } else {
-                        context.startService(serviceIntent)
                     }
                 }
 
@@ -257,41 +230,70 @@ object Injector {
                 }
 
                 if (!isRealTimeDataSource(context)) {
+
+//                    async {
+//                        while (true) {
+//                            if (isTradingTime()) {
+//                                StockRepo.getRealTimeStocksBD()
+//                                delay(2000)
+//                            } else {
+//                                delay(1000 * 60 * 6)
+//                            }
+//                        }
+//                    }
+
+
+//                    async {
+//                        StockRepo.getRealTimeStocksBD2()
+//                    }
+
+
+
                     async {
                         while (true) {
                             if (isTradingTime()) {
+                                delay(1000)
                                 StockRepo.getRealTimeStocksSH()
-                                delay(4000)
                             } else {
                                 delay(1000 * 60 * 6)
                             }
                         }
                     }
 
+//                    async {
+//                        while (true) {
+//                            if (isTradingTime()) {
+//                                StockRepo.getRealTimeStocksCX()
+//                                delay(3000)
+//                            } else {
+//                                delay(1000 * 60 * 6)
+//                            }
+//                        }
+//                    }
+
                     async {
                         while (true) {
-                            if (isTradingTime()) {
-                                StockRepo.getRealTimeStocks()
-                                delay(2500)
+                            if (isCallAuctionTime()) {
+                                StockRepo.getCallWarnType()
+                                delay(3 * 60 * 1000)
                             } else {
-                                delay(1000 * 60 * 6)
+                                delay(30 * 60 * 1000)
                             }
                         }
                     }
 
                     async {
                         while (true) {
-                            if (isTradingTime()) {
-                                StockRepo.getRealTimeStocksBD()
-                                delay(1200)
+                            if (isCallAuctionTime()) {
+                                StockRepo.getRealTimeStocksDFCF()
+                                delay(3000)
                             } else {
-                                delay(1000 * 60 * 6)
+                                delay(30 * 60 * 1000)
                             }
                         }
                     }
+
                 }
-
-
             }
         }
     }
@@ -431,7 +433,7 @@ object Injector {
                 while (true) {
                     refreshPopularityRanking()
                     if (!isActive) return@launch
-                    delay(1000 * 60 * 10)
+                    delay(1000 * 60 * 60)
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()
@@ -540,22 +542,12 @@ object Injector {
     class Tracker {
         private val cache = mutableListOf<StockRecord>()
 
-        val cacheSize = 30
+        val cacheSize = 80
         fun update(s: Stock) {
-
-
             val sb = StringBuilder()
-            val last = if (cache.size >= 2) cache[cache.size - 2] else cache.lastOrNull()
+
+            val last = if (cache.isNotEmpty()) cache[cache.size - 1] else cache.lastOrNull()
             if (last != null) {
-                val zf = (s.price - last.stock.price) / last.stock.price
-                val time = (System.currentTimeMillis() - last.time) / 1000f
-
-
-
-                if (zf >= 0.009 && time <= 10) {
-                    sb.append("${time}秒内涨幅${"%.2f".format(zf * 100)}%")
-                }
-
                 if (last.stock.ztPrice == last.stock.price && s.price < s.ztPrice) {
                     sb.append("[炸板]")
                 }
@@ -565,33 +557,55 @@ object Injector {
                 }
             }
 
-            val mid = if (cache.size >= cacheSize / 2) cache[cache.size * 2 / 3] else null
-            if (mid != null) {
-                val zf = (s.price - mid.stock.price) / mid.stock.price
-                val time = (System.currentTimeMillis() - mid.time) / 1000
-                if (zf >= 0.02 && time > 11 && time <= 30) {
-                    sb.append("${time}秒内涨幅${"%.2f".format(zf * 100)}%")
+            val tenSecondItem = if (cache.size >= 5) cache[cache.size - 5] else cache.lastOrNull()
+            if (tenSecondItem != null) {
+                val zf = s.chg - tenSecondItem.stock.chg
+                val time = (System.currentTimeMillis() - tenSecondItem.time) / 1000
+                if (zf >= 1 && time <= 15) {
+                    sb.append("${time}秒内涨幅${"%.2f".format(zf)}% ")
                 }
             }
 
+            //40 - 60
+            val mid = if (cache.size >= 3) cache[cache.size * 2 / 3] else null
+            if (mid != null) {
+                val zf = s.chg - mid.stock.chg
+                val time = (System.currentTimeMillis() - mid.time) / 1000
+                if (zf >= 2 && time >= 15 && time <= 60) {
+                    sb.append("${time}秒内涨幅${"%.2f".format(zf)}% ")
+                }
+            }
+
+
+            //90
+            val oneThreeStoke = if (cache.size >= 3) cache[cache.size * 1 / 3] else null
+            if (oneThreeStoke != null) {
+                val zf = s.chg - oneThreeStoke.stock.chg
+                val time = (System.currentTimeMillis() - oneThreeStoke.time) / 1000
+                if (zf >= 3 && time >= 60 && time <= 90) {
+                    sb.append("${time}秒内涨幅${"%.2f".format(zf)}% ")
+                }
+            }
+
+            //140 165
             val first = cache.firstOrNull()
             if (first != null) {
-                val zf = (s.price - first.stock.price) / first.stock.price
+                val zf = s.chg - first.stock.chg
                 val time = (System.currentTimeMillis() - first.time) / 1000
-                if (zf >= 0.04 && time > 30) {
-                    sb.append("${time}秒内涨幅${"%.2f".format(zf * 100)}%")
+                if (zf >= 4 && time >= 90 && time <= 180) {
+                    sb.append("${time}秒内涨幅${"%.2f".format(zf)}% ")
                 }
-
             }
             if (sb.isNotEmpty()) {
                 sendNotification(s, "${s.code}${s.name}异动,涨跌幅${s.chg}%", sb.toString())
             }
 
-
             cache.add(StockRecord(s))
             if (cache.size >= cacheSize) {
                 cache.removeAt(0)
             }
+
+
         }
 
 
@@ -602,7 +616,7 @@ object Injector {
                 NotificationManager.IMPORTANCE_HIGH
             )
             channel.description = "Channel description"
-            val notificationManager: NotificationManager = Injector.context.getSystemService(
+            val notificationManager: NotificationManager = context.getSystemService(
                 NotificationManager::class.java
             )
             notificationManager.createNotificationChannel(channel)
@@ -611,7 +625,7 @@ object Injector {
             val intent = Intent(Intent.ACTION_VIEW, uri)
 
             val builder: NotificationCompat.Builder =
-                NotificationCompat.Builder(Injector.context, "股票超人")
+                NotificationCompat.Builder(context, "股票超人")
                     .setSmallIcon(R.mipmap.ic_launcher) // 设置通知小图标
                     .setContentTitle(title) // 设置通知标题
                     .setContentText(content) // 设置通知内容
