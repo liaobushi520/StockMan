@@ -6,6 +6,10 @@ plugins {
 
 application {
     mainClass.set("com.liaobusi.stockman.monitor.ServerKt")
+    applicationDefaultJvmArgs = listOf(
+        "-Dstockman.db.path=${project.projectDir}/data/stockman-monitor.db",
+        "-Dstockman.log.dir=${project.projectDir}/logs"
+    )
 }
 
 dependencies {
@@ -16,6 +20,7 @@ dependencies {
     implementation("io.ktor:ktor-server-websockets-jvm:2.3.12")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.12")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.code.gson:gson:2.11.0")

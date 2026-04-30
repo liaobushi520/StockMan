@@ -12,28 +12,28 @@
 - IntelliJ IDEA 2024+ 或命令行终端
 - 网络可访问行情源
 
-本项目使用 Gradle Wrapper。因为 wrapper 在父 Android 项目根目录，所以命令都从 `stockman-monitor` 目录里用 `../gradlew` 执行。
+本项目使用 Gradle Wrapper。因为 wrapper 在父 Android 项目根目录，所以命令都从 `stockman-monitor` 目录里用 `./gradlew` 执行。
 
 ## 数据同步策略
 
-同步入口是 `StockSync`，内部使用策略模式：
+实时股票同步入口是 `RealtimeStockSync`，行情源策略位于 `server/src/main/kotlin/.../sync/strategy`：
 
-- `StockSyncStrategy`: 单个行情源策略接口。
-- `FallbackStockSyncStrategy`: 按顺序尝试策略，前一个失败或数据不完整时切到下一个。
+- `RealtimeStockStrategy`: 单个实时行情源策略接口。
+- `fetchFirstSuccessfulSnapshot`: 按顺序尝试策略，前一个失败或数据不完整时切到下一个。
 - `PagedRequestConfig`: 配置页码类接口的 `baseUrl`、`path`、`headers`、固定查询参数、`page`、`pageSize` 参数名。
 - `RangeRequestConfig`: 配置范围类接口的 `baseUrl`、`path`、`headers`、固定查询参数、`begin`、`end` 参数名。
 
 当前顺序：
 
 ```text
-EastMoney -> SSE -> Baidu+Caixin
+EastMoney -> Sina
 ```
 
 东方财富必须返回超过 5000 只才算完整；如果最终返回数据不完整，本次 `stock` 同步会失败并保留旧数据，不执行清空写入。
 
 网络层使用 OkHttp + Retrofit。Retrofit API 使用 `@Url`、`@HeaderMap`、`@QueryMap` 组合请求，不在策略里手写整段 URL；响应解析使用 Gson 的 `JsonObject` / `JsonArray`，便于兼容不同数据源返回结构。
 
-手动同步当天： 
+手动刷新实时股票：
 
 ```bash
 curl -X POST http://localhost:8080/api/sync/stocks
@@ -48,20 +48,14 @@ curl -X POST "http://localhost:8080/api/sync/history"
 手动回补历史日 K：
 
 ```bash
-curl -X POST "http://localhost:8080/api/sync/history?limit=120"
-```
-
-小批量测试可以加 `stockLimit`：
-
-```bash
-curl -X POST "http://localhost:8080/api/sync/history?limit=20&stockLimit=50"
+curl -X POST "http://localhost:8080/api/sync/history"
 ```
 
 单只或多只重试：
 
 ```bash
-curl -X POST "http://localhost:8080/api/sync/history?limit=120&code=302132"
-curl -X POST "http://localhost:8080/api/sync/history?limit=120&codes=302132,920156"
+curl -X POST "http://localhost:8080/api/sync/history?code=302132"
+curl -X POST "http://localhost:8080/api/sync/history?codes=302132,920156"
 ```
 
 同步状态：
@@ -118,14 +112,14 @@ Tasks: :web:jsBrowserDevelopmentRun
 从 `stockman-monitor` 目录执行：
 
 ```bash
-../gradlew :server:build
-../gradlew :web:jsBrowserDevelopmentWebpack
+./gradlew :server:build
+./gradlew :web:jsBrowserDevelopmentWebpack
 ```
 
 一次性构建服务端和前端：
 
 ```bash
-../gradlew :server:build :web:jsBrowserDevelopmentWebpack
+./gradlew :server:build :web:jsBrowserDevelopmentWebpack
 ```
 
 ## 本地运行
@@ -133,13 +127,13 @@ Tasks: :web:jsBrowserDevelopmentRun
 终端 1，启动服务端：
 
 ```bash
-../gradlew :server:run
+./gradlew :server:run
 ```
 
 终端 2，启动前端开发服务器：
 
 ```bash
-../gradlew :web:jsBrowserDevelopmentRun
+./gradlew :web:jsBrowserDevelopmentRun
 ```
 
 浏览器打开：
@@ -153,7 +147,7 @@ http://localhost:8081
 服务端分发包：
 
 ```bash
-../gradlew :server:installDist
+./gradlew :server:installDist
 ```
 
 生成目录：
@@ -171,7 +165,7 @@ server/build/install/server/bin/server
 前端静态资源：
 
 ```bash
-../gradlew :web:jsBrowserProductionWebpack
+./gradlew :web:jsBrowserProductionWebpack
 ```
 
 生成目录：
@@ -190,8 +184,7 @@ GET  http://localhost:8080/api/sync/status
 GET  http://localhost:8080/api/sync/history/status
 POST http://localhost:8080/api/sync/stocks
 POST http://localhost:8080/api/sync/history
-POST http://localhost:8080/api/sync/history?limit=120
-GET  http://localhost:8080/api/history/688233?limit=120
+GET  http://localhost:8080/api/history/688233?limit=210
 GET  http://localhost:8080/api/db/tables
 GET  http://localhost:8080/api/db/table/stock?limit=100
 GET  http://localhost:8080/api/db/table/historystock?limit=100

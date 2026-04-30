@@ -5,17 +5,20 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.send
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.slf4j.LoggerFactory
 import java.util.Collections
 import kotlin.math.sin
 import kotlin.random.Random
 
 class MarketEngine {
+    private val logger = LoggerFactory.getLogger(MarketEngine::class.java)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val json = Json { encodeDefaults = true }
     private val sessions = Collections.synchronizedSet(mutableSetOf<DefaultWebSocketSession>())
@@ -27,38 +30,35 @@ class MarketEngine {
         StockSeed("688981", "中芯国际", 49.32, limitRate = 0.2, baseChg = 0.1, circulationMarketValue = 3900.0, toMarketTime = 20200716, bk = "半导体,芯片")
     )
     val database = StockDatabase()
-    private val dailyStockSync = DailyStockSync(database)
+    private val realtimeStockSync = RealtimeStockSync(database)
     private val historyStockSync = HistoryStockSync(database)
     private val trackers = seeds.associate { it.code to Tracker() }
     private val stocks: MutableMap<String, StockTick>
     private val alerts = ArrayDeque<AlertEvent>()
     private var step = 0
+    @Volatile private var historyProgress = HistorySyncProgress()
+    @Volatile private var stopHistorySyncRequested = false
+    private var historySyncJob: Job? = null
 
     init {
         database.initialize(seeds)
+        logger.info("MarketEngine initialized: database={}", database.path())
         stocks = database.getStocks().associateBy { it.code }.toMutableMap()
         scope.launch {
-            runCatching { dailyStockSync.init() }
+            runCatching { realtimeStockSync.initializeRealtimeStocksIfEmpty() }
                 .onSuccess { status ->
                     if (status != null) reloadStocksAndBroadcast()
                 }
-                .onFailure { println("Stock sync failed: ${it.message}") }
+                .onFailure { logger.warn("Stock sync failed: {}", it.message) }
         }
         scope.launch {
             while (isActive) {
                 delay(60_000)
-                runCatching { dailyStockSync.syncIfNeededBySchedule() }
+                runCatching { realtimeStockSync.refreshRealtimeStocksIfScheduled() }
                     .onSuccess { status ->
                         if (status != null) reloadStocksAndBroadcast()
                     }
-                    .onFailure { println("Stock sync failed: ${it.message}") }
-            }
-        }
-        scope.launch {
-            while (isActive) {
-                delay(60_000)
-                runCatching { historyStockSync.syncTodayIfNeededAfterClose() }
-                    .onFailure { println("History stock sync failed: ${it.message}") }
+                    .onFailure { logger.warn("Stock sync failed: {}", it.message) }
             }
         }
         scope.launch {
@@ -103,19 +103,68 @@ class MarketEngine {
         return tick
     }
 
-    suspend fun syncStocksNow(): SyncStatus {
-        val status = dailyStockSync.sync()
+    suspend fun refreshRealtimeStocksNow(): SyncStatus {
+        logger.info("Manual realtime stock sync requested")
+        val status = realtimeStockSync.refreshRealtimeStocks(retry = false)
         reloadStocksAndBroadcast()
+        logger.info("Manual realtime stock sync completed: count={}, source={}", status.lastStockSyncCount, status.lastStockSyncSource)
         return status
     }
 
     fun syncStatus(): SyncStatus = database.syncStatus()
 
-    suspend fun syncHistoryNow(limit: Int, stockLimit: Int?, codes: List<String>): HistorySyncStatus {
-        return historyStockSync.syncRecentKLines(limit = limit, stockLimit = stockLimit, codes = codes)
+    suspend fun syncHistoryStocksNow(codes: List<String>): HistorySyncStatus {
+        logger.info("Manual history stock sync requested: codes={}", codes.size)
+        return historyStockSync.syncRecentKLines(codes = codes, retry = true)
+            .also { logger.info("Manual history stock sync completed: date={}, count={}, stocks={}, source={}", it.lastHistorySyncDate, it.lastHistorySyncCount, it.lastHistorySyncStockCount, it.lastHistorySyncSource) }
     }
 
     fun historySyncStatus(): HistorySyncStatus = database.historySyncStatus()
+
+    fun startHistoryStocksSync(codes: List<String> = emptyList(), full: Boolean = false): HistorySyncProgress {
+        val runningJob = historySyncJob
+        if (runningJob?.isActive == true) return historyProgress
+        stopHistorySyncRequested = false
+        historyProgress = HistorySyncProgress(running = true, lastMessage = if (full) "历史全量同步排队中" else "历史增量同步排队中")
+        historySyncJob = scope.launch {
+            runCatching {
+                historyStockSync.syncRecentKLinesIncremental(
+                    codes = codes,
+                    retry = true,
+                    full = full && codes.isEmpty(),
+                    onProgress = { progress -> historyProgress = progress },
+                    shouldStop = { stopHistorySyncRequested }
+                )
+            }.onFailure { error ->
+                logger.warn("Background history stock sync failed: {}", error.message)
+                historyProgress = historyProgress.copy(
+                    running = false,
+                    failed = historyProgress.failed + 1,
+                    endedAt = System.currentTimeMillis(),
+                    lastMessage = "同步异常: ${error.message ?: "unknown error"}"
+                )
+            }.onSuccess {
+                historyProgress = historyProgress.copy(
+                    running = false,
+                    endedAt = System.currentTimeMillis(),
+                    lastMessage = if (stopHistorySyncRequested) {
+                        "同步已停止，成功 ${historyProgress.success}，失败 ${historyProgress.failed}"
+                    } else {
+                        "同步完成，成功 ${historyProgress.success}，失败 ${historyProgress.failed}"
+                    }
+                )
+            }
+        }
+        return historyProgress
+    }
+
+    fun stopHistoryStocksSync(): HistorySyncProgress {
+        stopHistorySyncRequested = true
+        historyProgress = historyProgress.copy(stopRequested = true, lastMessage = "正在停止，当前请求结束后生效")
+        return historyProgress
+    }
+
+    fun historyStocksSyncProgress(): HistorySyncProgress = historyProgress
 
     private suspend fun simulate() {
         step += 1

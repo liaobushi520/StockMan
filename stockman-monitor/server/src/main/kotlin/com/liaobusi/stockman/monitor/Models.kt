@@ -47,6 +47,22 @@ data class ManualTickRequest(
     val chg: Double? = null
 )
 
+@Serializable
+data class EastMoneyDebugResult(
+    val code: String,
+    val secId: String,
+    val direct: Boolean,
+    val url: String,
+    val resolvedHosts: List<String>,
+    val httpCode: Int? = null,
+    val success: Boolean,
+    val elapsedMs: Long,
+    val contentLength: Long? = null,
+    val bodyPreview: String? = null,
+    val okHttpLog: String,
+    val error: String? = null
+)
+
 data class StockSeed(
     val code: String,
     val name: String,
@@ -90,3 +106,21 @@ fun money(value: Double): Double = BigDecimal(value).setScale(2, RoundingMode.HA
 fun percent(value: Double): Double = BigDecimal(value).setScale(2, RoundingMode.HALF_UP).toDouble()
 
 fun samePrice(left: Double, right: Double): Boolean = abs(left - right) < 0.005
+
+fun limitRate(code: String, name: String): Double {
+    return when {
+        name.startsWith("ST") || name.startsWith("*") -> 1.05
+        code.startsWith("300") || code.startsWith("301") || code.startsWith("688") || code.startsWith("689") -> 1.2
+        code.startsWith("82") || code.startsWith("83") || code.startsWith("87") || code.startsWith("88") || code.startsWith("43") || code.startsWith("92") -> 1.3
+        else -> 1.1
+    }
+}
+
+fun downLimitRate(code: String, name: String): Double {
+    return when {
+        name.startsWith("ST") || name.startsWith("*") -> 0.95
+        code.startsWith("300") || code.startsWith("301") || code.startsWith("688") || code.startsWith("689") -> 0.8
+        code.startsWith("82") || code.startsWith("83") || code.startsWith("87") || code.startsWith("88") || code.startsWith("43") || code.startsWith("92") -> 0.7
+        else -> 0.9
+    }
+}

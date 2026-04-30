@@ -6,6 +6,9 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.math.max
 import kotlin.math.min
@@ -14,7 +17,7 @@ import kotlin.random.Random
 
 const val FULL_MARKET_STOCK_MIN_COUNT = 5000
 
-class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor.db")) {
+class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
     private val jdbcUrl: String
 
     init {
@@ -80,14 +83,35 @@ class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor
                     )
                     """.trimIndent()
                 )
+                statement.executeUpdate(
+                    """
+                    CREATE TABLE IF NOT EXISTS history_sync_result (
+                        code TEXT PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        source TEXT NOT NULL,
+                        rowCount INTEGER NOT NULL,
+                        message TEXT NOT NULL DEFAULT '',
+                        startDate INTEGER NOT NULL,
+                        endDate INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                migrateHistorySyncResultTable(conn)
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_history_sync_result_status_date ON history_sync_result(status, endDate)")
             }
 
             if (tableCount(conn, "stock") == 0) {
                 seedCurrentStocks(conn, seeds)
             }
-            if (tableCount(conn, "historystock") == 0) {
+            if (tableCount(conn, "historystock") == 0 && tableCount(conn, "stock") <= seeds.size) {
                 seedHistoryStocks(conn, seeds)
             }
+            if (tableCount(conn, "history_sync_result") == 0) {
+                backfillHistorySyncResults(conn)
+            }
+            reconcileHistorySyncResultCoverage(conn)
         }
     }
 
@@ -114,13 +138,8 @@ class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor
 
     fun stockCount(): Int = connection().use { conn -> tableCount(conn, "stock") }
 
-    fun stockRefs(limit: Int? = null): List<StockRef> = connection().use { conn ->
-        val sql = buildString {
-            append("SELECT code, name, toMarketTime FROM stock ORDER BY code")
-            if (limit != null) append(" LIMIT ?")
-        }
-        conn.prepareStatement(sql).use { ps ->
-            if (limit != null) ps.setInt(1, limit.coerceAtLeast(1))
+    fun stockRefs(): List<StockRef> = connection().use { conn ->
+        conn.prepareStatement("SELECT code, name, toMarketTime FROM stock ORDER BY code").use { ps ->
             ps.executeQuery().use { rs ->
                 buildList {
                     while (rs.next()) {
@@ -160,6 +179,63 @@ class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor
         }
     }
 
+    fun stockRefsPendingHistorySync(endDate: Int, minRows: Int): List<StockRef> = connection().use { conn ->
+        conn.prepareStatement(
+            """
+            SELECT s.code, s.name, s.toMarketTime
+            FROM stock s
+            LEFT JOIN history_sync_result r
+                ON r.code = s.code
+                AND r.status = 'SUCCESS'
+                AND r.rowCount > 0
+            WHERE r.code IS NULL
+            ORDER BY s.code
+            """.trimIndent()
+        ).use { ps ->
+            ps.executeQuery().use { rs ->
+                buildList {
+                    while (rs.next()) {
+                        add(
+                            StockRef(
+                                code = rs.getString("code"),
+                                name = rs.getString("name"),
+                                toMarketTime = rs.getInt("toMarketTime")
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun stockRefsMissingRecentHistory(minDate: Int): List<StockRef> = connection().use { conn ->
+        conn.prepareStatement(
+            """
+            SELECT s.code, s.name, s.toMarketTime, MAX(h.date) AS max_history_date
+            FROM stock s
+            LEFT JOIN historystock h ON h.code = s.code
+            GROUP BY s.code, s.name, s.toMarketTime
+            HAVING max_history_date IS NULL OR max_history_date < ?
+            ORDER BY s.code
+            """.trimIndent()
+        ).use { ps ->
+            ps.setInt(1, minDate)
+            ps.executeQuery().use { rs ->
+                buildList {
+                    while (rs.next()) {
+                        add(
+                            StockRef(
+                                code = rs.getString("code"),
+                                name = rs.getString("name"),
+                                toMarketTime = rs.getInt("toMarketTime")
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     fun upsertTick(seed: StockSeed, tick: StockTick) {
         connection().use { conn ->
             conn.autoCommit = false
@@ -182,6 +258,7 @@ class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor
                 stocks.forEach { stock ->
                     updateDailyStock(conn, stock)
                 }
+                reconcileHistorySyncResultCoverage(conn)
                 setMeta(conn, "last_stock_sync_date", date.toString())
                 setMeta(conn, "last_stock_sync_time", System.currentTimeMillis().toString())
                 setMeta(conn, "last_stock_sync_count", stocks.size.toString())
@@ -222,6 +299,60 @@ class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor
         return historySyncStatus()
     }
 
+    fun upsertHistoryForCode(histories: List<SyncedHistoryStock>, source: String, requestedStocks: Int): HistorySyncStatus {
+        if (histories.isEmpty()) return historySyncStatus()
+        connection().use { conn ->
+            conn.autoCommit = false
+            try {
+                histories.forEach { upsertHistory(conn, it) }
+                val syncDate = histories.maxOfOrNull { it.date }
+                setMeta(conn, "last_history_sync_time", System.currentTimeMillis().toString())
+                if (syncDate != null) setMeta(conn, "last_history_sync_date", syncDate.toString())
+                setMeta(conn, "last_history_sync_count", tableCount(conn, "historystock").toString())
+                setMeta(conn, "last_history_sync_stock_count", distinctHistoryStockCount(conn).toString())
+                setMeta(conn, "last_history_sync_requested_stock_count", requestedStocks.toString())
+                setMeta(conn, "last_history_sync_source", source)
+                conn.commit()
+            } catch (e: Throwable) {
+                conn.rollback()
+                throw e
+            }
+        }
+        return historySyncStatus()
+    }
+
+    fun upsertHistorySyncResult(result: HistoryCodeSyncResult) {
+        connection().use { conn ->
+            conn.prepareStatement(
+                """
+                INSERT INTO history_sync_result (
+                    code, name, status, source, rowCount, message, startDate, endDate, updatedAt
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(code) DO UPDATE SET
+                    name = excluded.name,
+                    status = excluded.status,
+                    source = excluded.source,
+                    rowCount = excluded.rowCount,
+                    message = excluded.message,
+                    startDate = excluded.startDate,
+                    endDate = excluded.endDate,
+                    updatedAt = excluded.updatedAt
+                """.trimIndent()
+            ).use { ps ->
+                ps.setString(1, result.code)
+                ps.setString(2, result.name)
+                ps.setString(3, result.status.name)
+                ps.setString(4, result.source)
+                ps.setInt(5, result.rowCount)
+                ps.setString(6, result.message)
+                ps.setInt(7, result.startDate)
+                ps.setInt(8, result.endDate)
+                ps.setInt(9, result.endDate)
+                ps.executeUpdate()
+            }
+        }
+    }
+
     fun syncStatus(): SyncStatus = connection().use { conn ->
         SyncStatus(
             database = path(),
@@ -239,6 +370,7 @@ class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor
         HistorySyncStatus(
             database = path(),
             historyCount = tableCount(conn, "historystock"),
+            pendingHistorySyncCount = pendingHistorySyncCount(conn),
             lastHistorySyncTime = getMeta(conn, "last_history_sync_time")?.toLongOrNull(),
             lastHistorySyncDate = getMeta(conn, "last_history_sync_date")?.toIntOrNull(),
             lastHistorySyncCount = getMeta(conn, "last_history_sync_count")?.toIntOrNull(),
@@ -248,7 +380,23 @@ class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor
         )
     }
 
-    fun tableNames(): List<String> = listOf("stock", "historystock", "sync_meta")
+    private fun pendingHistorySyncCount(conn: Connection): Int {
+        return conn.prepareStatement(
+            """
+            SELECT COUNT(*)
+            FROM stock s
+            LEFT JOIN history_sync_result r
+                ON r.code = s.code
+                AND r.status = 'SUCCESS'
+                AND r.rowCount > 0
+            WHERE r.code IS NULL
+            """.trimIndent()
+        ).use { ps ->
+            ps.executeQuery().use { rs -> if (rs.next()) rs.getInt(1) else 0 }
+        }
+    }
+
+    fun tableNames(): List<String> = listOf("stock", "historystock", "history_sync_result", "sync_meta")
 
     fun dailyLines(code: String, limit: Int): DailyLineResponse = connection().use { conn ->
         val safeLimit = limit.coerceIn(1, 500)
@@ -294,7 +442,14 @@ class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor
         val safeOffset = max(0, offset)
         return connection().use { conn ->
             val total = tableCount(conn, name)
-            conn.prepareStatement("SELECT * FROM $name LIMIT ? OFFSET ?").use { ps ->
+            val orderBy = when (name) {
+                "historystock" -> " ORDER BY date DESC, code ASC"
+                "history_sync_result" -> " ORDER BY endDate DESC, code ASC"
+                "stock" -> " ORDER BY code ASC"
+                "sync_meta" -> " ORDER BY key ASC"
+                else -> ""
+            }
+            conn.prepareStatement("SELECT * FROM $name$orderBy LIMIT ? OFFSET ?").use { ps ->
                 ps.setInt(1, safeLimit)
                 ps.setInt(2, safeOffset)
                 ps.executeQuery().use { rs ->
@@ -320,6 +475,70 @@ class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor
                 rs.next()
                 rs.getInt(1)
             }
+        }
+    }
+
+    private fun distinctHistoryStockCount(conn: Connection): Int {
+        return conn.createStatement().use { statement ->
+            statement.executeQuery("SELECT COUNT(DISTINCT code) FROM historystock").use { rs ->
+                rs.next()
+                rs.getInt(1)
+            }
+        }
+    }
+
+    private fun migrateHistorySyncResultTable(conn: Connection) {
+        val columns = conn.createStatement().use { statement ->
+            statement.executeQuery("PRAGMA table_info(history_sync_result)").use { rs ->
+                buildSet {
+                    while (rs.next()) add(rs.getString("name"))
+                }
+            }
+        }
+        if ("targetDate" !in columns && "startedAt" !in columns && "endedAt" !in columns &&
+            "startDate" in columns && "endDate" in columns
+        ) return
+
+        conn.createStatement().use { statement ->
+            statement.executeUpdate("DROP TABLE IF EXISTS history_sync_result_new")
+            statement.executeUpdate(
+                """
+                CREATE TABLE history_sync_result_new (
+                    code TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    rowCount INTEGER NOT NULL,
+                    message TEXT NOT NULL DEFAULT '',
+                    startDate INTEGER NOT NULL,
+                    endDate INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            val hasOldRows = tableCount(conn, "history_sync_result") > 0
+            if (hasOldRows) {
+                statement.executeUpdate(
+                    """
+                    INSERT INTO history_sync_result_new (
+                        code, name, status, source, rowCount, message, startDate, endDate, updatedAt
+                    )
+                    SELECT
+                        r.code,
+                        r.name,
+                        r.status,
+                        r.source,
+                        r.rowCount,
+                        r.message,
+                        COALESCE((SELECT MIN(h.date) FROM historystock h WHERE h.code = r.code), 0),
+                        COALESCE((SELECT MAX(h.date) FROM historystock h WHERE h.code = r.code), r.targetDate, 0),
+                        COALESCE(r.updatedAt, r.endedAt, r.targetDate, 0)
+                    FROM history_sync_result r
+                    """.trimIndent()
+                )
+            }
+            statement.executeUpdate("DROP TABLE history_sync_result")
+            statement.executeUpdate("ALTER TABLE history_sync_result_new RENAME TO history_sync_result")
         }
     }
 
@@ -376,7 +595,7 @@ class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor
     }
 
     private fun seedHistoryStocks(conn: Connection, seeds: List<StockSeed>) {
-        val tradingDays = recentTradingDays(160)
+        val tradingDays = recentTradingDaysInRetentionWindow()
         seeds.forEachIndexed { seedIndex, seed ->
             var previousClose = seed.yesterdayClose * (1 - tradingDays.size * 0.0008)
             tradingDays.forEachIndexed { index, date ->
@@ -504,6 +723,68 @@ class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor
         )
     }
 
+    private fun backfillHistorySyncResults(conn: Connection) {
+        val now = LocalDate.now(CHINA_ZONE).format(DateTimeFormatter.BASIC_ISO_DATE).toInt()
+        conn.prepareStatement(
+            """
+            INSERT INTO history_sync_result (
+                code, name, status, source, rowCount, message, startDate, endDate, updatedAt
+            )
+            SELECT
+                h.code,
+                COALESCE(s.name, ''),
+                'SUCCESS',
+                'Backfill',
+                COUNT(*),
+                '',
+                MIN(h.date),
+                MAX(h.date),
+                ?
+            FROM historystock h
+            LEFT JOIN stock s ON s.code = h.code
+            GROUP BY h.code
+            """.trimIndent()
+        ).use { ps ->
+            ps.setInt(1, now)
+            ps.executeUpdate()
+        }
+    }
+
+    private fun reconcileHistorySyncResultCoverage(conn: Connection) {
+        val today = LocalDate.now(CHINA_ZONE).format(DateTimeFormatter.BASIC_ISO_DATE).toInt()
+        conn.createStatement().use { statement ->
+            statement.executeUpdate(
+                """
+                DELETE FROM history_sync_result
+                WHERE code NOT IN (SELECT code FROM stock)
+                """.trimIndent()
+            )
+        }
+        conn.prepareStatement(
+            """
+            INSERT INTO history_sync_result (
+                code, name, status, source, rowCount, message, startDate, endDate, updatedAt
+            )
+            SELECT
+                s.code,
+                s.name,
+                'PENDING',
+                '',
+                0,
+                'pending history sync',
+                0,
+                0,
+                ?
+            FROM stock s
+            LEFT JOIN history_sync_result r ON r.code = s.code
+            WHERE r.code IS NULL
+            """.trimIndent()
+        ).use { ps ->
+            ps.setInt(1, today)
+            ps.executeUpdate()
+        }
+    }
+
     private fun upsertHistory(
         conn: Connection,
         code: String,
@@ -557,17 +838,35 @@ class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor
         }
     }
 
-    private fun recentTradingDays(count: Int): List<Int> {
+    private fun recentTradingDaysInRetentionWindow(): List<Int> {
         val formatter = DateTimeFormatter.BASIC_ISO_DATE
         val days = ArrayDeque<Int>()
-        var date = LocalDate.now().minusDays(1)
-        while (days.size < count) {
+        val latest = latestClosedTradingDate()
+        val oldest = latest.minusDays((DEFAULT_SEED_HISTORY_DAYS - 1).toLong())
+        var date = latest
+        while (!date.isBefore(oldest)) {
             if (date.dayOfWeek != DayOfWeek.SATURDAY && date.dayOfWeek != DayOfWeek.SUNDAY) {
                 days.addFirst(date.format(formatter).toInt())
             }
             date = date.minusDays(1)
         }
         return days.toList()
+    }
+
+    private fun latestClosedTradingDate(): LocalDate {
+        val now = LocalDateTime.now(CHINA_ZONE)
+        var date = if (now.dayOfWeek != DayOfWeek.SATURDAY &&
+            now.dayOfWeek != DayOfWeek.SUNDAY &&
+            !now.toLocalTime().isBefore(DAILY_HISTORY_SYNC_TIME)
+        ) {
+            now.toLocalDate()
+        } else {
+            now.toLocalDate().minusDays(1)
+        }
+        while (date.dayOfWeek == DayOfWeek.SATURDAY || date.dayOfWeek == DayOfWeek.SUNDAY) {
+            date = date.minusDays(1)
+        }
+        return date
     }
 
     private fun setMeta(conn: Connection, key: String, value: String) {
@@ -590,6 +889,23 @@ class StockDatabase(private val dbPath: Path = Path.of("data", "stockman-monitor
                 if (rs.next()) rs.getString("value") else null
             }
         }
+    }
+
+    companion object {
+        private const val DEFAULT_SEED_HISTORY_DAYS = 210
+        private val CHINA_ZONE: ZoneId = ZoneId.of("Asia/Shanghai")
+        private val DAILY_HISTORY_SYNC_TIME: LocalTime = LocalTime.of(15, 10)
+    }
+}
+
+private fun defaultDatabasePath(): Path {
+    System.getProperty("stockman.db.path")?.takeIf { it.isNotBlank() }?.let { return Path.of(it) }
+    System.getenv("STOCKMAN_DB_PATH")?.takeIf { it.isNotBlank() }?.let { return Path.of(it) }
+    val cwd = Path.of("").toAbsolutePath().normalize()
+    return if (cwd.fileName?.toString() == "server") {
+        cwd.resolve("data").resolve("stockman-monitor.db")
+    } else {
+        cwd.resolve("server").resolve("data").resolve("stockman-monitor.db")
     }
 }
 
@@ -641,6 +957,7 @@ data class DailyLineResponse(
 data class HistorySyncStatus(
     val database: String,
     val historyCount: Int,
+    val pendingHistorySyncCount: Int,
     val lastHistorySyncTime: Long?,
     val lastHistorySyncDate: Int?,
     val lastHistorySyncCount: Int?,
@@ -704,4 +1021,37 @@ data class SyncedHistoryStock(
     val dtPrice: Double,
     val yesterdayClosePrice: Double,
     val averagePrice: Double
+)
+
+enum class HistoryCodeSyncStatus {
+    SUCCESS,
+    FAILED,
+    PENDING
+}
+
+data class HistoryCodeSyncResult(
+    val code: String,
+    val name: String,
+    val status: HistoryCodeSyncStatus,
+    val source: String,
+    val rowCount: Int,
+    val message: String,
+    val startDate: Int,
+    val endDate: Int
+)
+
+@kotlinx.serialization.Serializable
+data class HistorySyncProgress(
+    val running: Boolean = false,
+    val stopRequested: Boolean = false,
+    val total: Int = 0,
+    val completed: Int = 0,
+    val success: Int = 0,
+    val failed: Int = 0,
+    val currentCode: String = "",
+    val currentName: String = "",
+    val currentSource: String = "",
+    val lastMessage: String = "",
+    val startedAt: Long? = null,
+    val endedAt: Long? = null
 )
