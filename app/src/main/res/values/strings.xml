@@ -66,6 +66,6 @@
     <string name="setting_backup_btn">备份数据库与设置</string>
     <string name="setting_restore_btn">还原数据库与设置</string>
     <string name="setting_restore_confirm_title">确认还原</string>
-    <string name="setting_restore_confirm_message">将从 下载/WeiXin 目录读取 stockman_backup.zip，覆盖当前数据库与应用设置（SharedPreferences），完成后将重启应用。</string>
+    <string name="setting_restore_confirm_message">将打开系统文件选择器，请选取本应用备份的 zip（例如「下载/WeiXin」中的 stockman_backup.zip，或经微信等保存的备份文件）。还原会覆盖当前数据库与设置，完成后将重启应用。</string>
     <string name="setting_restore_confirm_ok">还原</string>
 </resources>

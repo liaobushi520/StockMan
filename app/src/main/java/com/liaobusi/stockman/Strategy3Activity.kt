@@ -7,9 +7,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
-import com.liaobusi.stockman.databinding.ActivityStrategy2Binding
-import com.liaobusi.stockman.databinding.ActivityStrategy3Binding
-import com.liaobusi.stockman.databinding.ItemStockBinding
+import com.liaobusi.stockman5.databinding.ActivityStrategy2Binding
+import com.liaobusi.stockman5.databinding.ActivityStrategy3Binding
+import com.liaobusi.stockman5.databinding.ItemStockBinding
 import com.liaobusi.stockman.db.Stock
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.repo.StockRepo

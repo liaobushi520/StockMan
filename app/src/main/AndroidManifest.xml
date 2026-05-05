@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <application
-        android:name=".App"
+        android:name="com.liaobusi.stockman.App"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -20,80 +20,80 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
-            android:name=".DPActivity"
+            android:name="com.liaobusi.stockman.DPActivity"
             android:exported="false" />
 
         <activity
-            android:name=".WebViewActivity"
+            android:name="com.liaobusi.stockman.WebViewActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize|stateAlwaysVisible" />
         <activity
-            android:name=".FPActivity"
+            android:name="com.liaobusi.stockman.FPActivity"
             android:exported="false" />
 
         <service
-            android:name=".StockService"
+            android:name="com.liaobusi.stockman.StockService"
             android:foregroundServiceType="specialUse" />
 
         <activity
-            android:name=".AnalysisActivity"
+            android:name="com.liaobusi.stockman.AnalysisActivity"
             android:exported="false" />
         <activity
-            android:name=".YDHistoryActivity"
+            android:name="com.liaobusi.stockman.YDHistoryActivity"
             android:exported="false" />
         <activity
-            android:name=".RelatedStocksActivity"
+            android:name="com.liaobusi.stockman.RelatedStocksActivity"
             android:exported="false" />
         <activity
-            android:name=".DebugActivity"
+            android:name="com.liaobusi.stockman.DebugActivity"
             android:exported="false" />
         <activity
-            android:name=".StockPairFitActivity"
+            android:name="com.liaobusi.stockman.StockPairFitActivity"
             android:exported="false" />
         <activity
-            android:name=".StockFitRankingActivity"
+            android:name="com.liaobusi.stockman.StockFitRankingActivity"
             android:exported="false" />
         <activity
-            android:name=".WillZTActivity"
+            android:name="com.liaobusi.stockman.WillZTActivity"
             android:exported="false" />
         <activity
-            android:name=".SettingActivity"
+            android:name="com.liaobusi.stockman.SettingActivity"
             android:exported="false" />
         <activity
-            android:name=".Strategy9Activity"
+            android:name="com.liaobusi.stockman.Strategy9Activity"
             android:exported="false" />
         <activity
-            android:name=".FollowListActivity"
+            android:name="com.liaobusi.stockman.FollowListActivity"
             android:exported="false" />
         <activity
-            android:name=".Strategy7Activity"
+            android:name="com.liaobusi.stockman.Strategy7Activity"
             android:exported="false">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
         <activity
-            android:name=".BKStrategyActivity"
+            android:name="com.liaobusi.stockman.BKStrategyActivity"
             android:exported="false">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
         <activity
-            android:name=".Strategy6Activity"
+            android:name="com.liaobusi.stockman.Strategy6Activity"
             android:exported="false" />
         <activity
-            android:name=".Strategy5Activity"
+            android:name="com.liaobusi.stockman.Strategy5Activity"
             android:exported="false" />
         <activity
-            android:name=".Strategy4Activity"
+            android:name="com.liaobusi.stockman.Strategy4Activity"
             android:exported="true"
             android:windowSoftInputMode="stateVisible|adjustResize" />
         <activity
-            android:name=".Strategy3Activity"
+            android:name="com.liaobusi.stockman.Strategy3Activity"
             android:exported="false" />
         <activity
-            android:name=".HomeActivity"
+            android:name="com.liaobusi.stockman.HomeActivity"
             android:exported="true"
             android:launchMode="singleTop">
             <intent-filter>
@@ -103,10 +103,10 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Strategy2Activity"
+            android:name="com.liaobusi.stockman.Strategy2Activity"
             android:exported="false" />
         <activity
-            android:name=".Strategy1Activity"
+            android:name="com.liaobusi.stockman.Strategy1Activity"
             android:exported="true" />
     </application>
 

@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace "com.liaobusi.stockman"
+    namespace "com.liaobusi.stockman5"
     compileSdk 34
 
     defaultConfig {

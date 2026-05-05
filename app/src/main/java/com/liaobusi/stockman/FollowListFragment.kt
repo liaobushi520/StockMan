@@ -14,9 +14,9 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.liaobusi.stockman.databinding.FragmentFollowListBinding
-import com.liaobusi.stockman.databinding.ItemFollowBinding
-import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
+import com.liaobusi.stockman5.databinding.FragmentFollowListBinding
+import com.liaobusi.stockman5.databinding.ItemFollowBinding
+import com.liaobusi.stockman5.databinding.LayoutStockPopupWindowBinding
 import com.liaobusi.stockman.db.BK
 import com.liaobusi.stockman.db.Follow
 import com.liaobusi.stockman.db.Stock

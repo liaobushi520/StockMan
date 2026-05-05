@@ -1,4 +1,5 @@
 package com.liaobusi.stockman
+import com.liaobusi.stockman5.R
 
 import android.Manifest
 import android.content.BroadcastReceiver

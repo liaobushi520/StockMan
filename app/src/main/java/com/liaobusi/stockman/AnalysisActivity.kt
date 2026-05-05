@@ -14,10 +14,10 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
-import com.liaobusi.stockman.databinding.ActivityAnalysisBinding
-import com.liaobusi.stockman.databinding.ActivityBkstrategyBinding
-import com.liaobusi.stockman.databinding.ActivitySettingBinding
-import com.liaobusi.stockman.databinding.ItemAnalysisBinding
+import com.liaobusi.stockman5.databinding.ActivityAnalysisBinding
+import com.liaobusi.stockman5.databinding.ActivityBkstrategyBinding
+import com.liaobusi.stockman5.databinding.ActivitySettingBinding
+import com.liaobusi.stockman5.databinding.ItemAnalysisBinding
 import com.liaobusi.stockman.db.AnalysisBean
 import com.liaobusi.stockman.repo.StockRepo
 import kotlinx.coroutines.Dispatchers

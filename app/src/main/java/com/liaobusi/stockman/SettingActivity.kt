@@ -2,6 +2,8 @@ package com.liaobusi.stockman
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -11,8 +13,8 @@ import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
-import com.liaobusi.stockman.databinding.ActivitySettingBinding
-import com.liaobusi.stockman.R
+import com.liaobusi.stockman5.databinding.ActivitySettingBinding
+import com.liaobusi.stockman5.R
 import com.liaobusi.stockman.db.DIYBk
 import com.liaobusi.stockman.db.FPResponse
 import com.liaobusi.stockman.db.ZTReplayBean
@@ -96,6 +98,20 @@ fun isActiveRateWithPopularity(context: Context): Boolean {
 class SettingActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingBinding
 
+    private val pickBackupZipLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri == null) return@registerForActivityResult
+        lifecycleScope.launch {
+            val err = AppDataBackup.restoreFromUri(this@SettingActivity, uri)
+            if (err != null) {
+                Toast.makeText(this@SettingActivity, err, Toast.LENGTH_LONG).show()
+            } else {
+                AppDataBackup.restartAppProcess(this@SettingActivity)
+            }
+        }
+    }
+
     companion object {
         fun startSettingActivity(context: Context) {
 
@@ -126,14 +142,14 @@ class SettingActivity : AppCompatActivity() {
                 .setMessage(R.string.setting_restore_confirm_message)
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.setting_restore_confirm_ok) { _, _ ->
-                    lifecycleScope.launch {
-                        val err = AppDataBackup.restore(this@SettingActivity)
-                        if (err != null) {
-                            Toast.makeText(this@SettingActivity, err, Toast.LENGTH_LONG).show()
-                        } else {
-                            AppDataBackup.restartAppProcess(this@SettingActivity)
-                        }
-                    }
+                    pickBackupZipLauncher.launch(
+                        arrayOf(
+                            "application/zip",
+                            "application/x-zip-compressed",
+                            "application/octet-stream",
+                            "*/*"
+                        )
+                    )
                 }
                 .show()
         }

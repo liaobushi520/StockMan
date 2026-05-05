@@ -1,4 +1,5 @@
 package com.liaobusi.stockman
+import com.liaobusi.stockman5.R
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -27,14 +28,14 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.liaobusi.stockman.databinding.ActivityFpactivityBinding
-import com.liaobusi.stockman.databinding.ActivityHomeBinding
-import com.liaobusi.stockman.databinding.ItemBkBinding
-import com.liaobusi.stockman.databinding.ItemStock2Binding
-import com.liaobusi.stockman.databinding.ItemStockBinding
-import com.liaobusi.stockman.databinding.LayoutPopupWindow2Binding
-import com.liaobusi.stockman.databinding.LayoutPopupWindowBinding
-import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
+import com.liaobusi.stockman5.databinding.ActivityFpactivityBinding
+import com.liaobusi.stockman5.databinding.ActivityHomeBinding
+import com.liaobusi.stockman5.databinding.ItemBkBinding
+import com.liaobusi.stockman5.databinding.ItemStock2Binding
+import com.liaobusi.stockman5.databinding.ItemStockBinding
+import com.liaobusi.stockman5.databinding.LayoutPopupWindow2Binding
+import com.liaobusi.stockman5.databinding.LayoutPopupWindowBinding
+import com.liaobusi.stockman5.databinding.LayoutStockPopupWindowBinding
 import com.liaobusi.stockman.db.Follow
 import com.liaobusi.stockman.db.strongLinkCodesCsvForStrategy
 import com.liaobusi.stockman.db.Hide

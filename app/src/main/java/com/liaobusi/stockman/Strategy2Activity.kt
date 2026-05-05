@@ -1,4 +1,5 @@
 package com.liaobusi.stockman
+import com.liaobusi.stockman5.R
 
 import android.content.Context
 import android.content.Intent
@@ -10,8 +11,8 @@ import android.view.View
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 
-import com.liaobusi.stockman.databinding.ActivityStrategy2Binding
-import com.liaobusi.stockman.databinding.ItemStockBinding
+import com.liaobusi.stockman5.databinding.ActivityStrategy2Binding
+import com.liaobusi.stockman5.databinding.ItemStockBinding
 import com.liaobusi.stockman.db.Stock
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.repo.StockRepo

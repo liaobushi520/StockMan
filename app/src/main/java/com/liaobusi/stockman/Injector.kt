@@ -1,4 +1,5 @@
 package com.liaobusi.stockman
+import com.liaobusi.stockman5.R
 
 
 import android.annotation.SuppressLint
@@ -285,6 +286,7 @@ object Injector {
 //                    }
 
                     async {
+                        if (!isTradingDay()) return@async
                         while (true) {
                             if (isTradingTime()) {
                                 delay(1000)
@@ -296,6 +298,7 @@ object Injector {
                     }
 
                     async {
+                        if (!isTradingDay()) return@async
                         while (true) {
                             if (isTradingTime()) {
                                 StockRepo.getRealTimeStocksSH()

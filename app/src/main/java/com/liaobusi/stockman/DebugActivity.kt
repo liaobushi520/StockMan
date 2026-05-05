@@ -1,4 +1,5 @@
 package com.liaobusi.stockman
+import com.liaobusi.stockman5.R
 
 import android.content.Context
 import android.content.Intent
@@ -14,7 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.liaobusi.stockman.databinding.ActivityDebugBinding
+import com.liaobusi.stockman5.databinding.ActivityDebugBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

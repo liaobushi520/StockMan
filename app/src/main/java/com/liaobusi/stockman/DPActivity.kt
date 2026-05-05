@@ -1,4 +1,5 @@
 package com.liaobusi.stockman
+import com.liaobusi.stockman5.R
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -30,11 +31,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.liaobusi.stockman.FPActivity
-import com.liaobusi.stockman.databinding.ActivityDpactivityBinding
-import com.liaobusi.stockman.databinding.FragmentDpSettingBinding
-import com.liaobusi.stockman.databinding.ItemStock2Binding
-import com.liaobusi.stockman.databinding.ItemStock3Binding
-import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
+import com.liaobusi.stockman5.databinding.ActivityDpactivityBinding
+import com.liaobusi.stockman5.databinding.FragmentDpSettingBinding
+import com.liaobusi.stockman5.databinding.ItemStock2Binding
+import com.liaobusi.stockman5.databinding.ItemStock3Binding
+import com.liaobusi.stockman5.databinding.LayoutStockPopupWindowBinding
 import com.liaobusi.stockman.db.DIYBk
 import com.liaobusi.stockman.db.Follow
 import com.liaobusi.stockman.db.Stock

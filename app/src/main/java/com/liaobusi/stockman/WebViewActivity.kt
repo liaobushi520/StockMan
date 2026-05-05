@@ -1,4 +1,5 @@
 package com.liaobusi.stockman
+import com.liaobusi.stockman5.R
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -16,7 +17,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
-import com.liaobusi.stockman.databinding.ActivityWebviewBinding
+import com.liaobusi.stockman5.databinding.ActivityWebviewBinding
 import com.liaobusi.stockman.db.FPResponse
 import com.liaobusi.stockman.db.ZTReplayBean
 import kotlinx.coroutines.Dispatchers

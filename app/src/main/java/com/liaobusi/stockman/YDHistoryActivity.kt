@@ -1,4 +1,5 @@
 package com.liaobusi.stockman
+import com.liaobusi.stockman5.R
 
 import android.content.Context
 import android.content.Intent
@@ -22,8 +23,8 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.liaobusi.stockman.databinding.ActivityYdHistoryBinding
-import com.liaobusi.stockman.databinding.ItemYdHistoryBinding
+import com.liaobusi.stockman5.databinding.ActivityYdHistoryBinding
+import com.liaobusi.stockman5.databinding.ItemYdHistoryBinding
 import com.liaobusi.stockman.db.PopularityRank
 import com.liaobusi.stockman.db.UnusualActionHistory
 import com.liaobusi.stockman.db.ZT

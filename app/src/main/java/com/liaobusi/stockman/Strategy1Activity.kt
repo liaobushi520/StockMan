@@ -1,4 +1,5 @@
 package com.liaobusi.stockman
+import com.liaobusi.stockman5.R
 
 import android.content.Context
 import android.content.Intent
@@ -14,9 +15,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.liaobusi.stockman.Injector.context
-import com.liaobusi.stockman.databinding.ActivityStrategy1Binding
-import com.liaobusi.stockman.databinding.ItemStockBinding
-import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
+import com.liaobusi.stockman5.databinding.ActivityStrategy1Binding
+import com.liaobusi.stockman5.databinding.ItemStockBinding
+import com.liaobusi.stockman5.databinding.LayoutStockPopupWindowBinding
 import com.liaobusi.stockman.db.Follow
 import com.liaobusi.stockman.db.Stock
 import com.liaobusi.stockman.db.openWeb

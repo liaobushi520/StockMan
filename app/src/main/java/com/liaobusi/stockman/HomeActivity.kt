@@ -1,4 +1,5 @@
 package com.liaobusi.stockman
+import com.liaobusi.stockman5.R
 
 import android.app.Activity
 import android.content.Intent
@@ -12,7 +13,7 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.liaobusi.stockman.databinding.ActivityHomeBinding
+import com.liaobusi.stockman5.databinding.ActivityHomeBinding
 import com.liaobusi.stockman.repo.StockRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

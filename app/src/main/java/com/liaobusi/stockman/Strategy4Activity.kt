@@ -1,4 +1,5 @@
 package com.liaobusi.stockman
+import com.liaobusi.stockman5.R
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -40,14 +41,14 @@ import com.google.android.material.appbar.AppBarLayout
 import com.google.gson.Gson
 import com.liaobusi.stockman.Injector.sp
 import com.liaobusi.stockman.Strategy4Activity.Companion.openJXQSStrategy
-import com.liaobusi.stockman.databinding.ActivityStrategy4Binding
-import com.liaobusi.stockman.databinding.FragmentDiyBkBinding
-import com.liaobusi.stockman.databinding.FragmentStockInfoBinding
-import com.liaobusi.stockman.databinding.ItemDiyBkBinding
-import com.liaobusi.stockman.databinding.ItemStockBinding
-import com.liaobusi.stockman.databinding.ItemStockInfoBkBinding
-import com.liaobusi.stockman.databinding.LayoutPopupWindow2Binding
-import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
+import com.liaobusi.stockman5.databinding.ActivityStrategy4Binding
+import com.liaobusi.stockman5.databinding.FragmentDiyBkBinding
+import com.liaobusi.stockman5.databinding.FragmentStockInfoBinding
+import com.liaobusi.stockman5.databinding.ItemDiyBkBinding
+import com.liaobusi.stockman5.databinding.ItemStockBinding
+import com.liaobusi.stockman5.databinding.ItemStockInfoBkBinding
+import com.liaobusi.stockman5.databinding.LayoutPopupWindow2Binding
+import com.liaobusi.stockman5.databinding.LayoutStockPopupWindowBinding
 import com.liaobusi.stockman.db.BK
 import com.liaobusi.stockman.db.DIYBk
 import com.liaobusi.stockman.db.HistoryBK

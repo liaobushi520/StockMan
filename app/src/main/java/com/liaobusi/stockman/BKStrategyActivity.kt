@@ -1,4 +1,5 @@
 package com.liaobusi.stockman
+import com.liaobusi.stockman5.R
 
 import android.graphics.Color
 import android.os.Build
@@ -19,12 +20,12 @@ import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.liaobusi.stockman.databinding.ActivityBkstrategyBinding
-import com.liaobusi.stockman.databinding.FragmentDiyBkBinding
-import com.liaobusi.stockman.databinding.ItemDiyBkBinding
-import com.liaobusi.stockman.databinding.ItemStockBinding
-import com.liaobusi.stockman.databinding.LayoutPopupWindow2Binding
-import com.liaobusi.stockman.databinding.LayoutPopupWindowBinding
+import com.liaobusi.stockman5.databinding.ActivityBkstrategyBinding
+import com.liaobusi.stockman5.databinding.FragmentDiyBkBinding
+import com.liaobusi.stockman5.databinding.ItemDiyBkBinding
+import com.liaobusi.stockman5.databinding.ItemStockBinding
+import com.liaobusi.stockman5.databinding.LayoutPopupWindow2Binding
+import com.liaobusi.stockman5.databinding.LayoutPopupWindowBinding
 import com.liaobusi.stockman.db.BK
 import com.liaobusi.stockman.db.DIYBk
 import com.liaobusi.stockman.db.Follow

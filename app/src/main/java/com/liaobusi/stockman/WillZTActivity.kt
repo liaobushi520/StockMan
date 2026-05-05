@@ -1,4 +1,5 @@
 package com.liaobusi.stockman
+import com.liaobusi.stockman5.R
 
 import android.content.Context
 import android.content.Intent
@@ -15,8 +16,8 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.liaobusi.stockman.databinding.FragmentWillZtBinding
-import com.liaobusi.stockman.databinding.ItemWillZtBinding
+import com.liaobusi.stockman5.databinding.FragmentWillZtBinding
+import com.liaobusi.stockman5.databinding.ItemWillZtBinding
 import com.liaobusi.stockman.db.Stock
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.repo.StockRepo
