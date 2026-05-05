@@ -1,6 +1,12 @@
 package com.liaobusi.stockman.db
 
 import androidx.room.*
+import com.liaobusi.stockman.Injector
+import com.liaobusi.stockman.epochSecondsInCnTradingSession
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @Dao
 interface UnusualActionHistoryDao {
@@ -21,6 +27,36 @@ interface UnusualActionHistoryDao {
         "select * from unusualactionhistory where (',' || stocks || ',') like '%,' || :code || ',%' order by time desc"
     )
     fun listContainingStockCode(code: String): List<UnusualActionHistory>
+
+    /** 统计关联股票用：限定时间段 + 仅异动源（1/2/3/4） */
+    @Query(
+        """
+        select * from unusualactionhistory
+        where time>=:start AND time<=:end
+          AND type in (1,2,3,4)
+          AND (',' || stocks || ',') like '%,' || :code || ',%'
+        order by time desc
+        """
+    )
+    fun listContainingStockCodeInRange(code: String, start: Long, end: Long): List<UnusualActionHistory>
+
+    /** 两只股票在同一条异动中同时出现（限定时间段 + 仅异动源 1/2/3/4） */
+    @Query(
+        """
+        select * from unusualactionhistory
+        where time>=:start AND time<=:end
+          AND type in (1,2,3,4)
+          AND (',' || stocks || ',') like '%,' || :codeA || ',%'
+          AND (',' || stocks || ',') like '%,' || :codeB || ',%'
+        order by time desc
+        """
+    )
+    fun listContainingTwoStockCodesInRange(
+        codeA: String,
+        codeB: String,
+        start: Long,
+        end: Long
+    ): List<UnusualActionHistory>
 }
 
 @Dao
@@ -340,6 +376,15 @@ interface HistoryStockDao {
     @Query("select * from historystock where  date >= :start AND date <= :end order by date desc")
     fun getHistoryByDate(start: Int, end: Int): List<HistoryStock>
 
+    /**
+     * 仅拉取指定代码在区间内的日 K，用于大范围扫描时跳过 ST 等无需参与的股票。
+     * [codes] 单次不宜过长（建议分批），避免超出 SQLite 绑定上限。
+     */
+    @Query(
+        "select * from historystock where date >= :start AND date <= :end AND code IN (:codes) order by date desc",
+    )
+    fun getHistoryByDateForCodes(start: Int, end: Int, codes: List<String>): List<HistoryStock>
+
     @Query("select * from historystock where code=:code AND date >= :start AND date <= :end order by date desc")
     fun getHistoryByDate2(code: String, start: Int, end: Int): List<HistoryStock>
 
@@ -375,10 +420,112 @@ interface ZTReplayDao {
         DELETE FROM ztreplaybean
         WHERE (expound IS NULL OR expound = '')
         AND (expound2 IS NULL OR expound2 = '')
+        AND (expound3 IS NULL OR expound3 = '')
         AND (reason2 IS NULL OR reason2 = '')
         """
     )
     fun deleteWhereExpoundExpound2Reason2AllEmpty(): Int
 
+}
+
+@Dao
+interface StockLinkageDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun upsert(linkage: StockLinkage)
+
+    @Query("select * from StockLinkage where code = :code limit 1")
+    fun getByCode(code: String): StockLinkage?
+}
+
+/** 将异动 stocks 字符串中的多只股票两两写入关联（与已有记录合并） */
+fun mergeStockLinkageFromStocksCsv(csv: String) {
+    val dao = Injector.appDatabase.stockLinkageDao()
+    val codes = csv.split(",").map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+    if (codes.size < 2) return
+    for (code in codes) {
+        val others = codes.filter { it != code }.toSet()
+        val row = dao.getByCode(code)
+        val existing =
+            row?.relatedCodes?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()
+                ?: emptySet()
+        val merged = (existing + others).sorted().joinToString(",")
+        dao.upsert(StockLinkage(code, merged))
+    }
+}
+
+/** 当前股 + 联动表中的关联码，供 Strategy4 板块入参；无关联则 null */
+fun strongLinkCodesCsvForStrategy(stockCode: String): String? {
+    val row = Injector.appDatabase.stockLinkageDao().getByCode(stockCode) ?: return null
+    val rel = row.relatedCodes.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    if (rel.isEmpty()) return null
+    return (listOf(stockCode) + rel).distinct().joinToString(",")
+}
+
+/** UnusualActionHistory.time 为秒；日历日回溯窗口（与同页关联股票列表统计一致）。 */
+internal fun unusualActionHistoryEpochRange(endDateYmd: Int, daysBack: Int): Pair<Long, Long> {
+    val sdf = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
+    val endDate: Date = runCatching { sdf.parse(endDateYmd.toString()) }.getOrNull() ?: Date()
+
+    val calEnd = Calendar.getInstance().apply {
+        time = endDate
+        set(Calendar.HOUR_OF_DAY, 23)
+        set(Calendar.MINUTE, 59)
+        set(Calendar.SECOND, 59)
+        set(Calendar.MILLISECOND, 999)
+    }
+
+    val calStart = Calendar.getInstance().apply {
+        time = endDate
+        add(Calendar.DATE, -daysBack)
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+
+    val startSec = calStart.timeInMillis / 1000
+    val endSec = calEnd.timeInMillis / 1000
+    return startSec to endSec
+}
+
+/**
+ * 近 [daysBack] 天（至 [endDateYmd]）异动共现次数降序的关联股票代码（与关联股票页算法一致）。
+ */
+fun relatedStockCodesByCooccurrenceInRange(
+    stockCode: String,
+    endDateYmd: Int,
+    daysBack: Int,
+): List<String> {
+    val (startSec, endSec) = unusualActionHistoryEpochRange(endDateYmd, daysBack)
+    val histories = Injector.appDatabase.unusualActionHistoryDao()
+        .listContainingStockCodeInRange(stockCode, startSec, endSec)
+        .filter { epochSecondsInCnTradingSession(it.time) }
+    val counts = mutableMapOf<String, Int>()
+    histories.forEach { h ->
+        val codes = h.stocks.split(",").map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        codes.forEach { c ->
+            if (c == stockCode) return@forEach
+            counts[c] = (counts[c] ?: 0) + 1
+        }
+    }
+    return counts.entries
+        .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+        .map { it.key }
+}
+
+/**
+ * 在新加自选时：按近 [daysBack] 天关联度排序，继承第一个「已自选且标记色非 0」的关联股的 color；否则 0。
+ */
+fun linkedColorFromRecentRelatedFollows(
+    stockCode: String,
+    endDateYmd: Int,
+    daysBack: Int,
+): Int {
+    val ordered = relatedStockCodesByCooccurrenceInRange(stockCode, endDateYmd, daysBack)
+    if (ordered.isEmpty()) return 0
+    val followMap = Injector.appDatabase.followDao().getFollowStocks().associateBy { it.code }
+    return ordered.firstNotNullOfOrNull { c ->
+        followMap[c]?.takeIf { it.color != 0 }?.color
+    } ?: 0
 }
 

@@ -557,6 +557,7 @@ class DPActivity : AppCompatActivity() {
                     root.setOnLongClickListener {
                         val b =
                             LayoutStockPopupWindowBinding.inflate(LayoutInflater.from(it.context))
+                        b.strongLinkStocksBtn.visibility = View.GONE
 
                         if (result.follow != null) {
                             b.followBtn.text = "取消关注"

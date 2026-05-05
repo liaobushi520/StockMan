@@ -36,6 +36,7 @@ import com.liaobusi.stockman.databinding.LayoutPopupWindow2Binding
 import com.liaobusi.stockman.databinding.LayoutPopupWindowBinding
 import com.liaobusi.stockman.databinding.LayoutStockPopupWindowBinding
 import com.liaobusi.stockman.db.Follow
+import com.liaobusi.stockman.db.strongLinkCodesCsvForStrategy
 import com.liaobusi.stockman.db.Hide
 import com.liaobusi.stockman.db.Stock
 import com.liaobusi.stockman.db.ZTReplayBean
@@ -57,6 +58,7 @@ import com.liaobusi.stockman.repo.StrategyResult
 import com.liaobusi.stockman.repo.toFormatText
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -1236,6 +1238,28 @@ class FPActivity : AppCompatActivity() {
                         b.dragonTigerRankBtn.setOnClickListener {
                             pw.dismiss()
                             result.stock.openDragonTigerRank(this@FPActivity)
+                        }
+
+                        b.strongLinkStocksBtn.setOnClickListener {
+                            pw.dismiss()
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                val codes = strongLinkCodesCsvForStrategy(result.stock.code)
+                                withContext(Dispatchers.Main) {
+                                    if (codes.isNullOrBlank()) {
+                                        Toast.makeText(
+                                            this@FPActivity,
+                                            "暂无强关联股票",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    } else {
+                                        Strategy4Activity.openJXQSStrategyForStockCodes(
+                                            this@FPActivity,
+                                            codes,
+                                            this@FPActivity.binding.endTimeTv.text.toString()
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         //仅关注不置顶

@@ -77,6 +77,20 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/clsBtn"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:minHeight="52dp"
+                    android:text="@string/home_link_cls_finance"
+                    android:textAllCaps="false"
+                    android:textColor="@color/yd_accent"
+                    app:cornerRadius="12dp"
+                    app:strokeColor="@color/yd_accent"
+                    app:strokeWidth="1.5dp" />
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

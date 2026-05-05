@@ -2,9 +2,9 @@ package com.liaobusi.stockman
 
 import android.content.Context
 import android.content.Intent
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.widget.TextView
 import android.widget.Toast
@@ -12,14 +12,17 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.liaobusi.stockman.databinding.ActivitySettingBinding
+import com.liaobusi.stockman.R
 import com.liaobusi.stockman.db.DIYBk
 import com.liaobusi.stockman.db.FPResponse
 import com.liaobusi.stockman.db.ZTReplayBean
+import com.liaobusi.stockman.db.source
 import com.liaobusi.stockman.repo.StockRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
+import java.util.Date
 
 
 fun isShowHiddenStockAndBK(context: Context): Boolean {
@@ -110,8 +113,41 @@ class SettingActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.title = "设置"
 
+        binding.backupDataBtn.setOnClickListener {
+            lifecycleScope.launch {
+                val msg = AppDataBackup.backup(this@SettingActivity)
+                Toast.makeText(this@SettingActivity, msg, Toast.LENGTH_LONG).show()
+            }
+        }
+
+        binding.restoreDataBtn.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.setting_restore_confirm_title)
+                .setMessage(R.string.setting_restore_confirm_message)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.setting_restore_confirm_ok) { _, _ ->
+                    lifecycleScope.launch {
+                        val err = AppDataBackup.restore(this@SettingActivity)
+                        if (err != null) {
+                            Toast.makeText(this@SettingActivity, err, Toast.LENGTH_LONG).show()
+                        } else {
+                            AppDataBackup.restartAppProcess(this@SettingActivity)
+                        }
+                    }
+                }
+                .show()
+        }
+
         binding.debugDbBtn.setOnClickListener {
             DebugActivity.start(this)
+        }
+
+        binding.stockPairFitBtn.setOnClickListener {
+            StockPairFitActivity.start(this)
+        }
+
+        binding.stockFitRankingBtn.setOnClickListener {
+            StockFitRankingActivity.start(this)
         }
 
         val sp = getSharedPreferences("app", Context.MODE_PRIVATE)
@@ -288,7 +324,6 @@ class SettingActivity : AppCompatActivity() {
 
 
         }
-
 
     }
 }

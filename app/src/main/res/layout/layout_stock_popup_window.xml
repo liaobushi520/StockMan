@@ -90,6 +90,26 @@
         android:textColor="#fff"
         android:textSize="18sp" />
 
+    <TextView
+        android:id="@+id/strongLinkStocksBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="10dp"
+        android:text="关联股票"
+        android:textColor="#fff"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/stockFitRankingBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="10dp"
+        android:text="走势拟合"
+        android:textColor="#fff"
+        android:textSize="18sp" />
+
 
 
 </LinearLayout>

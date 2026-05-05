@@ -22,9 +22,7 @@
         <activity
             android:name=".DPActivity"
             android:exported="false" />
-        <!-- <activity -->
-        <!-- android:name=".GeckoActivity" -->
-        <!-- android:exported="false" /> -->
+
         <activity
             android:name=".WebViewActivity"
             android:exported="false"
@@ -44,7 +42,16 @@
             android:name=".YDHistoryActivity"
             android:exported="false" />
         <activity
+            android:name=".RelatedStocksActivity"
+            android:exported="false" />
+        <activity
             android:name=".DebugActivity"
+            android:exported="false" />
+        <activity
+            android:name=".StockPairFitActivity"
+            android:exported="false" />
+        <activity
+            android:name=".StockFitRankingActivity"
             android:exported="false" />
         <activity
             android:name=".WillZTActivity"

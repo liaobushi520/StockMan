@@ -15,6 +15,8 @@
     <color name="yd_page_bg">#FFF4F5F7</color>
     <color name="yd_time_chip_bg">#FFE8EAEF</color>
     <color name="yd_accent">#FFBD2C2C</color>
+    <!-- 关注股票名高亮（比红绿涨跌更容易被扫到） -->
+    <color name="follow_name_highlight">#FF7C4DFF</color>
     <color name="yd_caption">#FF6B7280</color>
     <color name="yd_divider">#FFE5E7EB</color>
     <color name="yd_body">#FF1F2937</color>
@@ -38,4 +40,12 @@
     <color name="strategy_ma_30">#FFC2185B</color>
     <color name="strategy_ma_60">#FF37474F</color>
 
+    <color name="fit_rank_badge_bg">#FFE8EAEF</color>
+    <color name="fit_status_bg">#F5F5F7</color>
+    <color name="fit_card_stroke">#14000000</color>
+    <color name="fit_rho_muted">#FF6B7280</color>
+    <color name="fit_rho_strong">#FFBD2C2C</color>
+    <color name="fit_cta_bg">#FFF5F2F2</color>
+    <color name="fit_cta_text">#FFB91C1C</color>
+    <color name="fit_cta_ripple">#40BD2C2C</color>
 </resources>

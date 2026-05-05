@@ -13,6 +13,7 @@ import android.view.View
 import androidx.annotation.RequiresPermission
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import com.liaobusi.stockman.Injector.appDatabase
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -24,9 +25,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Date
@@ -272,6 +276,12 @@ fun Date.getEndOfDay(): Long {
 
 private val calendar = Calendar.getInstance()
 
+
+fun isTradingDay(): Boolean {
+    val date = appDatabase.historyBKDao().getHistoryByDate3("000001", today())?.date
+    return date == today()
+}
+
 fun isTradingTime(): Boolean {
     calendar.time = Date()
     val hour = calendar.get(Calendar.HOUR_OF_DAY)
@@ -286,6 +296,26 @@ fun isTradingTime(): Boolean {
     }
     if (hour == 11 && minute >= 30) return false
     return (hour in 9 until 12 || hour in 13 until 15)
+}
+
+/**
+ * 与 [isTradingTime] 规则一致的 A 股连续竞价时段判定，按上海时区解析 [timeSec]（Unix 秒）。
+ * 不含法定节假日；仅按星期与时分过滤。
+ */
+fun epochSecondsInCnTradingSession(timeSec: Long): Boolean {
+    val zdt = ZonedDateTime.ofInstant(Instant.ofEpochSecond(timeSec), ZoneId.of("Asia/Shanghai"))
+    when (zdt.dayOfWeek) {
+        DayOfWeek.SATURDAY,
+        DayOfWeek.SUNDAY,
+        -> return false
+        else -> Unit
+    }
+    val hour = zdt.hour
+    val minute = zdt.minute
+    if (hour < 9 || hour > 15) return false
+    if (hour == 9 && minute <= 15) return false
+    if (hour == 11 && minute >=30) return false
+    return hour in 9 until 12 || hour in 13 until 15
 }
 
 fun isCallAuctionTime(): Boolean {

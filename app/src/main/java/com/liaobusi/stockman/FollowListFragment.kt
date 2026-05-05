@@ -120,6 +120,7 @@ class FollowListFragment : Fragment() {
                     binding.root.setOnLongClickListener {
                         val b =
                             LayoutStockPopupWindowBinding.inflate(LayoutInflater.from(it.context))
+                        b.strongLinkStocksBtn.visibility = View.GONE
                         b.followBtn.text = "取消关注"
                         val pw = PopupWindow(
                             b.root,
@@ -171,6 +172,7 @@ class FollowListFragment : Fragment() {
                     binding.root.setOnLongClickListener {
                         val b =
                             LayoutStockPopupWindowBinding.inflate(LayoutInflater.from(it.context))
+                        b.strongLinkStocksBtn.visibility = View.GONE
                         b.followBtn.text = "取消关注"
                         val pw = PopupWindow(
                             b.root,

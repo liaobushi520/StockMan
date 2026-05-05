@@ -7,12 +7,16 @@
     <string name="yd_unusual_count_suffix">条</string>
     <string name="yd_popularity_heat">热度排名 %1$s</string>
     <string name="webview_activity_title">网页</string>
+    <string name="webview_intercepted_question">拦截到的提问</string>
+    <string name="webview_intercepted_answer">拦截到的回答</string>
     <string name="home_section_trading">盯盘与复盘</string>
     <string name="home_section_momentum">强势选股</string>
     <string name="home_section_strategies">经典策略</string>
     <string name="home_section_combos">更多策略</string>
     <string name="home_loading_hint">正在初始化数据，请勿退出应用</string>
     <string name="home_link_jiuyan">韭研公社</string>
+    <string name="home_link_deepseek">DeepSeek（自动提问+拦截）</string>
+    <string name="home_link_cls_finance">财联社看盘</string>
     <string name="home_analysis_icon_cd">分析入口</string>
 
     <string name="debug_db_hint">可选 %1$d 张表；每页 %2$d 行，可翻页浏览。</string>
@@ -26,4 +30,42 @@
     <string name="debug_filter_date_hint">date，如 20240422</string>
     <string name="debug_filter_code_hint">code，模糊匹配</string>
     <string name="debug_filter_apply">应用筛选</string>
+
+    <string name="follow_panel_title">自选</string>
+    <string name="follow_sort_manual">顺序</string>
+    <string name="follow_sort_chg">涨跌</string>
+    <string name="follow_sort_color">分组色</string>
+
+    <string name="related_stocks_empty">该时间段内暂无关联股票</string>
+
+    <string name="stock_pair_fit_title">双股走势拟合（测试）</string>
+    <string name="stock_pair_fit_hint">按日期对齐日 K 收盘，计算对数收益的 Pearson / Spearman、符号一致率与 OLS( A 对 B )。日期格式 yyyyMMdd。</string>
+    <string name="stock_pair_fit_code_a">股票 A 代码</string>
+    <string name="stock_pair_fit_code_b">股票 B 代码</string>
+    <string name="stock_pair_fit_start_date">开始日期</string>
+    <string name="stock_pair_fit_end_date">结束日期</string>
+    <string name="stock_pair_fit_use_network">网络拉取该区间的日 K 并写入本地（失败则用库内数据）</string>
+    <string name="stock_pair_fit_run">计算</string>
+    <string name="stock_pair_fit_computing">计算中…</string>
+
+    <string name="stock_fit_rank_title">拟合度分析</string>
+    <string name="stock_fit_rank_hint">从结束日往前回溯若干日历天构成区间；与区间内本地「日 K」有数据的其他股票比对走势（对数收益 Pearson，按 |ρ| 排序）。</string>
+    <string name="stock_fit_rank_lookback_days">回溯天数</string>
+    <string name="stock_fit_rank_end_prev_day">前一天</string>
+    <string name="stock_fit_rank_end_next_day">后一天</string>
+    <string name="stock_fit_rank_network_anchor">目标股本地 K 线不足时从网络补齐（仅目标股，不写其他股票）</string>
+    <string name="stock_fit_rank_run">查询</string>
+    <string name="stock_fit_rank_working">正在扫描与计算…</string>
+    <string name="stock_fit_rank_empty_range">该区间内本地无任何日 K，请先同步历史或勾选网络补齐目标股。</string>
+    <string name="stock_fit_rank_empty_stock_master">本地 Stock 表为空，无法按非 ST 股筛选，请先同步股票基础数据。</string>
+    <string name="stock_fit_rank_anchor_short">目标股在区间内仅有 %1$d 条 K 线，至少需要 %2$d 条，请扩大区间或勾选网络补齐。</string>
+    <string name="stock_fit_rank_done">可比约 %1$d 只，完整计算 %2$d 条，列表展示前 %3$d 条（已排序），耗时 %4$d ms。。</string>
+    <string name="stock_fit_rank_error">失败：%1$s</string>
+    <string name="stock_fit_rank_toolbar_sub">%1$s · %2$s</string>
+
+    <string name="setting_backup_btn">备份数据库与设置</string>
+    <string name="setting_restore_btn">还原数据库与设置</string>
+    <string name="setting_restore_confirm_title">确认还原</string>
+    <string name="setting_restore_confirm_message">将从 下载/WeiXin 目录读取 stockman_backup.zip，覆盖当前数据库与应用设置（SharedPreferences），完成后将重启应用。</string>
+    <string name="setting_restore_confirm_ok">还原</string>
 </resources>

@@ -53,17 +53,16 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"/>
 
-
         <TextView
-            android:layout_width="96dp"
+            android:layout_width="80dp"
             android:id="@+id/stockName"
-            android:paddingStart="16dp"
             android:textSize="16sp"
             android:textColor="#000"
             android:maxLines="1"
+            android:ellipsize="end"
             android:layout_marginVertical="24dp"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/lianbanCountFlagTv"
             app:layout_constraintBottom_toBottomOf="parent"
             android:layout_height="wrap_content"/>
 
@@ -181,10 +180,18 @@
             android:layout_gravity="center"
             android:textColor="#444444"
             android:textStyle="bold"
-            android:visibility="gone"
+            android:visibility="invisible"
             />
 
-
+        <View
+            android:id="@+id/followMarkView"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:visibility="gone"
+            android:background="@drawable/triangle_r_t"
+            app:layout_constraintStart_toStartOf="@+id/lianbanCountFlagTv"
+            app:layout_constraintTop_toTopOf="parent"
+            />
 
         <View
             android:id="@+id/yizibanView"
@@ -264,21 +271,6 @@
                 android:layout_height="wrap_content"/>
 
         </LinearLayout>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

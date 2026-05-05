@@ -20,6 +20,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.core.content.edit
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.google.gson.GsonBuilder
 import com.liaobusi.stockman.api.StockService
 import com.liaobusi.stockman.api.TGBStock
@@ -41,6 +43,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.Locale
+
 
 
 val log = StringBuilder()
@@ -63,6 +67,20 @@ fun writeLog(code: String, msg: String) {
 @SuppressLint("StaticFieldLeak")
 object Injector {
 
+    private val MIGRATION_34_35 = object : Migration(34, 35) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE Follow ADD COLUMN color INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
+    private val MIGRATION_35_36 = object : Migration(35, 36) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `StockLinkage` (`code` TEXT NOT NULL, `relatedCodes` TEXT NOT NULL, PRIMARY KEY(`code`))"
+            )
+        }
+    }
+
     lateinit var appDatabase: AppDatabase
     lateinit var context: Context
     lateinit var retrofit: Retrofit
@@ -83,13 +101,32 @@ object Injector {
 
     val client = getOkHttpClientBuilder().build()
 
+    private fun createAppDatabase(applicationContext: Context) =
+        Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java, "stock_man"
+        ).addMigrations(MIGRATION_34_35, MIGRATION_35_36)
+            .build()
+
+    fun closeAppDatabaseForRestore() {
+        if (::appDatabase.isInitialized) {
+            try {
+                appDatabase.close()
+            } catch (_: Throwable) {
+            }
+        }
+    }
+
+    fun reopenAppDatabaseIfNeeded(applicationContext: Context) {
+        if (!::appDatabase.isInitialized || !appDatabase.isOpen) {
+            appDatabase = createAppDatabase(applicationContext)
+        }
+    }
+
     fun inject(applicationContext: Context) {
         context = applicationContext
 
-        appDatabase = Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java, "stock_man"
-        ).build()
+        appDatabase = createAppDatabase(applicationContext)
         retrofit = Retrofit.Builder()
             .baseUrl("https://api.github.com/")
             .addConverterFactory(
@@ -550,110 +587,155 @@ object Injector {
 
     class Tracker {
         private val cache = mutableListOf<StockRecord>()
+        /**
+         * [cache] 中 [Stock.chg] 最小的下标；用于「相对窗口最低涨跌幅不足 1%」时
+         * 跳过按 chg 推算的时间窗涨幅检测。
+         */
+        private var minChgIdx = -1
 
-        val cacheSize = 80
         fun update(s: Stock) {
             val sb = StringBuilder()
+            appendBoardEvents(sb, s, cache.lastOrNull())
 
-            val last = if (cache.isNotEmpty()) cache[cache.size - 1] else cache.lastOrNull()
-            if (last != null) {
-                if (last.stock.ztPrice == last.stock.price && s.price < s.ztPrice) {
-                    sb.append("[炸板]")
+            val skipChgWindows =
+                cache.isNotEmpty() && minChgIdx in cache.indices &&
+                    s.chg - cache[minChgIdx].stock.chg < 1f
+            if (!skipChgWindows) {
+                val nowMs = System.currentTimeMillis()
+                val chg = s.chg
+                val fifthBack = if (cache.size >= 5) cache[cache.size - 5] else cache.lastOrNull()
+                appendChgSpike(sb, chg, fifthBack, nowMs, minDeltaChg = 1f, secRange = SEC_0_THROUGH_15)
+                val n = cache.size
+                if (n >= 3) {
+                    appendChgSpike(sb, chg, cache[n * 2 / 3], nowMs, 2f, SEC_15_THROUGH_60)
+                    appendChgSpike(sb, chg, cache[n / 3], nowMs, 3f, SEC_61_THROUGH_90)
                 }
-
-                if (last.stock.dtPrice == last.stock.price && s.price > s.dtPrice) {
-                    sb.append("[翘板]")
-                }
-            }
-
-            val tenSecondItem = if (cache.size >= 5) cache[cache.size - 5] else cache.lastOrNull()
-            if (tenSecondItem != null) {
-                val zf = s.chg - tenSecondItem.stock.chg
-                val time = (System.currentTimeMillis() - tenSecondItem.time) / 1000
-                if (zf >= 1 && time <= 15) {
-                    sb.append("${time}秒内涨幅${"%.2f".format(zf)}% ")
-                }
-            }
-
-            //40 - 60
-            val mid = if (cache.size >= 3) cache[cache.size * 2 / 3] else null
-            if (mid != null) {
-                val zf = s.chg - mid.stock.chg
-                val time = (System.currentTimeMillis() - mid.time) / 1000
-                if (zf >= 2 && time >= 15 && time <= 60) {
-                    sb.append("${time}秒内涨幅${"%.2f".format(zf)}% ")
+                cache.firstOrNull()?.let {
+                    appendChgSpike(sb, chg, it, nowMs, 4f, SEC_91_THROUGH_180)
                 }
             }
 
-
-            //90
-            val oneThreeStoke = if (cache.size >= 3) cache[cache.size * 1 / 3] else null
-            if (oneThreeStoke != null) {
-                val zf = s.chg - oneThreeStoke.stock.chg
-                val time = (System.currentTimeMillis() - oneThreeStoke.time) / 1000
-                if (zf >= 3 && time >= 60 && time <= 90) {
-                    sb.append("${time}秒内涨幅${"%.2f".format(zf)}% ")
-                }
-            }
-
-            //140 165
-            val first = cache.firstOrNull()
-            if (first != null) {
-                val zf = s.chg - first.stock.chg
-                val time = (System.currentTimeMillis() - first.time) / 1000
-                if (zf >= 4 && time >= 90 && time <= 180) {
-                    sb.append("${time}秒内涨幅${"%.2f".format(zf)}% ")
-                }
-            }
             if (sb.isNotEmpty()) {
                 sendNotification(s, "${s.code}${s.name}异动,涨跌幅${s.chg}%", sb.toString())
             }
-
-            cache.add(StockRecord(s))
-            if (cache.size >= cacheSize) {
-                cache.removeAt(0)
-            }
-
-
+            pushCache(s)
         }
 
+        private fun appendBoardEvents(sb: StringBuilder, s: Stock, last: StockRecord?) {
+            val lp = last?.stock ?: return
+            if (s.price == s.ztPrice && lp.price != lp.ztPrice) sb.append("[涨停]")
+            if (lp.ztPrice == lp.price && s.price < s.ztPrice) sb.append("[炸板]")
+            if (s.price == s.dtPrice && lp.dtPrice != lp.price) sb.append("[跌停]")
+            if (lp.dtPrice == lp.price && s.price > s.dtPrice) sb.append("[翘板]")
+        }
+
+        /** 在时间窗 [secRange]（秒，闭区间）内相对 anchor 涨幅 ≥ minDeltaChg 则追加文案 */
+        private fun appendChgSpike(
+            sb: StringBuilder,
+            curChg: Float,
+            anchor: StockRecord?,
+            nowMs: Long,
+            minDeltaChg: Float,
+            secRange: IntRange,
+        ) {
+            val a = anchor ?: return
+            val elapsed = ((nowMs - a.time) / 1000L).toInt().coerceAtLeast(0)
+            if (elapsed !in secRange) return
+            val delta = curChg - a.stock.chg
+            if (delta < minDeltaChg) return
+            sb.append("${elapsed}秒内涨幅${String.format(Locale.getDefault(), "%.2f", delta)}% ")
+        }
+
+        private fun indexOfMinimumChg(): Int {
+            if (cache.isEmpty()) return -1
+            var bestI = 0
+            var bestChg = cache[0].stock.chg
+            for (i in 1 until cache.size) {
+                val c = cache[i].stock.chg
+                if (c < bestChg) {
+                    bestChg = c
+                    bestI = i
+                }
+            }
+            return bestI
+        }
+
+        private fun pushCache(s: Stock) {
+            val prevMinChg =
+                if (minChgIdx >= 0 && minChgIdx < cache.size) cache[minChgIdx].stock.chg
+                else Float.POSITIVE_INFINITY
+            cache.add(StockRecord(s))
+            val newIdx = cache.lastIndex
+            minChgIdx = when {
+                cache.size == 1 -> 0
+                s.chg < prevMinChg -> newIdx
+                minChgIdx < 0 || minChgIdx > cache.lastIndex -> indexOfMinimumChg()
+                else -> minChgIdx
+            }
+            if (cache.size >= CACHE_SIZE) {
+                if (minChgIdx == 0) {
+                    cache.removeAt(0)
+                    minChgIdx = indexOfMinimumChg()
+                } else {
+                    cache.removeAt(0)
+                    minChgIdx--
+                }
+            }
+        }
 
         private fun sendNotification(stock: Stock, title: String, content: String) {
-            val channel = NotificationChannel(
-                "股票超人",
-                "异动",
-                NotificationManager.IMPORTANCE_HIGH
+            val nm = context.getSystemService(NotificationManager::class.java)
+            ensureNotificationChannelOnce(nm)
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(
+                "dfcf18://stock?market=${stock.marketCode()}&code=${stock.code}",
+            ))
+            val pending = PendingIntent.getActivity(
+                Injector.context,
+                100,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
-            channel.description = "Channel description"
-            val notificationManager: NotificationManager = context.getSystemService(
-                NotificationManager::class.java
+            nm.notify(
+                stock.code.toInt(),
+                NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle(title)
+                    .setContentText(content)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setVibrate(longArrayOf(1000, 1000, 1000, 1000, 1000))
+                    .setLights(Color.RED, 1000, 1000)
+                    .setContentIntent(pending)
+                    .build(),
             )
-            notificationManager.createNotificationChannel(channel)
-            val s = "dfcf18://stock?market=${stock.marketCode()}&code=${stock.code}"
-            val uri: Uri = Uri.parse(s)
-            val intent = Intent(Intent.ACTION_VIEW, uri)
+        }
 
-            val builder: NotificationCompat.Builder =
-                NotificationCompat.Builder(context, "股票超人")
-                    .setSmallIcon(R.mipmap.ic_launcher) // 设置通知小图标
-                    .setContentTitle(title) // 设置通知标题
-                    .setContentText(content) // 设置通知内容
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT) // 设置通知优先级
-                    .setVibrate(longArrayOf(1000, 1000, 1000, 1000, 1000)) // 设置震动模式
-                    .setLights(Color.RED, 1000, 1000) // 设置呼吸灯效果
-                    .setContentIntent(
-                        PendingIntent.getActivity(
-                            Injector.context,
-                            100,
-                            intent,
-                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                        )
+        companion object {
+            private const val CACHE_SIZE = 80
+            private const val NOTIFICATION_CHANNEL_ID = "股票超人"
+
+            private val SEC_0_THROUGH_15 = 0..15
+            private val SEC_15_THROUGH_60 = 15..60
+            private val SEC_61_THROUGH_90 = 61..90
+            private val SEC_91_THROUGH_180 = 91..180
+
+            private val channelLock = Any()
+            @Volatile
+            private var notificationChannelEnsured = false
+
+            private fun ensureNotificationChannelOnce(nm: NotificationManager) {
+                if (notificationChannelEnsured) return
+                synchronized(channelLock) {
+                    if (notificationChannelEnsured) return
+                    nm.createNotificationChannel(
+                        NotificationChannel(
+                            NOTIFICATION_CHANNEL_ID,
+                            "异动",
+                            NotificationManager.IMPORTANCE_HIGH,
+                        ).apply { description = "Channel description" },
                     )
-
-
-            notificationManager.notify(stock.code.toInt(), builder.build())
-
-
+                    notificationChannelEnsured = true
+                }
+            }
         }
     }
 }

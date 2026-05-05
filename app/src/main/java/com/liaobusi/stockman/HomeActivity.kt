@@ -89,6 +89,10 @@ class HomeActivity : AppCompatActivity() {
         binding.fpBtn.setOnClickListener {
             WebViewActivity.start(this, "https://www.jiuyangongshe.com/action")
         }
+        binding.clsBtn.setOnClickListener {
+            val url = "https://www.cls.cn/finance"
+            WebViewActivity.startDesktop(this, url)
+        }
         binding.s5.setOnClickListener { startActivityCls<Strategy5Activity>() }
         binding.s6.setOnClickListener { startActivityCls<Strategy6Activity>() }
         binding.s7.setOnClickListener { startActivityCls<BKStrategyActivity>() }

@@ -9,27 +9,32 @@ import androidx.room.*
 import com.liaobusi.stockman.Injector
 import com.liaobusi.stockman.STOCK_GREEN
 import com.liaobusi.stockman.isFPSource
+
 val WARN_TYPE_MAP = mapOf<String, String>(
     "68715" to "大幅高开",
     "68713" to "竞价抢筹",
     "68716" to "大幅低开"
 )
-@Entity(primaryKeys = ["time","type"])
+
+@Entity(primaryKeys = ["time", "type"])
 data class UnusualActionHistory(
     val time: Long,
     val comment: String,
     val stocks: String,
-    @ColumnInfo(defaultValue = "1") val type: Int = 1 //type =  4 同花顺  3 开盘啦 2 财联社   5 涨停  6 跌停
+    @ColumnInfo(defaultValue = "1") val type: Int = 1, //type =  4 同花顺  3 开盘啦 2 财联社   5 涨停  6 跌停
+    /** 关联板块（展示名，可为空）；直播类异动来自各源 plate / bk 字段 */
+    val bk: String? = null
 )
 
-val UnusualActionHistory.source : String get() {
-   return when(type){
-        4 -> "【同花顺】"
-        3 -> "【开盘啦】"
-        2 -> "【财联社】"
-       else -> ""
-   }
-}
+val UnusualActionHistory.source: String
+    get() {
+        return when (type) {
+            4 -> "【同花顺】"
+            3 -> "【开盘啦】"
+            2 -> "【财联社】"
+            else -> ""
+        }
+    }
 
 
 @Entity(primaryKeys = ["id"])
@@ -134,11 +139,20 @@ data class BKStock(val bkCode: String, val stockCode: String)
 data class Follow(
     @PrimaryKey val code: String,
     val type: Int,
-    @ColumnInfo(defaultValue = "1") val stickyOnTop: Int = 1
+    @ColumnInfo(defaultValue = "1") val stickyOnTop: Int = 1,
+    /** 自选标记色（ARGB int，0 表示默认/仅用浅灰标记条） */
+    @ColumnInfo(defaultValue = "0") val color: Int = 0,
 )
 
 @Entity
 data class Hide(@PrimaryKey val code: String, val type: Int)
+
+@Entity
+data class StockLinkage(
+    @PrimaryKey val code: String,
+    /** 逗号分隔的关联股票代码（不含自身） */
+    val relatedCodes: String,
+)
 
 
 /***
@@ -324,10 +338,12 @@ val HistoryStock.longUpShadow: Boolean
 
 
 @Database(
-    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class, PopularityRank::class, DragonTigerRank::class, ExpectHot::class, UnusualActionHistory::class],
-    version = 33,
+    entities = [Stock::class, HistoryStock::class, BK::class, HistoryBK::class, BKStock::class, Follow::class, GDRS::class, Hide::class, AnalysisBean::class, ZTReplayBean::class, DIYBk::class, PopularityRank::class, DragonTigerRank::class, ExpectHot::class, UnusualActionHistory::class, StockLinkage::class],
+    version = 37,
     autoMigrations = [
-        AutoMigration(from = 32, to = 33)
+        AutoMigration(from = 32, to = 33),
+        AutoMigration(from = 33, to = 34),
+        AutoMigration(from = 36, to = 37),
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -346,6 +362,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun dragonTigerDao(): DragonTigerDao
     abstract fun expectHotDao(): ExpectHotDao
     abstract fun unusualActionHistoryDao(): UnusualActionHistoryDao
+    abstract fun stockLinkageDao(): StockLinkageDao
 
 
 //    @DeleteTable.Entries(value = [DeleteTable(tableName = "BK"),DeleteTable(tableName = "HistoryBK")])
@@ -365,6 +382,7 @@ data class ZTReplayBean(
     @ColumnInfo(defaultValue = "") val groupName2: String = "",
     @ColumnInfo(defaultValue = "") val reason2: String = "",
     @ColumnInfo(defaultValue = "") val expound2: String = "",
+    @ColumnInfo(defaultValue = "") val expound3: String = "",
 )
 
 val ZTReplayBean.isYiZIBan: Boolean
@@ -417,6 +435,8 @@ val ZTReplayBean.reasonV: String
 
 val ZTReplayBean.expoundV: String
     get() {
+        if (expound.isEmpty() && expound2.isEmpty()) return expound3
+
         if (isFPSource(Injector.context)) {
             if (groupName.isEmpty()) {
                 return expound2

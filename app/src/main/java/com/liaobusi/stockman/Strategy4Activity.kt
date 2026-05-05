@@ -24,6 +24,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.DrawableCompat
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.graphics.toColorInt
 import androidx.core.view.ViewCompat
@@ -49,6 +52,8 @@ import com.liaobusi.stockman.db.BK
 import com.liaobusi.stockman.db.DIYBk
 import com.liaobusi.stockman.db.HistoryBK
 import com.liaobusi.stockman.db.Follow
+import com.liaobusi.stockman.db.mergeStockLinkageFromStocksCsv
+import com.liaobusi.stockman.db.strongLinkCodesCsvForStrategy
 import com.liaobusi.stockman.db.Stock
 import com.liaobusi.stockman.db.ZTReplayBean
 import com.liaobusi.stockman.db.color
@@ -59,7 +64,7 @@ import com.liaobusi.stockman.db.isChiNext
 import com.liaobusi.stockman.db.isMainBoard
 import com.liaobusi.stockman.db.isST
 import com.liaobusi.stockman.db.isSTARMarket
-import com.liaobusi.stockman.db.isYiZIBan
+import com.liaobusi.stockman.db.linkedColorFromRecentRelatedFollows
 import com.liaobusi.stockman.db.openDragonTigerRank
 import com.liaobusi.stockman.db.openWeb
 import com.liaobusi.stockman.db.reasonV
@@ -86,6 +91,7 @@ import java.util.Date
 import kotlin.math.abs
 import kotlin.math.min
 import androidx.core.content.edit
+import com.liaobusi.stockman.db.isYiZIBan
 import com.liaobusi.stockman.db.source
 
 val colors = listOf(
@@ -105,6 +111,7 @@ class Strategy4Activity : AppCompatActivity() {
 
     companion object {
 
+        /** [bkCode] 为板块代码，逗号分隔，每项须以 `BK` 开头；非股票代码 */
         fun openJXQSStrategy(context: Context, bkCode: String, endTime: String) {
             val i = Intent(
                 context, Strategy4Activity::class.java
@@ -113,6 +120,22 @@ class Strategy4Activity : AppCompatActivity() {
                 putExtra("endTime", endTime)
             }
             context.startActivity(i)
+        }
+
+        /** 按股票代码逗号串打开（走自定义板块 stockCodes，不经过板块 BK 校验） */
+        fun openJXQSStrategyForStockCodes(
+            context: Context,
+            stockCodesCsv: String,
+            endTime: String
+        ) {
+            val diy = DIYBk(
+                code = "__inline_stock_codes__",
+                name = "股票组合",
+                bkCodes = "BKFake",
+                dsp = "",
+                stockCodes = stockCodesCsv.trim(),
+            )
+            openJXQSStrategy2(context, diy, endTime)
         }
 
         fun openJXQSStrategy2(context: Context, diyBk: DIYBk, endTime: String) {
@@ -132,7 +155,7 @@ class Strategy4Activity : AppCompatActivity() {
 
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.page_menu, menu)
+        menuInflater.inflate(R.menu.strategy4_menu, menu)
         return true
     }
 
@@ -164,6 +187,11 @@ class Strategy4Activity : AppCompatActivity() {
                 return true
             }
 
+            R.id.follow_list -> {
+                (supportFragmentManager.findFragmentById(R.id.followPanelFragment) as? FollowPanelFragment)?.toggle()
+                return true
+            }
+
         }
         return super.onOptionsItemSelected(item)
     }
@@ -173,6 +201,23 @@ class Strategy4Activity : AppCompatActivity() {
         binding = ActivityStrategy4Binding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
+
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : androidx.activity.OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    val panel =
+                        supportFragmentManager.findFragmentById(R.id.followPanelFragment) as? FollowPanelFragment
+                    if (panel?.isShowing() == true) {
+                        panel.hide()
+                    } else {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                    }
+                }
+            },
+        )
+
         binding.rv.layoutManager = LinearLayoutManager(this@Strategy4Activity)
         binding.rv.adapter = ResultAdapter()
         supportActionBar?.title = "均线强势"
@@ -1332,17 +1377,18 @@ class Strategy4Activity : AppCompatActivity() {
                 }
             }
 
+            if (!binding.ydModeCb.isChecked) {
+                val newList = mutableListOf<StockResult>()
+                r.forEach {
+                    if (it.follow?.stickyOnTop == 1) {
+                        newList.add(0, it)
+                    } else {
+                        newList.add(it)
+                    }
 
-            val newList = mutableListOf<StockResult>()
-            r.forEach {
-                if (it.follow?.stickyOnTop == 1) {
-                    newList.add(0, it)
-                } else {
-                    newList.add(it)
                 }
-
+                r = newList
             }
-            r = newList
 
             val strategyResult2 = StrategyResult(r, strategyResult.total)
             val resultText = if (binding.ydModeCb.isChecked) {
@@ -1555,10 +1601,12 @@ class Strategy4Activity : AppCompatActivity() {
                     if (result.ydDetails != null) {
                         binding.ydHeaderTv.visibility = View.VISIBLE
                         binding.ydHeaderTv.text = "${
-                            result.ydDetails!!.time.toLong().toDateTimeString()
+                            result.ydDetails!!.time.toDateTimeString()
                         }\n${result.ydDetails!!.comment}  ${result.ydDetails!!.source}"
+                        binding.ydHeaderTv.setOnLongClickListener(null)
                     } else {
                         binding.ydHeaderTv.visibility = View.GONE
+                        binding.ydHeaderTv.setOnLongClickListener(null)
                     }
 
                     binding.root.setOnLongClickListener {
@@ -1578,10 +1626,25 @@ class Strategy4Activity : AppCompatActivity() {
 
                 val stock = result.stock
                 binding.apply {
+                    this.root.setBackgroundColor(0xffffffff.toInt())
+
                     if (result.follow != null) {
-                        this.root.setBackgroundColor(0x33333333)
+                        this.followMarkView.visibility = View.VISIBLE
+                        val markColor = if (result.follow!!.color != 0) {
+                            result.follow!!.color
+                        } else {
+                            ContextCompat.getColor(this.root.context, R.color.gray_400)
+                        }
+                        val tri = ContextCompat.getDrawable(
+                            this.root.context,
+                            R.drawable.triangle_r_t
+                        )?.mutate()
+                        if (tri != null) {
+                            DrawableCompat.setTint(tri, markColor)
+                            this.followMarkView.background = tri
+                        }
                     } else {
-                        this.root.setBackgroundColor(0xffffffff.toInt())
+                        this.followMarkView.visibility = View.GONE
                     }
 
                     if (result.changeRate != 0f) {
@@ -1681,10 +1744,10 @@ class Strategy4Activity : AppCompatActivity() {
                             binding.lianbanCountFlagTv.visibility = View.VISIBLE
                             binding.lianbanCountFlagTv.text = result.lianbanCount.toString()
                         } else {
-                            binding.lianbanCountFlagTv.visibility = View.GONE
+                            binding.lianbanCountFlagTv.visibility = View.INVISIBLE
                         }
                     } else {
-                        binding.lianbanCountFlagTv.visibility = View.GONE
+                        binding.lianbanCountFlagTv.visibility = View.INVISIBLE
                     }
 
                     this.stockName.text = stock.name
@@ -1874,26 +1937,68 @@ class Strategy4Activity : AppCompatActivity() {
                             YDHistoryActivity.start(this@Strategy4Activity, result.stock.code)
                         }
 
+                        b.strongLinkStocksBtn.setOnClickListener {
+                            pw.dismiss()
+                            val endDate =
+                                this@Strategy4Activity.binding.endTimeTv.editableText.toString()
+                                    .toIntOrNull()
+                            RelatedStocksActivity.start(
+                                this@Strategy4Activity,
+                                result.stock.code,
+                                endDateYmd = endDate,
+                            )
+                        }
+
+                        b.stockFitRankingBtn.setOnClickListener {
+                            pw.dismiss()
+                            StockFitRankingActivity.start(
+                                this@Strategy4Activity,
+                                result.stock.code,
+                            )
+                        }
+
                         //仅关注不置顶
                         b.followBtn.setOnClickListener {
                             pw.dismiss()
                             lifecycleScope.launch(Dispatchers.IO) {
-                                val p = data.indexOf(result)
+                                val code = result.stock.code
+                                // 异动模式下同一只股票可能出现多次：刷新所有位置
+                                val positions = data.mapIndexedNotNull { index, item ->
+                                    if (!item.isGroupHeader && item.stock.code == code) index else null
+                                }
                                 if (result.follow != null) {
                                     Injector.appDatabase.followDao()
-                                        .deleteFollow(Follow(result.stock.code, 1))
-
-                                    result.follow = null
-
+                                        .deleteFollow(Follow(code, 1))
+                                    positions.forEach { idx ->
+                                        data.getOrNull(idx)?.follow = null
+                                    }
                                     lifecycleScope.launch(Dispatchers.Main) {
-                                        notifyItemChanged(p)
+                                        positions.forEach { notifyItemChanged(it) }
                                     }
 
-                                } else {
-                                    result.follow = Follow(result.stock.code, 1, 0)
-                                    Injector.appDatabase.followDao().insertFollow(result.follow!!)
+                              } else {
+                                    // 新关注时：近 60 天异动共现关联度从高到低，继承首个已自选且带标记色的关联股的 color
+                                    val endDateYmd =
+                                        this@Strategy4Activity.binding.endTimeTv.editableText.toString()
+                                            .toIntOrNull() ?: today()
+                                    val linkedColor = linkedColorFromRecentRelatedFollows(
+                                        stockCode = code,
+                                        endDateYmd = endDateYmd,
+                                        daysBack = 60,
+                                    )
+
+                                    val newFollow = Follow(
+                                        code = code,
+                                        type = 1,
+                                        stickyOnTop = 0,
+                                        color = linkedColor
+                                    )
+                                    Injector.appDatabase.followDao().insertFollow(newFollow)
+                                    positions.forEach { idx ->
+                                        data.getOrNull(idx)?.follow = newFollow
+                                    }
                                     lifecycleScope.launch(Dispatchers.Main) {
-                                        notifyItemChanged(p)
+                                        positions.forEach { notifyItemChanged(it) }
                                     }
 
                                 }
@@ -1905,37 +2010,44 @@ class Strategy4Activity : AppCompatActivity() {
                         b.stickyOnTopBtn.setOnClickListener {
                             pw.dismiss()
                             lifecycleScope.launch(Dispatchers.IO) {
-                                val p = data.indexOf(result)
-                                if (result.follow?.stickyOnTop == 1) {
-                                    val n = Follow(result.stock.code, 1, 0)
-                                    Injector.appDatabase.followDao().insertFollow(n)
-                                    result.follow = n
+                                val code = result.stock.code
+                                val positions = data.mapIndexedNotNull { index, item ->
+                                    if (!item.isGroupHeader && item.stock.code == code) index else null
+                                }
+                                val endDateYmd =
+                                    this@Strategy4Activity.binding.endTimeTv.editableText.toString()
+                                        .toIntOrNull() ?: today()
+                                val wasSticky = result.follow?.stickyOnTop == 1
+                                val keepColor = result.follow?.let { it.color }
+                                    ?: linkedColorFromRecentRelatedFollows(
+                                        stockCode = code,
+                                        endDateYmd = endDateYmd,
+                                        daysBack = 60,
+                                    )
+                                val newSticky = if (wasSticky) 0 else 1
+                                val n = Follow(code, 1, newSticky, keepColor)
+                                Injector.appDatabase.followDao().insertFollow(n)
+                                positions.forEach { idx ->
+                                    data.getOrNull(idx)?.follow = n
+                                }
 
-                                    lifecycleScope.launch(Dispatchers.Main) {
+                                val p = data.indexOf(result)
+                                lifecycleScope.launch(Dispatchers.Main) {
+                                    if (wasSticky) {
                                         data.remove(result)
                                         notifyItemRemoved(p)
                                         delay(300)
                                         data.add(itemCount - 1, result)
                                         notifyItemInserted(itemCount - 1)
-                                    }
-
-                                } else {
-                                    val n = Follow(result.stock.code, 1, 1)
-                                    result.follow = n
-                                    Injector.appDatabase.followDao().insertFollow(n)
-                                    lifecycleScope.launch(Dispatchers.Main) {
+                                    } else {
                                         data.remove(result)
                                         notifyItemRemoved(p)
                                         delay(300)
                                         data.add(0, result)
                                         notifyItemInserted(0)
                                     }
-
                                 }
-
-
                             }
-
                         }
 
                         val arr = IntArray(2)

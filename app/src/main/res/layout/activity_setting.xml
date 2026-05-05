@@ -24,21 +24,35 @@
         android:layout_weight="1"
         tools:context=".SettingActivity">
 
-
         <androidx.core.widget.NestedScrollView
+            android:id="@+id/scrollView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:fillViewport="true">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
+                android:paddingVertical="12dp"
                 android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="显示"
+                    android:textStyle="bold"
+                    android:textSize="15sp"
+                    android:textColor="#222"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="6dp"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="6dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -55,7 +69,9 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="6dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -70,10 +86,22 @@
 
                 </LinearLayout>
 
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="功能"
+                    android:textStyle="bold"
+                    android:textSize="15sp"
+                    android:textColor="#222"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="6dp"/>
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="6dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -91,7 +119,9 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="6dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -111,7 +141,9 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="6dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -128,7 +160,9 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="6dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -146,7 +180,9 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="6dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -164,7 +200,9 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="6dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -181,7 +219,9 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="6dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -197,6 +237,16 @@
 
 
 
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="工具"
+                    android:textStyle="bold"
+                    android:textSize="15sp"
+                    android:textColor="#222"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="6dp"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -321,7 +371,6 @@
 
                 </LinearLayout>
 
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -384,12 +433,49 @@
 
                 </LinearLayout>
 
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="备份与还原"
+                    android:textStyle="bold"
+                    android:textSize="15sp"
+                    android:textColor="#222"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="6dp"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/backupDataBtn"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setting_backup_btn" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/restoreDataBtn"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/setting_restore_btn" />
+
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/debugDbBtn"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginTop="10dp"
                     android:text="@string/debug_db_entry" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/stockPairFitBtn"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/stock_pair_fit_title" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/stockFitRankingBtn"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/stock_fit_rank_title" />
 
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>

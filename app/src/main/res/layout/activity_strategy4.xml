@@ -618,7 +618,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             app:buttonTint="@color/yd_accent"
-                            android:checked="false" />
+                            android:checked="true" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -1172,7 +1172,17 @@
                 app:tint="@android:color/white" />
 
 
+
+
+
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+        <!-- 自选下拉面板 -->
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/followPanelFragment"
+            android:name="com.liaobusi.stockman.FollowPanelFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

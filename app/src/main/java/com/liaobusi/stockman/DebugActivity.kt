@@ -38,6 +38,7 @@ class DebugActivity : AppCompatActivity() {
             "HistoryBK",
             "BKStock",
             "Follow",
+            "StockLinkage",
             "GDRS",
             "Hide",
             "AnalysisBean",

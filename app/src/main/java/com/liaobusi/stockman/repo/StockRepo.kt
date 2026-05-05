@@ -888,6 +888,62 @@ object StockRepo {
 
     }
 
+    private fun eastMoneyStockSecId(code: String): String {
+        val market = when {
+            code.startsWith("000") || code.startsWith("300") || code.startsWith("301") ||
+                code.startsWith("002") || code.startsWith("001") || code.startsWith("003") -> 0
+            code.startsWith("82") || code.startsWith("83") || code.startsWith("87") ||
+                code.startsWith("88") || code.startsWith("43") || code.startsWith("92") -> 0
+            else -> 1
+        }
+        return "$market.$code"
+    }
+
+    /**
+     * 东方财富日 K（前复权 fqt=1），按日期升序；仅保留 [startDate, endDate] 内数据。
+     * [lmt] 为请求条数上限，区间很长时需增大（最大视接口而定，常用 ≤1200）。
+     */
+    suspend fun fetchStockDayKlineRange(
+        code: String,
+        startDate: Int,
+        endDate: Int,
+        lmt: Int = 1200,
+    ): List<HistoryStock> = withContext(Dispatchers.IO) {
+        if (startDate > endDate) return@withContext emptyList()
+        val api = Injector.retrofit.create(StockService::class.java)
+        val secId = eastMoneyStockSecId(code)
+        val url =
+            "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=$secId&klt=101&fqt=1&lmt=$lmt&end=20500000&iscca=1&fields1=f1,f2,f3,f4,f5,f6,f7,f8&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64,f350,f351,f352&forcect=1"
+        val response = try {
+            api.getBKHistory(url)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            null
+        }
+        val lines = response?.data?.klines ?: return@withContext emptyList()
+        lines.asReversed().mapNotNull { line ->
+            val arr = line.split(',')
+            if (arr.size < 11) return@mapNotNull null
+            val d = arr[0].replace("-", "").toInt()
+            if (d < startDate || d > endDate) return@mapNotNull null
+            HistoryStock(
+                openPrice = arr[1].toFloat(),
+                closePrice = arr[2].toFloat(),
+                highest = arr[3].toFloat(),
+                lowest = arr[4].toFloat(),
+                amplitude = arr[7].toFloat(),
+                chg = arr[8].toFloat(),
+                turnoverRate = arr[10].toFloat(),
+                code = code,
+                yesterdayClosePrice = -1f,
+                date = d,
+                averagePrice = -1f,
+                ztPrice = -1f,
+                dtPrice = -1f,
+            )
+        }.sortedBy { it.date }
+    }
+
     suspend fun getCallWarnType() = withContext(Dispatchers.IO) {
 
         Log.i("股票超人", "从网络获取集合竞价信息")
@@ -956,11 +1012,17 @@ object StockRepo {
                     sb.append(it.first())
                     sb.append(",")
                 }
+                val bk = listOf(it.PlateName, it.PlateCode)
+                    .map { s -> s.trim() }
+                    .filter { it.isNotEmpty() }
+                    .joinToString(" ")
+                    .ifEmpty { null }
                 UnusualActionHistory(
                     time = it.Time.toLong(),
                     comment = it.Comment,
                     stocks = sb.removeSuffix(",").toString(),
-                    type = 3
+                    type = 3,
+                    bk = bk
                 )
             }
             appDatabase.unusualActionHistoryDao().insertAll(histories)
@@ -986,7 +1048,8 @@ object StockRepo {
                         time = it.ctime.toLong(),
                         comment = if (info?.analysisContent?.isNotEmpty() == true) info.title + "\n" + info.analysisContent else "" + info?.title,
                         stocks = sb.removeSuffix(",").toString(),
-                        type = 4
+                        type = 4,
+                        bk = info?.bkname?.trim()?.takeIf { it.isNotEmpty() }
                     )
                 }
                 appDatabase.unusualActionHistoryDao().insertAll(histories)
@@ -1013,11 +1076,17 @@ object StockRepo {
                         sb.append(it.StockID.removePrefix("sz").removePrefix("sh"))
                         sb.append(",")
                     }
+                    val bk = listOf(it.plate_name, it.plate_code)
+                        .map { s -> s.trim() }
+                        .filter { it.isNotEmpty() }
+                        .joinToString(" ")
+                        .ifEmpty { null }
                     UnusualActionHistory(
                         time = it.ctime.toLong(),
                         comment = it.title + "\n" + it.brief,
                         stocks = sb.removeSuffix(",").toString(),
-                        type = 2
+                        type = 2,
+                        bk = bk
                     )
                 }
                 appDatabase.unusualActionHistoryDao().insertAll(histories)
@@ -1341,7 +1410,7 @@ object StockRepo {
         newList
     }
 
-
+    //获取财新网实时数据
     suspend fun getRealTimeStocksCX() = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
         fun elapsedSec() = (System.currentTimeMillis() - startTime) / 1000f
@@ -1749,6 +1818,95 @@ object StockRepo {
             return@withContext newList
         }
 
+
+    /**
+     * 拉取新浪 [getHQNodeDataSimple](https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeDataSimple)
+     * 深圳综值成份（`node=zhishu_399106`），写入 [Stock] 与 [HistoryStock]。
+     */
+    suspend fun getRealTimeSinaSZ(
+        pageSize: Int = 3000,
+        maxPages: Int = 1,
+    ) = withContext(Dispatchers.IO) {
+        val date = appDatabase.historyBKDao().getHistoryByDate3("000001", today())?.date
+        if (date != today()) return@withContext emptyList()
+
+        val startTime = System.currentTimeMillis()
+        fun elapsedSec() = (System.currentTimeMillis() - startTime) / 1000f
+        try {
+            val base =
+                "https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeDataSimple"
+            val node = "zhishu_399106"
+            val items = mutableListOf<SinaHQNodeItem>()
+            runCatching {
+                var page = 0
+                while (page < maxPages) {
+                    val url =
+                        "$base?page=$page&num=$pageSize&sort=symbol&asc=1&node=$node&_s_r_a=page"
+                    val chunk = apiService.getSinaHQNodeDataSimple(url)
+                    if (chunk.isEmpty()) break
+                    items.addAll(chunk)
+                    if (chunk.size < pageSize) break
+                    page++
+                }
+            }.onFailure { e ->
+                Log.e("股票超人", "新浪深圳综指请求失败，已耗时${elapsedSec()}秒", e)
+                return@withContext emptyList<Stock>()
+            }
+            Log.i("股票超人", "新浪深圳综指网络拉取${items.size}条，耗时${elapsedSec()}秒")
+            if (items.isEmpty()) return@withContext emptyList<Stock>()
+
+            val byCode = LinkedHashMap<String, SinaHQNodeItem>()
+            for (it in items) {
+                val c = parseSinaStockCode(it) ?: continue
+                byCode[c] = it
+            }
+            if (byCode.isEmpty()) return@withContext emptyList<Stock>()
+
+            val existingList = appDatabase.stockDao().getStockByCodes(byCode.keys.toList())
+            val existingByCode = existingList.associateBy { it.code }
+            val stocks = byCode.mapNotNull { (code, sina) ->
+                sinaItemToStock(sina, existingByCode[code])?.also { updated ->
+                    if (!trackerType) trackerMap[updated.code]?.update(updated)
+                }
+            }
+            if (stocks.isEmpty()) return@withContext emptyList<Stock>()
+
+            if (trackerType) stocks.forEach { realTimeStockMap[it.code] = it }
+
+            val date = today()
+            appDatabase.stockDao().insertAll(stocks)
+            Log.i(
+                "股票超人",
+                "插入股票数据库${stocks.size}条，来源新浪深圳综指，耗时${elapsedSec()}秒"
+            )
+            val historyStocks = stocks.mapNotNull { s ->
+                if (s.price == 0f) null
+                else HistoryStock(
+                    code = s.code,
+                    date = date,
+                    closePrice = s.price,
+                    chg = s.chg,
+                    amplitude = s.amplitude,
+                    turnoverRate = s.turnoverRate,
+                    highest = s.highest,
+                    lowest = s.lowest,
+                    openPrice = s.openPrice,
+                    ztPrice = s.ztPrice,
+                    dtPrice = s.dtPrice,
+                    yesterdayClosePrice = s.yesterdayClosePrice,
+                    averagePrice = s.averagePrice
+                )
+            }
+            appDatabase.historyStockDao().insertHistory(historyStocks)
+            Log.i(
+                "股票超人",
+                "插入股票历史数据库${historyStocks.size}条，来源新浪深圳综指，耗时${elapsedSec()}秒"
+            )
+            stocks
+        } finally {
+            Log.i("股票超人", "获取新浪深圳综指结束，总耗时${elapsedSec()}秒")
+        }
+    }
 
     //东方财富
     suspend fun getRealTimeStocksDFCF() = withContext(Dispatchers.IO) {
@@ -3801,87 +3959,7 @@ object StockRepo {
         return@withContext StrategyResult(result, stocks.size)
     }
 
-    /**
-     * 拉取新浪 [getHQNodeDataSimple](https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeDataSimple)
-     * 深圳综治成份（`node=zhishu_399106`），写入 [Stock] 与 [HistoryStock]。
-     */
-    suspend fun getRealTimeSinaSZ(
-        pageSize: Int = 3000,
-        maxPages: Int = 1,
-    ) = withContext(Dispatchers.IO) {
-        val date = appDatabase.historyBKDao().getHistoryByDate3("000001", today())?.date
-        if (date != today()) return@withContext emptyList()
 
-        val startTime = System.currentTimeMillis()
-        fun elapsedSec() = (System.currentTimeMillis() - startTime) / 1000f
-        try {
-            val base =
-                "https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeDataSimple"
-            val node = "zhishu_399106"
-            val items = mutableListOf<SinaHQNodeItem>()
-            runCatching {
-                var page = 0
-                while (page < maxPages) {
-                    val url = "$base?page=$page&num=$pageSize&sort=symbol&asc=1&node=$node&_s_r_a=page"
-                    val chunk = apiService.getSinaHQNodeDataSimple(url)
-                    if (chunk.isEmpty()) break
-                    items.addAll(chunk)
-                    if (chunk.size < pageSize) break
-                    page++
-                }
-            }.onFailure { e ->
-                Log.e("股票超人", "新浪深圳综指请求失败，已耗时${elapsedSec()}秒", e)
-                return@withContext emptyList<Stock>()
-            }
-            Log.i("股票超人", "新浪深圳综指网络拉取${items.size}条，耗时${elapsedSec()}秒")
-            if (items.isEmpty()) return@withContext emptyList<Stock>()
-
-            val byCode = LinkedHashMap<String, SinaHQNodeItem>()
-            for (it in items) {
-                val c = parseSinaStockCode(it) ?: continue
-                byCode[c] = it
-            }
-            if (byCode.isEmpty()) return@withContext emptyList<Stock>()
-
-            val existingList = appDatabase.stockDao().getStockByCodes(byCode.keys.toList())
-            val existingByCode = existingList.associateBy { it.code }
-            val stocks = byCode.mapNotNull { (code, sina) ->
-                sinaItemToStock(sina, existingByCode[code])?.also { updated ->
-                    if (!trackerType) trackerMap[updated.code]?.update(updated)
-                }
-            }
-            if (stocks.isEmpty()) return@withContext emptyList<Stock>()
-
-            if (trackerType) stocks.forEach { realTimeStockMap[it.code] = it }
-
-            val date = today()
-            appDatabase.stockDao().insertAll(stocks)
-            Log.i("股票超人", "插入股票数据库${stocks.size}条，来源新浪深圳综指，耗时${elapsedSec()}秒")
-            val historyStocks = stocks.mapNotNull { s ->
-                if (s.price == 0f) null
-                else HistoryStock(
-                    code = s.code,
-                    date = date,
-                    closePrice = s.price,
-                    chg = s.chg,
-                    amplitude = s.amplitude,
-                    turnoverRate = s.turnoverRate,
-                    highest = s.highest,
-                    lowest = s.lowest,
-                    openPrice = s.openPrice,
-                    ztPrice = s.ztPrice,
-                    dtPrice = s.dtPrice,
-                    yesterdayClosePrice = s.yesterdayClosePrice,
-                    averagePrice = s.averagePrice
-                )
-            }
-            appDatabase.historyStockDao().insertHistory(historyStocks)
-            Log.i("股票超人", "插入股票历史数据库${historyStocks.size}条，来源新浪深圳综指，耗时${elapsedSec()}秒")
-            stocks
-        } finally {
-            Log.i("股票超人", "获取新浪深圳综指结束，总耗时${elapsedSec()}秒")
-        }
-    }
 
     private fun parseSinaStockCode(item: SinaHQNodeItem): String? {
         val raw = item.code?.trim()?.takeIf { it.isNotEmpty() }
@@ -3913,23 +3991,23 @@ object StockRepo {
             openPrice = openP,
             yesterdayClosePrice = if (yest > 0f) yest else existing.yesterdayClosePrice
         ) ?: Stock(
-                code = code,
-                name = name,
-                price = price,
-                chg = chg,
-                amplitude = amplitude,
-                turnoverRate = 0f,
-                highest = hi,
-                lowest = lo,
-                circulationMarketValue = 0f,
-                toMarketTime = 0,
-                openPrice = openP,
-                yesterdayClosePrice = yest,
-                ztPrice = -1f,
-                dtPrice = -1f,
-                averagePrice = -1f,
-                bk = ""
-            )
+            code = code,
+            name = name,
+            price = price,
+            chg = chg,
+            amplitude = amplitude,
+            turnoverRate = 0f,
+            highest = hi,
+            lowest = lo,
+            circulationMarketValue = 0f,
+            toMarketTime = 0,
+            openPrice = openP,
+            yesterdayClosePrice = yest,
+            ztPrice = -1f,
+            dtPrice = -1f,
+            averagePrice = -1f,
+            bk = ""
+        )
     }
 
     //订阅东方财富股票数据

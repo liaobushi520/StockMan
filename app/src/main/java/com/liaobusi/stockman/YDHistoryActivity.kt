@@ -4,7 +4,11 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
+import android.text.Spannable
+import android.text.SpannableString
 import android.text.TextUtils
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
@@ -73,6 +77,7 @@ class YDHistoryActivity : AppCompatActivity() {
                 }.getOrNull()?.takeIf { it.isNotEmpty() } ?: stockCode
             withContext(Dispatchers.Main) {
                 binding.toolbar.title = "异动历史 · $displayName"
+                adapter.setHighlightStockName(displayName)
             }
 
             val replayList =
@@ -145,8 +150,16 @@ class YDHistoryActivity : AppCompatActivity() {
         ListAdapter<YdHistoryRow, YDHistoryAdapter.VH>(YdDiff()) {
 
         private val expandedKeys = mutableSetOf<String>()
+        private var highlightStockName: String = ""
 
         private fun rowKey(row: YdHistoryRow) = "${code}_${row.dateKey}"
+
+        fun setHighlightStockName(name: String) {
+            val n = name.trim()
+            if (highlightStockName == n) return
+            highlightStockName = n
+            notifyDataSetChanged()
+        }
 
         inner class VH(val itemBinding: ItemYdHistoryBinding) :
             RecyclerView.ViewHolder(itemBinding.root)
@@ -239,7 +252,11 @@ class YDHistoryActivity : AppCompatActivity() {
             val unusualText = formatAggregatedUnusual(row.unusualSameDay)
             holder.itemBinding.unusualSection.isVisible = unusualText.isNotBlank()
             if (unusualText.isNotBlank()) {
-                holder.itemBinding.unusualTv.text = unusualText
+                holder.itemBinding.unusualTv.text = highlightMatches(
+                    text = unusualText,
+                    keyword = highlightStockName,
+                    color = ContextCompat.getColor(holder.itemView.context, R.color.yd_accent),
+                )
             }
 
             val hasReplayDetails = item != null && (
@@ -258,6 +275,33 @@ class YDHistoryActivity : AppCompatActivity() {
             }
         }
     }
+}
+
+private fun highlightMatches(text: String, keyword: String, color: Int): CharSequence {
+    val k = keyword.trim()
+    if (text.isBlank() || k.isBlank()) return text
+
+    var start = text.indexOf(k, startIndex = 0, ignoreCase = false)
+    if (start < 0) return text
+
+    val ss = SpannableString(text)
+    while (start >= 0) {
+        val end = (start + k.length).coerceAtMost(text.length)
+        ss.setSpan(
+            ForegroundColorSpan(color),
+            start,
+            end,
+            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
+        )
+        ss.setSpan(
+            StyleSpan(Typeface.BOLD),
+            start,
+            end,
+            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
+        )
+        start = text.indexOf(k, startIndex = end, ignoreCase = false)
+    }
+    return ss
 }
 
 /**

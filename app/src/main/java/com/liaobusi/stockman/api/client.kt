@@ -85,7 +85,7 @@ fun getOkHttpClientBuilder() = OkHttpClient.Builder().apply {
                     "User-Agent",
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
                 )
-                it.header("Acs-Token","1776924005702_1777000636050_4o3VJYYsyA4qN8l+stYo0jjWvAK+X1y3U3cKUoqEyhmLSz2bV/9rQMOK1mI4zbgkxgSPLfoQuRxDsCHf+Qv2fccfTyDRMLlDjQ1SssttIgrTV3ZNJvjOJg7biD/Hc/bJMg1tLdj2nMw7mRAs7rEb/2hGTkUvJIXHNeTnAyf9VXu9vnllNMUgs6txbweqiNSnosdk3rwmp8mNdmt9L64heXK9jBACDuk5ubRve4xeiF2a9B6jeBK1WP9akUUtH9+77/OaRxDP7PnwFAN/NsjjSyv+m1FJ7q3IaoCvaj1eQeCl7fa+0jijw8MVZOq6P6jtqvw4NQeatvccR6czVizBlqAtp+Bug1apjvw6nhkzP91iVQtVxbNVkX6286yMDRuL")
+                // it.header("sec-ch-ua","\"Chromium\";v=\"140\", \"Not=A?Brand\";v=\"24\", \"Microsoft Edge\";v=\"140\"")
             }
         }.build()
         chain.proceed(request)
