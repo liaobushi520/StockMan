@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clickable="true"
+    android:focusable="true"
+    android:visibility="gone">
+
+    <View
+        android:id="@+id/mask"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#66000000" />
+
+    <LinearLayout
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="top"
+        android:background="@android:color/white"
+        android:elevation="8dp"
+        android:orientation="vertical">
+
+        <!-- 单行紧凑：标题 + 排序，尽量不抢列表视线 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:id="@+id/followPanelTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="10dp"
+                android:includeFontPadding="false"
+                android:text="@string/follow_panel_title"
+                android:textColor="@color/yd_body"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:letterSpacing="-0.02" />
+
+            <LinearLayout
+                android:id="@+id/sortSegmentBar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:animateLayoutChanges="true"
+                android:background="@drawable/bg_follow_sort_track"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="3dp">
+
+                <TextView
+                    android:id="@+id/sortManualBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_follow_sort_seg_idle"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:minHeight="30dp"
+                    android:paddingHorizontal="4dp"
+                    android:paddingVertical="6dp"
+                    android:text="@string/follow_sort_manual"
+                    android:textColor="@color/yd_secondary"
+                    android:textSize="11.5sp" />
+
+                <TextView
+                    android:id="@+id/sortChgBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="2dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_follow_sort_seg_idle"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:minHeight="30dp"
+                    android:paddingHorizontal="4dp"
+                    android:paddingVertical="6dp"
+                    android:text="@string/follow_sort_chg"
+                    android:textColor="@color/yd_secondary"
+                    android:textSize="11.5sp" />
+
+                <TextView
+                    android:id="@+id/sortColorBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="2dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_follow_sort_seg_idle"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:minHeight="30dp"
+                    android:paddingHorizontal="4dp"
+                    android:paddingVertical="6dp"
+                    android:text="@string/follow_sort_color"
+                    android:textColor="@color/yd_secondary"
+                    android:textSize="11.5sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:id="@+id/followHeaderDivider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginHorizontal="12dp"
+            android:background="@color/yd_divider" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false" />
+    </LinearLayout>
+</FrameLayout>
