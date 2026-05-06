@@ -13,6 +13,7 @@ import android.os.Build
 import android.os.Bundle
 import android.text.SpannableStringBuilder
 import android.text.style.ForegroundColorSpan
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -2051,13 +2052,34 @@ class Strategy4Activity : AppCompatActivity() {
                             }
                         }
 
-                        val arr = IntArray(2)
-                        binding.root.getLocationInWindow(arr)
-                        pw.showAsDropDown(
-                            it,
-                            (ev?.x ?: 0f).toInt(),
-                            -500 - (binding.root.height - (ev!!.y - arr[1])).toInt()
-                        )
+                        val motion = ev ?: return@setOnLongClickListener false
+                        val dm = binding.root.resources.displayMetrics
+                        val edgeInset = (8 * dm.density).toInt()
+                        val rootW = binding.root.width
+                        val rootH = binding.root.height
+                        val wSpec = View.MeasureSpec.makeMeasureSpec(rootW, View.MeasureSpec.AT_MOST)
+                        val hSpec = View.MeasureSpec.makeMeasureSpec(rootH, View.MeasureSpec.AT_MOST)
+                        b.root.measure(wSpec, hSpec)
+                        val popupW = b.root.measuredWidth
+                        var popupH = b.root.measuredHeight
+                        if (popupH <= 0) {
+                            b.root.measure(
+                                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                            )
+                        }
+                        val rootLoc = IntArray(2)
+                        binding.root.getLocationInWindow(rootLoc)
+                        val touchRelX =
+                            (motion.rawX.toInt() - rootLoc[0]).coerceIn(0, rootW)
+                        var xRel = touchRelX
+                        val minX = edgeInset
+                        val maxX = rootW - popupW - edgeInset
+                        xRel = when {
+                            maxX >= minX -> xRel.coerceIn(minX, maxX)
+                            else -> edgeInset.coerceAtMost((rootW - popupW).coerceAtLeast(0))
+                        }
+                        pw.showAtLocation(binding.root, Gravity.NO_GRAVITY, xRel, motion.y.toInt())
                         return@setOnLongClickListener true
                     }
 

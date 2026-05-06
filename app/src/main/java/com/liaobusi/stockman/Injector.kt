@@ -521,7 +521,7 @@ object Injector {
             } else {
                 appDatabase.popularityRankDao().getRanksByDate(today()).map { it.code }
             }
-            Log.e(
+            Log.i(
                 "股票超人",
                 "开始跟踪股票异动方式2 聚焦昨日涨停${isFocusLB(context)} 数量${list.size}"
             )
