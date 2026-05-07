@@ -72,6 +72,8 @@ import org.w3c.dom.WebSocket
 import org.w3c.dom.events.Event
 
 private val json = Json { ignoreUnknownKeys = true }
+private const val MONITOR_REFRESH_MIN_SECONDS = 2
+private const val MONITOR_REFRESH_MAX_SECONDS = 10
 
 fun main() {
     renderComposable(rootElementId = "root") {
@@ -91,6 +93,7 @@ fun MonitorApp() {
     var monitorSourceStatus by remember { mutableStateOf("来源加载中") }
     var customCodes by remember { mutableStateOf("") }
     var monitoringEnabled by remember { mutableStateOf(false) }
+    var monitorRefreshSeconds by remember { mutableStateOf(5) }
     var tradingTime by remember { mutableStateOf(isTradingTime()) }
     var notificationState by remember {
         mutableStateOf(runCatching { Notification.permission }.getOrDefault("default"))
@@ -124,12 +127,12 @@ fun MonitorApp() {
         }
     }
 
-    LaunchedEffect(selectedSources.toList(), customCodes) {
+    LaunchedEffect(selectedSources.toList(), customCodes, monitorRefreshSeconds) {
         while (true) {
             val result = loadMonitorSourceMap(selectedSources.toList(), customCodes)
             monitorSourcesByCode = result.sourcesByCode
             monitorSourceStatus = result.message
-            delay(60_000)
+            delay(monitorRefreshSeconds.coerceIn(MONITOR_REFRESH_MIN_SECONDS, MONITOR_REFRESH_MAX_SECONDS) * 1_000L)
         }
     }
 
@@ -172,7 +175,9 @@ fun MonitorApp() {
                         MonitorSectionTitle(
                             enabled = monitoringEnabled,
                             tradingTime = tradingTime,
+                            refreshSeconds = monitorRefreshSeconds,
                             meta = "${monitorStocks.size} / ${stocks.size} 只标的",
+                            onRefreshSecondsChange = { monitorRefreshSeconds = it.coerceIn(MONITOR_REFRESH_MIN_SECONDS, MONITOR_REFRESH_MAX_SECONDS) },
                             onStart = {
                                 if (isTradingTime()) {
                                     monitoringEnabled = true
@@ -187,7 +192,11 @@ fun MonitorApp() {
                         AlertList(alerts)
                     }
                 }
-                ManualTickPanel()
+                ManualTickPanel { alert ->
+                    alerts.add(0, alert)
+                    if (alerts.size > 30) alerts.removeLast()
+                    showNotification(alert)
+                }
                 EastMoneyDebugPanel()
                 }
                 "kpl-live" -> KplLivePage()
@@ -440,7 +449,9 @@ fun SectionTitle(title: String, meta: String) {
 fun MonitorSectionTitle(
     enabled: Boolean,
     tradingTime: Boolean,
+    refreshSeconds: Int,
     meta: String,
+    onRefreshSecondsChange: (Int) -> Unit,
     onStart: () -> Unit,
     onStop: () -> Unit
 ) {
@@ -457,6 +468,19 @@ fun MonitorSectionTitle(
                 )
             }
             Span { Text(meta) }
+            Span({ classes(AppStyles.monitorIntervalControl) }) {
+                Text("间隔")
+                Input(type = InputType.Number) {
+                    value(refreshSeconds.toString())
+                    attr("min", MONITOR_REFRESH_MIN_SECONDS.toString())
+                    attr("max", MONITOR_REFRESH_MAX_SECONDS.toString())
+                    attr("step", "1")
+                    onInput { event ->
+                        event.value.toString().toIntOrNull()?.let { onRefreshSecondsChange(it) }
+                    }
+                }
+                Text("秒")
+            }
             Button(attrs = {
                 classes(if (enabled) AppStyles.secondaryButton else AppStyles.primaryButton)
                 if (!tradingTime && !enabled) disabled()
@@ -644,14 +668,15 @@ fun AlertList(alerts: List<AlertEvent>) {
 }
 
 @Composable
-fun ManualTickPanel() {
+fun ManualTickPanel(onManualAlert: (AlertEvent) -> Unit) {
     var code by remember { mutableStateOf("600519") }
     var chg by remember { mutableStateOf("4.2") }
+    var status by remember { mutableStateOf("") }
 
     Div({ classes(AppStyles.manual) }) {
         Div {
             H2 { Text("手动测试") }
-            P { Text("推一个涨跌幅到本地服务，方便立刻验证通知链路。") }
+            P { Text("推一个涨跌幅到本地服务，并直接唤醒一条浏览器通知。") }
         }
         Div({ classes(AppStyles.form) }) {
             Input(type = InputType.Text) {
@@ -673,8 +698,40 @@ fun ManualTickPanel() {
                     options.headers = js("""({"Content-Type": "application/json"})""")
                     options.body = body
                     window.fetch("http://localhost:8080/api/tick", options)
+                        .then { response -> response.text() }
+                        .then { text ->
+                            runCatching {
+                                val tick = json.decodeFromString<StockTick>(text.toString())
+                                val now = (js("Date.now()") as Double).toLong()
+                                val alert = AlertEvent(
+                                    code = tick.code,
+                                    name = tick.name,
+                                    title = "${tick.code}${tick.name}手动测试",
+                                    content = "手动测试通知，涨跌幅 ${tick.chg.fmt()}%，现价 ${tick.price.fmt()}，${formatTime(now)}",
+                                    chg = tick.chg,
+                                    price = tick.price,
+                                    time = now
+                                )
+                                onManualAlert(alert)
+                                status = if (runCatching { Notification.permission }.getOrNull() == "granted") {
+                                    "已推送测试通知"
+                                } else {
+                                    "已生成测试事件，但浏览器通知未授权"
+                                }
+                            }.onFailure {
+                                status = "推送失败: ${it.message ?: it.toString()}"
+                            }
+                            null
+                        }
+                        .catch { error ->
+                            status = "推送失败: ${error.toString()}"
+                            null
+                        }
                 }
             }) { Text("推送") }
+            if (status.isNotBlank()) {
+                Span({ classes(AppStyles.timeText) }) { Text(status) }
+            }
         }
     }
 }
@@ -1057,6 +1114,14 @@ object AppStyles : StyleSheet() {
         property("flex-wrap", "wrap")
     }
 
+    val monitorIntervalControl by style {
+        display(DisplayStyle.Flex)
+        alignItems(AlignItems.Center)
+        gap(6.px)
+        color(Color("#66707c"))
+        fontSize(13.px)
+    }
+
     val upText by style {
         color(Color("#c43c3c"))
         fontWeight("700")
@@ -1383,6 +1448,11 @@ object AppStyles : StyleSheet() {
             fontSize(14.px)
             width(110.px)
             boxSizing("border-box")
+        }
+        ".$monitorIntervalControl input" style {
+            width(58.px)
+            height(32.px)
+            padding(6.px)
         }
     }
 

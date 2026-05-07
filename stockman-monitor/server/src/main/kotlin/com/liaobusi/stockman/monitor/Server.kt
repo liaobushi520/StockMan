@@ -138,9 +138,10 @@ fun Application.monitorModule() {
             }
         }
         post("/api/sync/stocks") {
-            serverLogger.info("HTTP POST /api/sync/stocks")
+            val source = call.request.queryParameters["source"]?.trim().orEmpty().ifBlank { "sina" }
+            serverLogger.info("HTTP POST /api/sync/stocks source={}", source)
             runCatching {
-                engine.refreshRealtimeStocksNow()
+                engine.refreshRealtimeStocksNow(source)
             }.onSuccess {
                 call.respond(it)
             }.onFailure {
@@ -536,11 +537,65 @@ private fun dbViewerHtml(): String = """
     .meta {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       gap: 12px;
-      padding: 14px 16px;
+      padding: 12px 16px;
       border-bottom: 1px solid #edf0f4;
       color: #66707c;
       flex-wrap: wrap;
+    }
+    .tableTitleBlock {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 260px;
+    }
+    .tableTitleActions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    #tableName {
+      color: #20242a;
+      font-size: 16px;
+    }
+    .tableStatus,
+    .syncSub {
+      color: #66707c;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .stockRefreshPanel {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .stockRefreshPanel label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      color: #66707c;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .stockRefreshPanel select,
+    .stockRefreshPanel input {
+      width: 118px;
+    }
+    .refreshState {
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      border: 1px solid #edf0f4;
+      border-radius: 8px;
+      background: #fbfcfd;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 700;
     }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
     th, td {
@@ -569,10 +624,16 @@ private fun dbViewerHtml(): String = """
     .syncHeader {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       gap: 12px;
       flex-wrap: wrap;
       width: 100%;
+    }
+    .syncTitleBlock {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 260px;
     }
     .syncActions {
       display: flex;
@@ -612,10 +673,6 @@ private fun dbViewerHtml(): String = """
     <div>
       <h1>StockMan DB Viewer</h1>
       <p id="dbPath">正在连接数据库...</p>
-      <p id="syncStatus">正在读取同步状态...</p>
-    </div>
-    <div>
-      <button id="stockRefreshButton" hidden>刷新</button>
     </div>
   </header>
   <div class="tabs" id="tabs"></div>
@@ -623,7 +680,10 @@ private fun dbViewerHtml(): String = """
     <div class="syncPanel">
       <div class="syncStats">
         <div class="syncHeader">
-          <strong>历史同步</strong>
+          <div class="syncTitleBlock">
+            <strong>历史同步</strong>
+            <span class="syncSub" id="historySyncSummary">正在读取历史同步状态...</span>
+          </div>
           <div class="syncActions">
             <span id="historyPendingCount">待同步 -</span>
             <button id="historyIncrementalSyncButton" hidden>增量同步</button>
@@ -653,7 +713,31 @@ private fun dbViewerHtml(): String = """
   </section>
   <section class="panel">
     <div class="meta">
-      <strong id="tableName">-</strong>
+      <div class="tableTitleBlock">
+        <div class="tableTitleActions">
+          <strong id="tableName">-</strong>
+        </div>
+        <span class="tableStatus" id="tableSyncSummary">正在读取表状态...</span>
+        <div class="stockRefreshPanel" id="stockRefreshPanel" hidden>
+          <label>数据源
+            <select id="stockRefreshSource">
+              <option value="sina" selected>新浪</option>
+              <option value="eastmoney">东方财富</option>
+            </select>
+          </label>
+          <label>模式
+            <select id="stockRefreshMode">
+              <option value="manual" selected>手动</option>
+              <option value="auto">自动</option>
+            </select>
+          </label>
+          <label>间隔(秒)
+            <input id="stockRefreshInterval" type="number" min="1" max="3600" value="10">
+          </label>
+          <button id="stockRefreshButton">刷新</button>
+          <span class="refreshState" id="stockRefreshState">空闲</span>
+        </div>
+      </div>
       <span id="tableTotal">-</span>
     </div>
     <div class="toolbar">
@@ -683,6 +767,10 @@ let currentTotal = 0;
 let historyLogLines = [];
 let lastHistoryLogMessage = "";
 let lastHistoryProgressKey = "";
+let latestSyncStatus = null;
+let latestHistorySyncStatus = null;
+let stockRefreshTimer = null;
+let stockRefreshRunning = false;
 
 async function loadTables() {
   const rsp = await fetch("/api/db/tables");
@@ -723,14 +811,16 @@ async function loadTable(name, page = currentPage) {
   currentPage = Math.max(1, page);
   const previewTable = name === "historystock" ? "history_sync_result" : name;
   document.getElementById("chartSection").hidden = name !== "historystock";
-  document.getElementById("stockRefreshButton").hidden = name !== "stock";
+  document.getElementById("stockRefreshPanel").hidden = name !== "stock";
   document.getElementById("historyIncrementalSyncButton").hidden = name !== "historystock";
   document.getElementById("historyFullSyncButton").hidden = name !== "historystock";
   document.getElementById("stopHistorySyncButton").hidden = name !== "historystock";
+  updateStockAutoRefresh();
   document.querySelectorAll("#tabs button").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.tableName === name);
   });
   document.getElementById("tableName").textContent = name === "historystock" ? "history_sync_result" : name;
+  updateTableSyncSummary();
   document.getElementById("tableTotal").textContent = "加载中";
   const content = document.getElementById("content");
   content.innerHTML = "";
@@ -776,19 +866,59 @@ async function loadTable(name, page = currentPage) {
 
 async function loadSyncStatus() {
   const rsp = await fetch("/api/sync/status");
-  const data = await rsp.json();
-  const date = data.lastStockSyncDate || "-";
-  const count = data.lastStockSyncCount || "-";
-  const source = data.lastStockSyncSource || "-";
-  document.getElementById("syncStatus").textContent =
-    "stock " + data.stockCount + " 行，historystock " + data.historyCount + " 行，上次同步 " + date + " / " + count + " 只 / " + source;
+  latestSyncStatus = await rsp.json();
+  updateTableSyncSummary();
+}
+
+function updateTableSyncSummary() {
+  const tableSummary = document.getElementById("tableSyncSummary");
+  if (!tableSummary) return;
+  if (activeTable === "stock" && latestSyncStatus) {
+    const date = formatTimestamp(latestSyncStatus.lastStockSyncTime);
+    const count = latestSyncStatus.lastStockSyncCount || "-";
+    const source = latestSyncStatus.lastStockSyncSource || "-";
+    tableSummary.textContent = "stock " + latestSyncStatus.stockCount + " 行 · 上次实时同步 " + date + " / " + count + " 只 / " + source;
+    return;
+  }
+  if (activeTable === "historystock" && latestHistorySyncStatus) {
+    const date = latestHistorySyncStatus.lastHistorySyncDate || "-";
+    const count = latestHistorySyncStatus.lastHistorySyncCount || "-";
+    const stocks = latestHistorySyncStatus.lastHistorySyncStockCount || "-";
+    const source = latestHistorySyncStatus.lastHistorySyncSource || "-";
+    tableSummary.textContent = "预览 history_sync_result · historystock " + latestHistorySyncStatus.historyCount + " 行 · 上次历史同步 " + date + " / " + stocks + " 只 / " + count + " 行 / " + source;
+    return;
+  }
+  tableSummary.textContent = activeTable ? "当前表预览" : "正在读取表状态...";
+}
+
+function formatTimestamp(value) {
+  if (!value) return "-";
+  const date = new Date(Number(value));
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  });
 }
 
 async function loadHistorySyncStatus() {
   const rsp = await fetch("/api/sync/history/status");
   if (!rsp.ok) return;
   const data = await rsp.json();
+  latestHistorySyncStatus = data;
   document.getElementById("historyPendingCount").textContent = "待同步 " + (data.pendingHistorySyncCount || 0);
+  const date = data.lastHistorySyncDate || "-";
+  const count = data.lastHistorySyncCount || "-";
+  const stocks = data.lastHistorySyncStockCount || "-";
+  const source = data.lastHistorySyncSource || "-";
+  document.getElementById("historySyncSummary").textContent =
+    "historystock " + data.historyCount + " 行 · 上次历史同步 " + date + " / " + stocks + " 只 / " + count + " 行 / " + source;
+  updateTableSyncSummary();
 }
 
 function appendHistoryLog(message) {
@@ -898,22 +1028,59 @@ async function loadDailyChart() {
   renderDailyChart(await rsp.json());
 }
 
-document.getElementById("stockRefreshButton").onclick = async () => {
+async function refreshStockTable(trigger) {
+  if (stockRefreshRunning) return;
   const button = document.getElementById("stockRefreshButton");
+  const source = document.getElementById("stockRefreshSource").value || "sina";
+  const state = document.getElementById("stockRefreshState");
+  stockRefreshRunning = true;
   button.disabled = true;
-  button.textContent = "刷新中...";
+  button.textContent = trigger === "auto" ? "自动刷新中..." : "刷新中...";
+  state.textContent = (trigger === "auto" ? "自动" : "手动") + "刷新中 · " + source;
   try {
-    const rsp = await fetch("/api/sync/stocks", { method: "POST" });
+    const rsp = await fetch("/api/sync/stocks?source=" + encodeURIComponent(source), { method: "POST" });
     if (!rsp.ok) throw new Error(await rsp.text());
-    await rsp.json();
-    await loadTables();
+    latestSyncStatus = await rsp.json();
+    await loadSyncStatus();
     if (activeTable) await loadTable(activeTable);
+    state.textContent = "刷新成功 · " + formatTimestamp(latestSyncStatus.lastStockSyncTime);
   } catch (error) {
-    alert(error);
+    state.textContent = "刷新失败 · " + error;
+    if (trigger !== "auto") alert(error);
   } finally {
+    stockRefreshRunning = false;
     button.disabled = false;
     button.textContent = "刷新";
   }
+}
+
+function updateStockAutoRefresh() {
+  if (stockRefreshTimer != null) {
+    clearInterval(stockRefreshTimer);
+    stockRefreshTimer = null;
+  }
+  const state = document.getElementById("stockRefreshState");
+  if (!state) return;
+  const mode = document.getElementById("stockRefreshMode").value;
+  const seconds = Math.max(1, Math.min(3600, Number(document.getElementById("stockRefreshInterval").value || 10)));
+  document.getElementById("stockRefreshInterval").value = seconds;
+  if (activeTable !== "stock" || mode !== "auto") {
+    if (activeTable === "stock") state.textContent = "空闲";
+    return;
+  }
+  state.textContent = "自动刷新已开启 · 每 " + seconds + " 秒";
+  stockRefreshTimer = setInterval(() => {
+    if (activeTable === "stock") refreshStockTable("auto");
+  }, seconds * 1000);
+}
+
+document.getElementById("stockRefreshButton").onclick = () => refreshStockTable("manual");
+document.getElementById("stockRefreshMode").onchange = updateStockAutoRefresh;
+document.getElementById("stockRefreshInterval").onchange = updateStockAutoRefresh;
+document.getElementById("stockRefreshSource").onchange = () => {
+  const state = document.getElementById("stockRefreshState");
+  state.textContent = "数据源已切换 · " + document.getElementById("stockRefreshSource").value;
+  updateStockAutoRefresh();
 };
 
 async function startHistorySync(full) {

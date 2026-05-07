@@ -24,7 +24,7 @@ fun showNotification(alert: AlertEvent) {
 
     val options = js("({})")
     options.body = alert.content
-    options.tag = alert.code
+    options.tag = "${alert.code}-${alert.time}"
     options.renotify = true
     Notification(alert.title, options)
 

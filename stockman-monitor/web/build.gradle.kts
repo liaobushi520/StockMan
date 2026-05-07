@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
+
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
@@ -10,6 +12,9 @@ kotlin {
         browser {
             commonWebpackConfig {
                 outputFileName = "stockman-monitor.js"
+                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
+                    port = 8081
+                }
             }
         }
         binaries.executable()

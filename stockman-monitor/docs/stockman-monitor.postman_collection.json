@@ -1,0 +1,80 @@
+{
+  "info": {
+    "_postman_id": "2a0e8b5d-2e4d-4d3d-b0a4-9f7c1f4b8f68",
+    "name": "StockMan Monitor",
+    "description": "StockMan Monitor 调试接口集合。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "实时行情",
+      "item": [
+        {
+          "name": "新浪实时行情 - A股列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "User-Agent",
+                "value": "Mozilla/5.0"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json,text/plain,*/*"
+              }
+            ],
+            "url": {
+              "raw": "{{sina_base_url}}/quotes_service/api/json_v2.php/Market_Center.getHQNodeDataSimple?page=1&num=3000&sort=symbol&asc=1&node=hs_a&_s_r_a=page",
+              "host": [
+                "{{sina_base_url}}"
+              ],
+              "path": [
+                "quotes_service",
+                "api",
+                "json_v2.php",
+                "Market_Center.getHQNodeDataSimple"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "页码，对应 SinaApi.getRealtimeStocks(page)"
+                },
+                {
+                  "key": "num",
+                  "value": "3000",
+                  "description": "每页数量，对应 SinaApi.getRealtimeStocks(pageSize)"
+                },
+                {
+                  "key": "sort",
+                  "value": "symbol"
+                },
+                {
+                  "key": "asc",
+                  "value": "1"
+                },
+                {
+                  "key": "node",
+                  "value": "hs_a"
+                },
+                {
+                  "key": "_s_r_a",
+                  "value": "page"
+                }
+              ]
+            },
+            "description": "对应 server/src/main/kotlin/com/liaobusi/stockman/monitor/network/SinaApi.kt 的 getRealtimeStocks 接口。"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "sina_base_url",
+      "value": "https://vip.stock.finance.sina.com.cn",
+      "type": "string"
+    }
+  ]
+}

@@ -9,7 +9,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
-import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.pow
 import kotlin.random.Random
@@ -395,10 +395,7 @@ class HistoryStockSync(private val database: StockDatabase) {
         private const val STOP_CHECK_DELAY_MS = 100L
 
         private fun historyEndDate(): Int {
-            return LocalDate.now(RealtimeStockSync.CHINA_ZONE)
-                .minusDays(1)
-                .format(RealtimeStockSync.BASIC_DATE)
-                .toInt()
+            return ChinaMarketCalendar.currentHistoryTargetDate(LocalDateTime.now(RealtimeStockSync.CHINA_ZONE))
         }
     }
 

@@ -2,6 +2,7 @@ package com.liaobusi.stockman.monitor.sync.strategy
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
+import com.liaobusi.stockman.monitor.ChinaMarketCalendar
 import com.liaobusi.stockman.monitor.FULL_MARKET_STOCK_MIN_COUNT
 import com.liaobusi.stockman.monitor.SyncedStock
 import com.liaobusi.stockman.monitor.downLimitRate
@@ -191,7 +192,7 @@ class SinaRealtimeStockStrategy(private val api: SinaApi) : RealtimeStockStrateg
         check(stocks.size > FULL_MARKET_STOCK_MIN_COUNT) { "$name returned too few stocks: ${stocks.size}" }
         return RealtimeStockSnapshot(
             source = name,
-            date = LocalDate.now(CHINA_ZONE).format(BASIC_DATE).toInt(),
+            date = 0,
             stocks = stocks
         )
     }
@@ -357,8 +358,10 @@ private fun JsonElement?.doubleOrZero(): Double = stringOrNull()?.toDoubleOrNull
 private fun JsonElement?.scaled(): Double = money(doubleOrZero() / 100.0)
 
 private fun Int.safeSyncDate(): Int {
-    return takeIf { it > 0 } ?: LocalDate.now(CHINA_ZONE).format(BASIC_DATE).toInt()
+    return takeIf { it > 0 }
+        ?.let { ChinaMarketCalendar.normalizeTradingDate(it) }
+        ?: ChinaMarketCalendar.toBasicInt(ChinaMarketCalendar.latestTradingDateOnOrBefore(LocalDate.now(CHINA_ZONE)))
 }
 
-private val CHINA_ZONE: ZoneId = ZoneId.of("Asia/Shanghai")
+private val CHINA_ZONE: ZoneId = ChinaMarketCalendar.zone
 private val BASIC_DATE: DateTimeFormatter = DateTimeFormatter.BASIC_ISO_DATE

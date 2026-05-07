@@ -4,10 +4,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.sql.Connection
 import java.sql.DriverManager
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.math.max
@@ -186,12 +184,14 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
             FROM stock s
             LEFT JOIN history_sync_result r
                 ON r.code = s.code
-                AND r.status = 'SUCCESS'
-                AND r.rowCount > 0
             WHERE r.code IS NULL
+                OR r.status <> 'SUCCESS'
+                OR r.rowCount <= 0
+                OR r.endDate < ?
             ORDER BY s.code
             """.trimIndent()
         ).use { ps ->
+            ps.setInt(1, endDate)
             ps.executeQuery().use { rs ->
                 buildList {
                     while (rs.next()) {
@@ -245,7 +245,13 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
         }
     }
 
-    fun replaceStocksFromSync(stocks: List<SyncedStock>, date: Int, clearBeforeInsert: Boolean = false, source: String = "unknown") {
+    fun replaceStocksFromSync(
+        stocks: List<SyncedStock>,
+        date: Int,
+        clearBeforeInsert: Boolean = false,
+        source: String = "unknown",
+        preserveExistingBk: Boolean = false
+    ) {
         require(stocks.size > FULL_MARKET_STOCK_MIN_COUNT) { "daily stock snapshot is incomplete: ${stocks.size}" }
         connection().use { conn ->
             conn.autoCommit = false
@@ -256,7 +262,7 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
                     }
                 }
                 stocks.forEach { stock ->
-                    updateDailyStock(conn, stock)
+                    updateDailyStock(conn, stock, preserveExistingBk)
                 }
                 reconcileHistorySyncResultCoverage(conn)
                 setMeta(conn, "last_stock_sync_date", date.toString())
@@ -271,9 +277,33 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
         }
     }
 
+    fun hasEastMoneyRealtimeSlot(slot: String): Boolean {
+        return connection().use { conn ->
+            getMeta(conn, "last_eastmoney_realtime_slot") == slot
+        }
+    }
+
+    fun markEastMoneyRealtimeSlot(slot: String) {
+        connection().use { conn ->
+            setMeta(conn, "last_eastmoney_realtime_slot", slot)
+        }
+    }
+
     fun markDailyStockSlot(slot: String) {
         connection().use { conn ->
             setMeta(conn, "last_stock_sync_slot", slot)
+        }
+    }
+
+    fun lastRealtimeToHistoryDate(): Int? {
+        return connection().use { conn ->
+            getMeta(conn, "last_realtime_to_history_date")?.toIntOrNull()
+        }
+    }
+
+    fun markRealtimeToHistoryDate(date: Int) {
+        connection().use { conn ->
+            setMeta(conn, "last_realtime_to_history_date", date.toString())
         }
     }
 
@@ -321,6 +351,66 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
         return historySyncStatus()
     }
 
+    fun upsertHistoryFromCurrentStocks(date: Int, source: String): HistorySyncStatus {
+        connection().use { conn ->
+            conn.autoCommit = false
+            try {
+                val stockCount = tableCount(conn, "stock")
+                conn.prepareStatement(
+                    """
+                    INSERT INTO historystock (
+                        code, date, closePrice, openPrice, highest, lowest, chg, amplitude,
+                        turnoverRate, ztPrice, dtPrice, yesterdayClosePrice, averagePrice
+                    )
+                    SELECT
+                        code,
+                        ?,
+                        price,
+                        openPrice,
+                        highest,
+                        lowest,
+                        chg,
+                        amplitude,
+                        turnoverRate,
+                        ztPrice,
+                        dtPrice,
+                        yesterdayClosePrice,
+                        averagePrice
+                    FROM stock
+                    WHERE 1 = 1
+                    ON CONFLICT(code, date) DO UPDATE SET
+                        closePrice = excluded.closePrice,
+                        openPrice = excluded.openPrice,
+                        highest = excluded.highest,
+                        lowest = excluded.lowest,
+                        chg = excluded.chg,
+                        amplitude = excluded.amplitude,
+                        turnoverRate = excluded.turnoverRate,
+                        ztPrice = excluded.ztPrice,
+                        dtPrice = excluded.dtPrice,
+                        yesterdayClosePrice = excluded.yesterdayClosePrice,
+                        averagePrice = excluded.averagePrice
+                    """.trimIndent()
+                ).use { ps ->
+                    ps.setInt(1, date)
+                    ps.executeUpdate()
+                }
+                upsertHistorySyncResultsFromHistory(conn, source, date)
+                setMeta(conn, "last_history_sync_time", System.currentTimeMillis().toString())
+                setMeta(conn, "last_history_sync_date", date.toString())
+                setMeta(conn, "last_history_sync_count", tableCount(conn, "historystock").toString())
+                setMeta(conn, "last_history_sync_stock_count", stockCount.toString())
+                setMeta(conn, "last_history_sync_requested_stock_count", stockCount.toString())
+                setMeta(conn, "last_history_sync_source", source)
+                conn.commit()
+            } catch (e: Throwable) {
+                conn.rollback()
+                throw e
+            }
+        }
+        return historySyncStatus()
+    }
+
     fun upsertHistorySyncResult(result: HistoryCodeSyncResult) {
         connection().use { conn ->
             conn.prepareStatement(
@@ -353,6 +443,42 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
         }
     }
 
+    private fun upsertHistorySyncResultsFromHistory(conn: Connection, source: String, updatedAt: Int) {
+        conn.prepareStatement(
+            """
+            INSERT INTO history_sync_result (
+                code, name, status, source, rowCount, message, startDate, endDate, updatedAt
+            )
+            SELECT
+                s.code,
+                s.name,
+                'SUCCESS',
+                ?,
+                COUNT(h.date),
+                '',
+                COALESCE(MIN(h.date), 0),
+                COALESCE(MAX(h.date), 0),
+                ?
+            FROM stock s
+            LEFT JOIN historystock h ON h.code = s.code
+            GROUP BY s.code, s.name
+            ON CONFLICT(code) DO UPDATE SET
+                name = excluded.name,
+                status = excluded.status,
+                source = excluded.source,
+                rowCount = excluded.rowCount,
+                message = excluded.message,
+                startDate = excluded.startDate,
+                endDate = excluded.endDate,
+                updatedAt = excluded.updatedAt
+            """.trimIndent()
+        ).use { ps ->
+            ps.setString(1, source)
+            ps.setInt(2, updatedAt)
+            ps.executeUpdate()
+        }
+    }
+
     fun syncStatus(): SyncStatus = connection().use { conn ->
         SyncStatus(
             database = path(),
@@ -370,7 +496,7 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
         HistorySyncStatus(
             database = path(),
             historyCount = tableCount(conn, "historystock"),
-            pendingHistorySyncCount = pendingHistorySyncCount(conn),
+            pendingHistorySyncCount = pendingHistorySyncCount(conn, currentHistoryTargetDate()),
             lastHistorySyncTime = getMeta(conn, "last_history_sync_time")?.toLongOrNull(),
             lastHistorySyncDate = getMeta(conn, "last_history_sync_date")?.toIntOrNull(),
             lastHistorySyncCount = getMeta(conn, "last_history_sync_count")?.toIntOrNull(),
@@ -380,20 +506,26 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
         )
     }
 
-    private fun pendingHistorySyncCount(conn: Connection): Int {
+    private fun pendingHistorySyncCount(conn: Connection, endDate: Int): Int {
         return conn.prepareStatement(
             """
             SELECT COUNT(*)
             FROM stock s
             LEFT JOIN history_sync_result r
                 ON r.code = s.code
-                AND r.status = 'SUCCESS'
-                AND r.rowCount > 0
             WHERE r.code IS NULL
+                OR r.status <> 'SUCCESS'
+                OR r.rowCount <= 0
+                OR r.endDate < ?
             """.trimIndent()
         ).use { ps ->
+            ps.setInt(1, endDate)
             ps.executeQuery().use { rs -> if (rs.next()) rs.getInt(1) else 0 }
         }
+    }
+
+    private fun currentHistoryTargetDate(): Int {
+        return ChinaMarketCalendar.currentHistoryTargetDate(LocalDateTime.now(ZoneId.of("Asia/Shanghai")))
     }
 
     fun tableNames(): List<String> = listOf("stock", "historystock", "history_sync_result", "sync_meta")
@@ -548,7 +680,7 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
         }
     }
 
-    private fun updateDailyStock(conn: Connection, stock: SyncedStock) {
+    private fun updateDailyStock(conn: Connection, stock: SyncedStock, preserveExistingBk: Boolean) {
         conn.prepareStatement(
             """
             INSERT INTO stock (
@@ -571,7 +703,10 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
                 ztPrice = excluded.ztPrice,
                 dtPrice = excluded.dtPrice,
                 averagePrice = excluded.averagePrice,
-                bk = excluded.bk
+                bk = CASE
+                    WHEN ? THEN CASE WHEN bk <> '' THEN bk ELSE excluded.bk END
+                    ELSE excluded.bk
+                END
             """.trimIndent()
         ).use { ps ->
             ps.setString(1, stock.code)
@@ -590,6 +725,7 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
             ps.setDouble(14, stock.dtPrice)
             ps.setDouble(15, stock.averagePrice)
             ps.setString(16, stock.bk)
+            ps.setBoolean(17, preserveExistingBk)
             ps.executeUpdate()
         }
     }
@@ -682,7 +818,7 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
     }
 
     private fun upsertTodayHistory(conn: Connection, seed: StockSeed, tick: StockTick) {
-        val date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE).toInt()
+        val date = ChinaMarketCalendar.currentHistoryTargetDate()
         val open = money(seed.yesterdayClose * (1 + (seed.baseChg / 2) / 100))
         val high = money(max(open, tick.price) * 1.012)
         val low = money(min(open, tick.price) * 0.992)
@@ -845,7 +981,7 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
         val oldest = latest.minusDays((DEFAULT_SEED_HISTORY_DAYS - 1).toLong())
         var date = latest
         while (!date.isBefore(oldest)) {
-            if (date.dayOfWeek != DayOfWeek.SATURDAY && date.dayOfWeek != DayOfWeek.SUNDAY) {
+            if (ChinaMarketCalendar.isTradingDay(date)) {
                 days.addFirst(date.format(formatter).toInt())
             }
             date = date.minusDays(1)
@@ -854,19 +990,8 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
     }
 
     private fun latestClosedTradingDate(): LocalDate {
-        val now = LocalDateTime.now(CHINA_ZONE)
-        var date = if (now.dayOfWeek != DayOfWeek.SATURDAY &&
-            now.dayOfWeek != DayOfWeek.SUNDAY &&
-            !now.toLocalTime().isBefore(DAILY_HISTORY_SYNC_TIME)
-        ) {
-            now.toLocalDate()
-        } else {
-            now.toLocalDate().minusDays(1)
-        }
-        while (date.dayOfWeek == DayOfWeek.SATURDAY || date.dayOfWeek == DayOfWeek.SUNDAY) {
-            date = date.minusDays(1)
-        }
-        return date
+        val target = ChinaMarketCalendar.currentHistoryTargetDate(LocalDateTime.now(CHINA_ZONE))
+        return LocalDate.parse(target.toString(), DateTimeFormatter.BASIC_ISO_DATE)
     }
 
     private fun setMeta(conn: Connection, key: String, value: String) {
@@ -894,7 +1019,6 @@ class StockDatabase(private val dbPath: Path = defaultDatabasePath()) {
     companion object {
         private const val DEFAULT_SEED_HISTORY_DAYS = 210
         private val CHINA_ZONE: ZoneId = ZoneId.of("Asia/Shanghai")
-        private val DAILY_HISTORY_SYNC_TIME: LocalTime = LocalTime.of(15, 10)
     }
 }
 

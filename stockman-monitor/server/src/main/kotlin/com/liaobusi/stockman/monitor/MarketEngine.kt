@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
+import java.time.LocalDateTime
 import java.util.Collections
 import kotlin.math.sin
 import kotlin.random.Random
@@ -47,18 +48,28 @@ class MarketEngine {
         scope.launch {
             runCatching { realtimeStockSync.initializeRealtimeStocksIfEmpty() }
                 .onSuccess { status ->
-                    if (status != null) reloadStocksAndBroadcast()
+                    if (status != null) {
+                        reloadStocksAndBroadcast()
+                    }
                 }
                 .onFailure { logger.warn("Stock sync failed: {}", it.message) }
         }
         scope.launch {
             while (isActive) {
                 delay(60_000)
-                runCatching { realtimeStockSync.refreshRealtimeStocksIfScheduled() }
-                    .onSuccess { status ->
-                        if (status != null) reloadStocksAndBroadcast()
-                    }
-                    .onFailure { logger.warn("Stock sync failed: {}", it.message) }
+                val result = runCatching { realtimeStockSync.refreshRealtimeStocksIfScheduled() }
+                result.onFailure { logger.warn("Stock sync failed: {}", it.message) }
+                val status = result.getOrNull()
+                if (status != null) {
+                    reloadStocksAndBroadcast()
+                }
+                val eastMoneyStatus = runCatching { realtimeStockSync.refreshEastMoneyRealtimeStocksIfScheduled() }
+                    .onFailure { logger.warn("Scheduled EastMoney realtime stock sync failed: {}", it.message) }
+                    .getOrNull()
+                if (eastMoneyStatus != null) {
+                    reloadStocksAndBroadcast()
+                }
+                syncHistoryFromRealtimeSnapshotAfterClose()
             }
         }
         scope.launch {
@@ -103,9 +114,10 @@ class MarketEngine {
         return tick
     }
 
-    suspend fun refreshRealtimeStocksNow(): SyncStatus {
-        logger.info("Manual realtime stock sync requested")
-        val status = realtimeStockSync.refreshRealtimeStocks(retry = false)
+    suspend fun refreshRealtimeStocksNow(source: String): SyncStatus {
+        val refreshSource = RealtimeRefreshSource.from(source)
+        logger.info("Manual realtime stock sync requested: source={}", refreshSource)
+        val status = realtimeStockSync.refreshRealtimeStocks(source = refreshSource, retry = false)
         reloadStocksAndBroadcast()
         logger.info("Manual realtime stock sync completed: count={}, source={}", status.lastStockSyncCount, status.lastStockSyncSource)
         return status
@@ -165,6 +177,35 @@ class MarketEngine {
     }
 
     fun historyStocksSyncProgress(): HistorySyncProgress = historyProgress
+
+    private fun syncHistoryFromRealtimeSnapshotAfterClose(force: Boolean = false) {
+        if (!force && !ChinaMarketCalendar.isAfterTradingClose(LocalDateTime.now(RealtimeStockSync.CHINA_ZONE))) return
+        val stockStatus = database.syncStatus()
+        val targetDate = ChinaMarketCalendar.currentHistoryTargetDate(LocalDateTime.now(RealtimeStockSync.CHINA_ZONE))
+        if (!force && database.lastRealtimeToHistoryDate() == targetDate) return
+        val stockDate = stockStatus.lastStockSyncDate?.let { ChinaMarketCalendar.normalizeTradingDate(it) }
+        if (stockDate != targetDate) {
+            logger.info("Skip realtime-to-history sync: stockDate={}, targetDate={}", stockDate, targetDate)
+            return
+        }
+        val stockCount = stockStatus.lastStockSyncCount ?: 0
+        if (stockCount <= FULL_MARKET_STOCK_MIN_COUNT) {
+            logger.info("Skip realtime-to-history sync: stockCount={} incomplete", stockCount)
+            return
+        }
+        val status = database.upsertHistoryFromCurrentStocks(
+            date = targetDate,
+            source = "RealtimeStock:${stockStatus.lastStockSyncSource ?: "unknown"}"
+        )
+        database.markRealtimeToHistoryDate(targetDate)
+        logger.info(
+            "Realtime-to-history sync completed: date={}, stockCount={}, historyCount={}, source={}",
+            status.lastHistorySyncDate,
+            status.lastHistorySyncStockCount,
+            status.lastHistorySyncCount,
+            status.lastHistorySyncSource
+        )
+    }
 
     private suspend fun simulate() {
         step += 1
